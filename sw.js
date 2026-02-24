@@ -5,10 +5,10 @@ const CACHE_NAME = 'instaisle-v1';
 
 // Core files to cache on install
 const PRECACHE_URLS = [
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/instaisle/index.html',
+  '/instaisle/manifest.json',
+  '/instaisle/icon-192.png',
+  '/instaisle/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap'
 ];
 
@@ -68,7 +68,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         // If offline and no cache — return a minimal offline page
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('/instaisle/index.html');
         }
         return new Response('', { status: 503 });
       });
