@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>InstAisle</title>
-<!-- Tesseract.js — on-device OCR, no API key needed -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="InstAisle">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
 <!-- Firebase SDK -->
 <script type="module">
 // Firebase is loaded as a module — see bottom of body
@@ -622,14 +627,17 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <div class="divider"></div>
     <div class="section-header" style="margin-bottom:10px">
-      <span class="section-title">Anthropic API Key</span>
+      <span class="section-title">Gemini API Key</span>
     </div>
     <div style="margin-bottom:6px">
-      <input class="input" id="api-key-input" type="password" placeholder="sk-ant-…"
+      <input class="input" id="api-key-input" type="password" placeholder="AIza…"
         style="font-size:.78rem" autocomplete="off">
     </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:16px" onclick="saveApiKey()">Save API Key</button>
-    <div style="font-size:.68rem;color:var(--muted);margin-bottom:16px">Your key is stored locally in your browser only and never sent to any server other than Anthropic directly.</div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:8px" onclick="saveApiKey()">Save API Key</button>
+    <div style="font-size:.68rem;color:var(--muted);margin-bottom:16px">
+      Free at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue)">aistudio.google.com/apikey</a>.
+      Stored in your browser only — never sent anywhere except Google directly.
+    </div>
     <div class="divider"></div>
     <div class="section-header" style="margin-bottom:10px">
       <span class="section-title">Join a Shared Store</span>
@@ -1137,11 +1145,10 @@ function openShareStoreModal(id)    { if(window._fbReady) window.openShareStoreM
 function copyShareCode()            { if(window._fbReady) window.copyShareCode();            else showToast('Loading…'); }
 
 function openProfileModal() {
-  // Pre-fill API key input if already saved
-  const saved = localStorage.getItem('_anthropicKey');
+  const saved = localStorage.getItem('_geminiKey');
   if (saved) {
     document.getElementById('api-key-input').value = saved;
-    window._anthropicKey = saved;
+    window._geminiKey = saved;
   }
   openModal('modal-profile');
 }
@@ -1149,9 +1156,8 @@ function openProfileModal() {
 function saveApiKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) { showToast('Please enter an API key'); return; }
-  if (!key.startsWith('sk-ant-')) { showToast('Key should start with sk-ant-…'); return; }
-  localStorage.setItem('_anthropicKey', key);
-  window._anthropicKey = key;
+  localStorage.setItem('_geminiKey', key);
+  window._geminiKey = key;
   showToast('API key saved ✓');
   closeModal('modal-profile');
 }
@@ -1160,10 +1166,8 @@ function saveApiKey() {
 // BOOT
 // ══════════════════════════════
 function boot() {
-  // Load saved API key
-  const savedKey = localStorage.getItem('_anthropicKey');
-  if (savedKey) window._anthropicKey = savedKey;
-  // Firebase module handles data loading on auth state change
+  const savedKey = localStorage.getItem('_geminiKey');
+  if (savedKey) window._geminiKey = savedKey;
   renderAll();
 }
 
@@ -1868,30 +1872,22 @@ async function processListInput(){
   const store=getActiveStore();
   closeModal('modal-add-list');
 
-  // ── Image path — use Tesseract OCR ──
+  // ── Image path ──
   if(uploadedImageB64){
-    showProcessing('Reading handwriting… 0%');
+    showProcessing('Reading your list…');
     try {
-      const names = await parseImageWithTesseract(uploadedImageB64, uploadedImageType||'image/jpeg');
+      const names=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
       uploadedImageB64=null; uploadedImageType=null;
       resetUploadZone();
-      if(!names.length){ hideProcessing(); showToast('No text found — try a clearer photo'); return; }
+      if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
-      // Use keyword matching for classification (no API needed)
-      const results = names.map(name => ({
-        name,
-        aisleIndex: kwMatch(normalise(name), store.aisles),
-        aiClassified: false,
-        checked: false
-      }));
-      state.lists[store.id] = applyCorr(results, store);
-      hideProcessing();
-      renderListScreen();
-      showToast(`${names.length} items from photo sorted ✓`);
+      const results=await classifyWithClaude(names,store);
+      state.lists[store.id]=applyCorr(results,store);
+      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
       persistActiveStore();
     } catch(err){
       hideProcessing(); console.error(err);
-      showToast('Could not read image — try a clearer photo or type the list');
+      showToast('Could not read image: ' + (err.message||'unknown error'));
     }
     return;
   }
@@ -1902,18 +1898,21 @@ async function processListInput(){
   if(!raw){ showToast('Enter at least one item'); return; }
   const names=raw.split('\n').map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
-  showProcessing('Sorting items by aisle…');
-  const results = names.map(name => ({
-    name,
-    aisleIndex: kwMatch(normalise(name), store.aisles),
-    aiClassified: false,
-    checked: false
-  }));
-  state.lists[store.id] = applyCorr(results, store);
-  hideProcessing();
-  renderListScreen();
-  showToast(`${names.length} items sorted ✓`);
-  persistActiveStore();
+  showProcessing('Asking Claude to classify your items…');
+  try {
+    const results=await classifyWithClaude(names,store);
+    state.lists[store.id]=applyCorr(results,store);
+    hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
+    persistActiveStore();
+  } catch(err){
+    hideProcessing(); console.error(err);
+    state.lists[store.id]=applyCorr(
+      names.map(name=>({name,aisleIndex:kwMatch(normalise(name),store.aisles),aiClassified:false,checked:false})),
+      store
+    );
+    renderListScreen(); showToast('Used keyword matching (AI unavailable)');
+    persistActiveStore();
+  }
 }
 
 function resetUploadZone(){
@@ -1926,42 +1925,40 @@ function resetUploadZone(){
   }
 }
 
-async function parseImageWithTesseract(b64, mimeType) {
-  // Convert base64 to a blob URL Tesseract can read
-  const byteChars = atob(b64);
-  const byteArr = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
-  const blob = new Blob([byteArr], { type: mimeType });
-  const url  = URL.createObjectURL(blob);
-
-  try {
-    const result = await Tesseract.recognize(url, 'eng', {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round((m.progress || 0) * 100);
-          showProcessing(`Reading handwriting… ${pct}%`);
-        }
-      }
-    });
-
-    const rawText = result.data.text;
-
-    // Parse lines into individual items
-    const items = rawText
-      .split('\n')
-      .map(line => line
-        .replace(/^[\s\-•*\d.)]+/, '')  // strip leading bullets/numbers
-        .replace(/[^\w\s'&]/g, ' ')      // remove special chars
-        .trim()
-        .toLowerCase()
-      )
-      .filter(line => line.length > 1 && line.length < 60); // filter noise
-
-    // Deduplicate
-    return [...new Set(items)];
-  } finally {
-    URL.revokeObjectURL(url);
+async function parseImageWithGemini(b64, mimeType){
+  const apiKey = window._geminiKey;
+  if(!apiKey){ showToast('⚠️ Add your Gemini API key in Settings'); openProfileModal(); return []; }
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              inline_data: { mime_type: mimeType, data: b64 }
+            },
+            {
+              text: `This is a handwritten or printed shopping list. Read every item written on it carefully.
+Return ONLY a JSON array of strings, one item per entry, lowercase. No markdown, no explanation:
+["bananas","chicken breast","greek yogurt"]
+If you cannot find any grocery items, return: []`
+            }
+          ]
+        }]
+      })
+    }
+  );
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
   }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+  const clean = text.replace(/```json?/gi,'').replace(/```/g,'').trim();
+  const parsed = JSON.parse(clean);
+  return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
 }
 
 async function classifyWithClaude(items,store){
@@ -2264,5 +2261,12 @@ function persistActiveStore() {
 boot();
 </script>
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/InstAisle/sw.js').catch(()=>{});
+  });
+}
+</script>
 </body>
 </html>
