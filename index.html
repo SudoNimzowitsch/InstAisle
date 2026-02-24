@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="InstAisle">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0f1117">
-<meta name="mobile-web-app-capable" content="yes">
 <!-- Firebase SDK -->
 <script type="module">
 // Firebase is loaded as a module — see bottom of body
@@ -537,7 +536,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- PROCESSING OVERLAY -->
 <div class="processing-overlay" id="processing-overlay">
   <div class="spinner"></div>
-  <div class="processing-title">Asking Claude…</div>
+  <div class="processing-title">Reading your list…</div>
   <div class="processing-text" id="processing-text">Classifying your items by aisle</div>
 </div>
 
@@ -788,8 +787,8 @@ async function loadUserData(uid) {
   window._storeUnsubs = storeDocs.map(snap =>
     onSnapshot(doc(db, 'stores', snap.id), (d) => {
       if (!d.exists()) return;
+      if (window._isSaving) return;
       const data = d.data();
-      // Update store in state
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
@@ -834,6 +833,7 @@ async function seedDemoStore(uid) {
   window._storeUnsubs.push(
     window._fb.onSnapshot(window._fb.doc(db, 'stores', id), (d) => {
       if (!d.exists()) return;
+      if (window._isSaving) return;
       const data = d.data();
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
@@ -856,6 +856,7 @@ window.persistStore = async function(storeId) {
   const store = state.stores.find(s => s.id === storeId);
   if (!store) return;
   setSyncDot('syncing');
+  window._isSaving = true;
   try {
     await updateDoc(doc(db, 'stores', storeId), {
       name: store.name, color: store.color, aisles: store.aisles,
@@ -866,6 +867,8 @@ window.persistStore = async function(storeId) {
   } catch(e) {
     console.error('Sync error', e);
     setSyncDot('error');
+  } finally {
+    setTimeout(() => { window._isSaving = false; }, 1500);
   }
 };
 
@@ -884,6 +887,7 @@ window.createStoreInFirestore = async function(storeData) {
   window._storeUnsubs.push(
     onSnapshot(doc(db, 'stores', storeData.id), (d) => {
       if (!d.exists()) return;
+      if (window._isSaving) return;
       const data = d.data();
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
@@ -969,6 +973,7 @@ window.joinStoreByCode = async function() {
     window._storeUnsubs.push(
       onSnapshot(doc(db,'stores',storeDoc.id), (d) => {
         if (!d.exists()) return;
+        if (window._isSaving) return;
         const dd = d.data();
         const idx = state.stores.findIndex(s => s.id === d.id);
         if (idx !== -1) {
@@ -1092,10 +1097,6 @@ window._fbReady = true;
 const AISLE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#e879f9','#facc15','#f87171','#22d3ee'];
 const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#facc15','#f87171'];
 
-// ── Cloud Function region — update this if you deploy to a different region ──
-// Find your region in Firebase Console → Functions → copy from the URL
-const FIREBASE_REGION = 'us-central1';
-
 // ══════════════════════════════
 // STATE
 // ══════════════════════════════
@@ -1136,33 +1137,10 @@ function openShareStoreModal(id)    { if(window._fbReady) window.openShareStoreM
 function copyShareCode()            { if(window._fbReady) window.copyShareCode();            else showToast('Loading…'); }
 
 function openProfileModal() {
-  // Pre-fill API key input if already saved
-  const saved = localStorage.getItem('_anthropicKey');
-  if (saved) {
-    document.getElementById('api-key-input').value = saved;
-    window._anthropicKey = saved;
-  }
   openModal('modal-profile');
 }
 
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key) { showToast('Please enter an API key'); return; }
-  if (!key.startsWith('sk-ant-')) { showToast('Key should start with sk-ant-…'); return; }
-  localStorage.setItem('_anthropicKey', key);
-  window._anthropicKey = key;
-  showToast('API key saved ✓');
-  closeModal('modal-profile');
-}
-
-// ══════════════════════════════
-// BOOT
-// ══════════════════════════════
 function boot() {
-  // Load saved API key
-  const savedKey = localStorage.getItem('_anthropicKey');
-  if (savedKey) window._anthropicKey = savedKey;
-  // Firebase module handles data loading on auth state change
   renderAll();
 }
 
@@ -1229,7 +1207,7 @@ function renderListScreen(){
 
     gItems.forEach(item=>{
       const bgBadge=hexRgba(color,.18);
-      const aiDot=item.aiClassified?`<span class="ai-dot" title="Classified by Claude">✦</span>`:'';
+      const aiDot=item.aiClassified?`<span class="ai-dot" title="AI classified">✦</span>`:'';
       html+=`<div class="list-item ${item.checked?'checked':''}"
           data-item-idx="${item.idx}" data-aisle-key="${key}"
           draggable="true"
@@ -1388,7 +1366,7 @@ function renderAisleRows(){
           <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
             <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
             <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
-            <div style="font-size:.68rem">Claude will identify what's on the shelves and add keywords automatically</div>
+            <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
           </div>
           ${pending ? renderScanResult(i, pending) : ''}
         </div>
@@ -1489,7 +1467,7 @@ async function handleAisleImageUpload(e){
   zone.innerHTML=`
     <img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
     <div class="aisle-img-spinner"></div>
-    <div style="font-size:.7rem;color:var(--blue)">Scanning shelves with Claude…</div>`;
+    <div style="font-size:.7rem;color:var(--blue)">Scanning shelves…</div>`;
 
   try {
     const keywords=await scanAisleImage(b64, mime);
@@ -1551,7 +1529,7 @@ function acceptScanKws(i){
     zone.onclick=()=>triggerAisleScan(i);
     zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
       <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
-      <div style="font-size:.68rem">Claude will identify what's on the shelves and add keywords automatically</div>`;
+      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
   }
   if(panel) panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
   showToast(`${added} keyword${added!==1?'s':''} added from photo ✓`);
@@ -1566,7 +1544,7 @@ function discardScan(i){
     zone.onclick=()=>triggerAisleScan(i);
     zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
       <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
-      <div style="font-size:.68rem">Claude will identify what's on the shelves and add keywords automatically</div>`;
+      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
   }
   const panel=document.getElementById('panel-scan-'+i);
   if(panel){
@@ -1575,39 +1553,38 @@ function discardScan(i){
 }
 
 async function scanAisleImage(b64, mime){
-  const apiKey = window._anthropicKey;
-  if(!apiKey){ showToast('Add your Anthropic API key in Settings'); return []; }
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:1000,
-      messages:[{
-        role:'user',
-        content:[
-          {type:'image', source:{type:'base64', media_type:mime, data:b64}},
-          {type:'text', text:`This is a photo of a grocery store aisle or shelf section. 
-Identify every distinct product category, product type, or item you can see on the shelves.
-Return ONLY a JSON array of short lowercase keyword strings (1–4 words each) suitable for matching shopping list items to this aisle.
-Be specific and comprehensive — include brand-agnostic product names.
-No markdown, no explanation, just the JSON array:
-["whole milk","2% milk","oat milk","greek yogurt","butter","cream cheese","cheddar","eggs"]`}
-        ]
-      }]
-    })
+  const user=window._currentUser;
+  if(!user){ showToast('Please sign in first'); return []; }
+  const token=await user.getIdToken();
+
+  // Resize before sending
+  const MAX=1024;
+  const resizedB64=await new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',0.85).split(',')[1]);
+    };
+    img.src=`data:${mime};base64,${b64}`;
   });
-  if(!res.ok) throw new Error(`API ${res.status}`);
+
+  const res=await fetch(
+    'https://us-central1-instaisle-e8d6b.cloudfunctions.net/scanAisleImage',
+    {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({imageBase64:resizedB64, mimeType:'image/jpeg'})
+    }
+  );
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    throw new Error(err?.error||`Server error ${res.status}`);
+  }
   const data=await res.json();
-  const text=data.content.map(c=>c.text||'').join('').trim()
-    .replace(/^```json?\s*/i,'').replace(/```\s*$/i,'').trim();
-  const parsed=JSON.parse(text);
-  return Array.isArray(parsed) ? parsed.map(k=>String(k).toLowerCase().trim()).filter(Boolean) : [];
+  return Array.isArray(data.keywords)?data.keywords:[];
 }
 
 function fileToDataUrl(file){
@@ -1839,30 +1816,22 @@ function handleFileUpload(e){
     const reader=new FileReader();
     reader.onload=ev=>{
       const dataUrl=ev.target.result;
-
-      // Resize image to max 1024px on longest side before sending to API
-      // This prevents "internal error" responses from Gemini on large phone photos
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 1024;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else       { w = Math.round(w * MAX / h); h = MAX; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const resized = canvas.toDataURL('image/jpeg', 0.85);
-        uploadedImageB64 = resized.split(',')[1];
-        uploadedImageType = 'image/jpeg';
-
-        // Show preview
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1024;
+        let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const resized=canvas.toDataURL('image/jpeg',0.85);
+        uploadedImageB64=resized.split(',')[1];
+        uploadedImageType='image/jpeg';
         zone.classList.add('has-image');
         zone.innerHTML=`<img class="img-preview" src="${resized}" alt="List preview">
-          <p style="font-size:.7rem;color:var(--green);margin-top:8px">✓ Image ready — Gemini will read your handwriting</p>`;
+          <p style="font-size:.7rem;color:var(--green);margin-top:8px">✓ Image ready — tap Organise to read your list</p>`;
       };
-      img.src = dataUrl;
+      img.src=dataUrl;
     };
     reader.readAsDataURL(f);
   } else {
@@ -1885,24 +1854,20 @@ async function processListInput(){
 
   // ── Image path ──
   if(uploadedImageB64){
-    showProcessing('Reading your list…');
+    showProcessing('Reading your list with Gemini…');
     try {
       const names=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
       uploadedImageB64=null; uploadedImageType=null;
       resetUploadZone();
       if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
-      const results = classifyWithClaude(names, store);
-      const finalList = applyCorr(results, store);
-      state.lists[store.id] = finalList;
-      // Persist to Firestore FIRST, then render — prevents onSnapshot from wiping the list
+      const results=classifyItems(names,store);
+      state.lists[store.id]=applyCorr(results,store);
       await window.persistStore(store.id);
-      hideProcessing();
-      renderListScreen();
-      showToast(`${names.length} items from photo organised ✓`);
+      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
       hideProcessing(); console.error(err);
-      showToast('Could not read image: ' + (err.message||'unknown error'));
+      showToast('Could not read image: '+(err.message||'unknown error'));
     }
     return;
   }
@@ -1914,13 +1879,10 @@ async function processListInput(){
   const names=raw.split('\n').map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
-  const results = classifyWithClaude(names, store);
-  const finalList = applyCorr(results, store);
-  state.lists[store.id] = finalList;
+  const results=classifyItems(names,store);
+  state.lists[store.id]=applyCorr(results,store);
   await window.persistStore(store.id);
-  hideProcessing();
-  renderListScreen();
-  showToast(`${names.length} items organised ✓`);
+  hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
 }
 
 function resetUploadZone(){
@@ -1934,35 +1896,29 @@ function resetUploadZone(){
 }
 
 async function parseImageWithGemini(b64, mimeType){
-  // Get Firebase auth token to authenticate with our Cloud Function
-  const user = window._currentUser;
+  const user=window._currentUser;
   if(!user){ showToast('Please sign in first'); return []; }
-  const token = await user.getIdToken();
-
-  const res = await fetch(
-    `https://${FIREBASE_REGION}-instaisle-e8d6b.cloudfunctions.net/parseShoppingList`,
+  const token=await user.getIdToken();
+  const res=await fetch(
+    'https://us-central1-instaisle-e8d6b.cloudfunctions.net/parseShoppingList',
     {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({ imageBase64: b64, mimeType })
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({imageBase64:b64, mimeType})
     }
   );
   if(!res.ok){
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err?.error || `Server error ${res.status}`);
+    const err=await res.json().catch(()=>({}));
+    throw new Error(err?.error||`Server error ${res.status}`);
   }
-  const data = await res.json();
-  return Array.isArray(data.items) ? data.items.filter(Boolean) : [];
+  const data=await res.json();
+  return Array.isArray(data.items)?data.items.filter(Boolean):[];
 }
 
-function classifyWithClaude(items, store) {
-  // Uses built-in keyword matching — no API key needed
-  return items.map(name => ({
+function classifyItems(items,store){
+  return items.map(name=>({
     name,
-    aisleIndex: kwMatch(normalise(name), store.aisles),
+    aisleIndex: kwMatch(normalise(name),store.aisles),
     aiClassified: false,
     checked: false
   }));
