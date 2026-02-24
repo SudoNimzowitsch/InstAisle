@@ -1892,10 +1892,14 @@ async function processListInput(){
       resetUploadZone();
       if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
-      const results=await classifyWithClaude(names,store);
-      state.lists[store.id]=applyCorr(results,store);
-      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
-      persistActiveStore();
+      const results = classifyWithClaude(names, store);
+      const finalList = applyCorr(results, store);
+      state.lists[store.id] = finalList;
+      // Persist to Firestore FIRST, then render — prevents onSnapshot from wiping the list
+      await window.persistStore(store.id);
+      hideProcessing();
+      renderListScreen();
+      showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
       hideProcessing(); console.error(err);
       showToast('Could not read image: ' + (err.message||'unknown error'));
@@ -1911,11 +1915,12 @@ async function processListInput(){
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
   const results = classifyWithClaude(names, store);
-  state.lists[store.id] = applyCorr(results, store);
+  const finalList = applyCorr(results, store);
+  state.lists[store.id] = finalList;
+  await window.persistStore(store.id);
   hideProcessing();
   renderListScreen();
   showToast(`${names.length} items organised ✓`);
-  persistActiveStore();
 }
 
 function resetUploadZone(){
