@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>InstAisle</title>
+<!-- Tesseract.js — on-device OCR, no API key needed -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <!-- Firebase SDK -->
 <script type="module">
 // Firebase is loaded as a module — see bottom of body
@@ -1585,7 +1587,7 @@ async function scanAisleImage(b64, mime){
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-haiku-4-5-20251001',
       max_tokens:1000,
       messages:[{
         role:'user',
@@ -1866,22 +1868,30 @@ async function processListInput(){
   const store=getActiveStore();
   closeModal('modal-add-list');
 
-  // ── Image path ──
+  // ── Image path — use Tesseract OCR ──
   if(uploadedImageB64){
-    showProcessing('Reading your handwritten list…');
+    showProcessing('Reading handwriting… 0%');
     try {
-      const names=await parseImageWithClaude(uploadedImageB64, uploadedImageType||'image/jpeg');
+      const names = await parseImageWithTesseract(uploadedImageB64, uploadedImageType||'image/jpeg');
       uploadedImageB64=null; uploadedImageType=null;
       resetUploadZone();
-      if(!names.length){ hideProcessing(); showToast('No items found in image'); return; }
-      showProcessing(`Found ${names.length} items — classifying by aisle…`);
-      const results=await classifyWithClaude(names,store);
-      state.lists[store.id]=applyCorr(results,store);
-      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
+      if(!names.length){ hideProcessing(); showToast('No text found — try a clearer photo'); return; }
+      showProcessing(`Found ${names.length} items — sorting by aisle…`);
+      // Use keyword matching for classification (no API needed)
+      const results = names.map(name => ({
+        name,
+        aisleIndex: kwMatch(normalise(name), store.aisles),
+        aiClassified: false,
+        checked: false
+      }));
+      state.lists[store.id] = applyCorr(results, store);
+      hideProcessing();
+      renderListScreen();
+      showToast(`${names.length} items from photo sorted ✓`);
       persistActiveStore();
     } catch(err){
       hideProcessing(); console.error(err);
-      showToast('Could not read image — try typing the list instead');
+      showToast('Could not read image — try a clearer photo or type the list');
     }
     return;
   }
@@ -1892,21 +1902,18 @@ async function processListInput(){
   if(!raw){ showToast('Enter at least one item'); return; }
   const names=raw.split('\n').map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
-  showProcessing('Asking Claude to classify your items…');
-  try {
-    const results=await classifyWithClaude(names,store);
-    state.lists[store.id]=applyCorr(results,store);
-    hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
-    persistActiveStore();
-  } catch(err){
-    hideProcessing(); console.error(err);
-    state.lists[store.id]=applyCorr(
-      names.map(name=>({name,aisleIndex:kwMatch(normalise(name),store.aisles),aiClassified:false,checked:false})),
-      store
-    );
-    renderListScreen(); showToast('Used keyword matching (AI unavailable)');
-    persistActiveStore();
-  }
+  showProcessing('Sorting items by aisle…');
+  const results = names.map(name => ({
+    name,
+    aisleIndex: kwMatch(normalise(name), store.aisles),
+    aiClassified: false,
+    checked: false
+  }));
+  state.lists[store.id] = applyCorr(results, store);
+  hideProcessing();
+  renderListScreen();
+  showToast(`${names.length} items sorted ✓`);
+  persistActiveStore();
 }
 
 function resetUploadZone(){
@@ -1919,46 +1926,42 @@ function resetUploadZone(){
   }
 }
 
-async function parseImageWithClaude(b64, mimeType){
-  const apiKey = window._anthropicKey;
-  if(!apiKey){ showToast('Add your Anthropic API key in Settings'); return []; }
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body:JSON.stringify({
-      model:'claude-opus-4-6',
-      max_tokens:1000,
-      messages:[{
-        role:'user',
-        content:[
-          {
-            type:'image',
-            source:{type:'base64', media_type:mimeType, data:b64}
-          },
-          {
-            type:'text',
-            text:`This is a shopping list. Please read all the items written on it — including any handwritten text.
+async function parseImageWithTesseract(b64, mimeType) {
+  // Convert base64 to a blob URL Tesseract can read
+  const byteChars = atob(b64);
+  const byteArr = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+  const blob = new Blob([byteArr], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
 
-Return ONLY a JSON array of strings, one per item. No markdown, no explanation, no numbering:
-["bananas","chicken breast","greek yogurt"]
+  try {
+    const result = await Tesseract.recognize(url, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round((m.progress || 0) * 100);
+          showProcessing(`Reading handwriting… ${pct}%`);
+        }
+      }
+    });
 
-If you cannot identify any grocery items, return an empty array: []`
-          }
-        ]
-      }]
-    })
-  });
-  if(!res.ok) throw new Error(`API ${res.status}`);
-  const data=await res.json();
-  const text=data.content.map(c=>c.text||'').join('').trim()
-    .replace(/^```json?\s*/i,'').replace(/```\s*$/i,'').trim();
-  const parsed=JSON.parse(text);
-  return Array.isArray(parsed)?parsed.filter(Boolean):[];
+    const rawText = result.data.text;
+
+    // Parse lines into individual items
+    const items = rawText
+      .split('\n')
+      .map(line => line
+        .replace(/^[\s\-•*\d.)]+/, '')  // strip leading bullets/numbers
+        .replace(/[^\w\s'&]/g, ' ')      // remove special chars
+        .trim()
+        .toLowerCase()
+      )
+      .filter(line => line.length > 1 && line.length < 60); // filter noise
+
+    // Deduplicate
+    return [...new Set(items)];
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 async function classifyWithClaude(items,store){
@@ -1993,7 +1996,7 @@ Rules:
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body:JSON.stringify({
-      model:'claude-opus-4-6',
+      model:'claude-opus-4-5',
       max_tokens:1000,
       messages:[{role:'user',content:prompt}]
     })
