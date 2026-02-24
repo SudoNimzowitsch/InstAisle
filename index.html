@@ -452,7 +452,10 @@ textarea.input{resize:vertical;min-height:90px;}
 <div id="auth-screen">
   <div class="auth-logo">InstAisle</div>
   <div class="auth-tagline">Smart grocery lists, synced everywhere</div>
-  <div id="auth-debug" style="display:none;font-size:.72rem;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.3);margin-bottom:12px;text-align:center;word-break:break-all"></div>
+
+  <!-- Debug output — shows Firebase status visibly -->
+  <div id="auth-debug" style="display:none;font-size:.72rem;padding:8px 12px;border-radius:8px;
+    background:rgba(0,0,0,.3);margin-bottom:12px;text-align:center;word-break:break-all"></div>
 
   <div class="auth-tabs">
     <button class="auth-tab active" id="tab-signin">Sign In</button>
@@ -685,9 +688,19 @@ import { getFirestore, doc, collection, setDoc, getDoc, onSnapshot,
          updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove }
                                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+// ── Debug helper — shows errors visibly on screen ──
+function dbg(msg, isError) {
+  console.log('[InstAisle]', msg);
+  const el = document.getElementById('auth-debug');
+  if (el) {
+    el.style.display = 'block';
+    el.style.color = isError ? '#f87171' : '#4ade80';
+    el.textContent = msg;
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 //  FIREBASE CONFIGURATION
-//  Get it from: Firebase Console → Project Settings → Your Apps
 // ══════════════════════════════════════════════════════════════
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyC_QHkzWMXgx-p3tRANKO_1ioRXuj91RcA",
@@ -700,18 +713,15 @@ const FIREBASE_CONFIG = {
 };
 
 // ── Init ──
-function dbg(msg, isError) {
-  console.log('[InstAisle]', msg);
-  const el = document.getElementById('auth-debug');
-  if (el) { el.style.display='block'; el.style.color=isError?'#f87171':'#4ade80'; el.textContent=msg; }
-}
 let app, auth, db;
 try {
   app  = initializeApp(FIREBASE_CONFIG);
   auth = getAuth(app);
   db   = getFirestore(app);
   dbg('✓ Firebase initialised');
-} catch(e) { dbg('✗ Firebase init failed: ' + e.message, true); }
+} catch(e) {
+  dbg('✗ Firebase init failed: ' + e.message, true);
+}
 
 // ══════════════════════════════
 // EXPOSE to global scope (bridge to non-module JS below)
@@ -1030,9 +1040,12 @@ window.signInEmail = async function() {
   errEl.classList.remove('show');
   if (!email || !pass) { showAuthError('signin','Please fill in all fields'); return; }
   document.getElementById('btn-signin').disabled = true;
+  dbg('Signing in: ' + email);
   try {
     await signInWithEmailAndPassword(auth, email, pass);
+    dbg('✓ Signed in');
   } catch(e) {
+    dbg('✗ Sign in error: ' + e.code, true);
     showAuthError('signin', friendlyAuthError(e.code));
   }
   document.getElementById('btn-signin').disabled = false;
@@ -1046,10 +1059,13 @@ window.signUpEmail = async function() {
   if (!name || !email || !pass) { showAuthError('signup','Please fill in all fields'); return; }
   if (pass.length < 6) { showAuthError('signup','Password must be at least 6 characters'); return; }
   document.getElementById('btn-signup').disabled = true;
+  dbg('Creating account: ' + email);
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
+    dbg('✓ Account created');
   } catch(e) {
+    dbg('✗ Sign up error: ' + e.code, true);
     showAuthError('signup', friendlyAuthError(e.code));
   }
   document.getElementById('btn-signup').disabled = false;
@@ -1107,11 +1123,13 @@ function setSyncDot(status) {
 }
 window.setSyncDot = setSyncDot;
 
-// Signal that the Firebase module is fully loaded
+// Expose debug helper globally
 window._dbg = dbg;
+
+// Signal that the Firebase module is fully loaded
 window._fbReady = true;
 dbg('✓ App ready');
-  
+
 </script>
 
 <script>
@@ -1142,20 +1160,8 @@ let touchOffX = 0, touchOffY = 0;
 // ══════════════════════════════
 // AUTH UI HELPERS
 // ══════════════════════════════
-function switchAuthTab(tab) {
-  ['signin','signup'].forEach(t => {
-    document.getElementById('auth-panel-'+t)?.classList.toggle('active', t===tab);
-  });
-  document.querySelectorAll('.auth-tab').forEach((b,i)=>{
-    b.classList.toggle('active', (i===0&&tab==='signin')||(i===1&&tab==='signup'));
-  });
-}
 
-// ══════════════════════════════
-// AUTH UI — wired up via addEventListener, no onclick attributes
-// ══════════════════════════════
-
-// Tab switching — pure DOM, no Firebase needed
+// Tab switching — uses inline styles, guaranteed to work
 function switchAuthTab(tab) {
   document.getElementById('auth-panel-signin').style.display = tab === 'signin' ? 'block' : 'none';
   document.getElementById('auth-panel-signup').style.display = tab === 'signup' ? 'block' : 'none';
@@ -1170,13 +1176,17 @@ function whenReady(fn) {
   const interval = setInterval(() => {
     attempts++;
     if (window._fbReady) { clearInterval(interval); fn(); }
-    else if (attempts > 40) { clearInterval(interval); const m='Firebase did not load after 4s'; if(window._dbg) window._dbg(m,true); else alert(m); }
+    else if (attempts > 40) {
+      clearInterval(interval);
+      const m = 'Firebase did not load after 4s — check network';
+      if(window._dbg) window._dbg(m, true); else alert(m);
+    }
   }, 100);
 }
 
-// Wire up all auth buttons once DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-
+// Wire up all auth buttons — use setTimeout to ensure DOM is ready
+// regardless of whether DOMContentLoaded has already fired
+function wireAuthButtons() {
   // Tab switching
   document.getElementById('tab-signin')?.addEventListener('click', () => switchAuthTab('signin'));
   document.getElementById('tab-signup')?.addEventListener('click', () => switchAuthTab('signup'));
@@ -1197,9 +1207,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-signout')?.addEventListener('click', () => whenReady(() => window.signOut()));
   document.getElementById('btn-join-store')?.addEventListener('click', () => whenReady(() => window.joinStoreByCode()));
 
-  // initialise tab display
+  // Show sign-in panel by default
   switchAuthTab('signin');
-});
+}
+
+// Run immediately if DOM already ready, otherwise wait for it
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wireAuthButtons);
+} else {
+  wireAuthButtons();
+}
 
 function openProfileModal() {
   // Pre-fill API key input if already saved
