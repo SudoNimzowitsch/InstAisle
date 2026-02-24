@@ -627,19 +627,6 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <div class="divider"></div>
     <div class="section-header" style="margin-bottom:10px">
-      <span class="section-title">Gemini API Key</span>
-    </div>
-    <div style="margin-bottom:6px">
-      <input class="input" id="api-key-input" type="password" placeholder="AIza…"
-        style="font-size:.78rem" autocomplete="off">
-    </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:8px" onclick="saveApiKey()">Save API Key</button>
-    <div style="font-size:.68rem;color:var(--muted);margin-bottom:16px">
-      Free at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue)">aistudio.google.com/apikey</a>.
-      Stored in your browser only — never sent anywhere except Google directly.
-    </div>
-    <div class="divider"></div>
-    <div class="section-header" style="margin-bottom:10px">
       <span class="section-title">Join a Shared Store</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -1105,6 +1092,10 @@ window._fbReady = true;
 const AISLE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#e879f9','#facc15','#f87171','#22d3ee'];
 const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#facc15','#f87171'];
 
+// ── Cloud Function region — update this if you deploy to a different region ──
+// Find your region in Firebase Console → Functions → copy from the URL
+const FIREBASE_REGION = 'us-central1';
+
 // ══════════════════════════════
 // STATE
 // ══════════════════════════════
@@ -1145,10 +1136,11 @@ function openShareStoreModal(id)    { if(window._fbReady) window.openShareStoreM
 function copyShareCode()            { if(window._fbReady) window.copyShareCode();            else showToast('Loading…'); }
 
 function openProfileModal() {
-  const saved = localStorage.getItem('_geminiKey');
+  // Pre-fill API key input if already saved
+  const saved = localStorage.getItem('_anthropicKey');
   if (saved) {
     document.getElementById('api-key-input').value = saved;
-    window._geminiKey = saved;
+    window._anthropicKey = saved;
   }
   openModal('modal-profile');
 }
@@ -1156,8 +1148,9 @@ function openProfileModal() {
 function saveApiKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) { showToast('Please enter an API key'); return; }
-  localStorage.setItem('_geminiKey', key);
-  window._geminiKey = key;
+  if (!key.startsWith('sk-ant-')) { showToast('Key should start with sk-ant-…'); return; }
+  localStorage.setItem('_anthropicKey', key);
+  window._anthropicKey = key;
   showToast('API key saved ✓');
   closeModal('modal-profile');
 }
@@ -1166,8 +1159,10 @@ function saveApiKey() {
 // BOOT
 // ══════════════════════════════
 function boot() {
-  const savedKey = localStorage.getItem('_geminiKey');
-  if (savedKey) window._geminiKey = savedKey;
+  // Load saved API key
+  const savedKey = localStorage.getItem('_anthropicKey');
+  if (savedKey) window._anthropicKey = savedKey;
+  // Firebase module handles data loading on auth state change
   renderAll();
 }
 
@@ -1926,39 +1921,28 @@ function resetUploadZone(){
 }
 
 async function parseImageWithGemini(b64, mimeType){
-  const apiKey = window._geminiKey;
-  if(!apiKey){ showToast('⚠️ Add your Gemini API key in Settings'); openProfileModal(); return []; }
+  // Get Firebase auth token to authenticate with our Cloud Function
+  const user = window._currentUser;
+  if(!user){ showToast('Please sign in first'); return []; }
+  const token = await user.getIdToken();
+
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://${FIREBASE_REGION}-instaisle-e8d6b.cloudfunctions.net/parseShoppingList`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              inline_data: { mime_type: mimeType, data: b64 }
-            },
-            {
-              text: `This is a handwritten or printed shopping list. Read every item written on it carefully.
-Return ONLY a JSON array of strings, one item per entry, lowercase. No markdown, no explanation:
-["bananas","chicken breast","greek yogurt"]
-If you cannot find any grocery items, return: []`
-            }
-          ]
-        }]
-      })
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ imageBase64: b64, mimeType })
     }
   );
   if(!res.ok){
     const err = await res.json().catch(()=>({}));
-    throw new Error(err?.error?.message || `Gemini API error ${res.status}`);
+    throw new Error(err?.error || `Server error ${res.status}`);
   }
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-  const clean = text.replace(/```json?/gi,'').replace(/```/g,'').trim();
-  const parsed = JSON.parse(clean);
-  return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  return Array.isArray(data.items) ? data.items.filter(Boolean) : [];
 }
 
 async function classifyWithClaude(items,store){
