@@ -1839,14 +1839,30 @@ function handleFileUpload(e){
     const reader=new FileReader();
     reader.onload=ev=>{
       const dataUrl=ev.target.result;
-      const b64=dataUrl.split(',')[1];
-      uploadedImageB64=b64;
-      uploadedImageType=f.type;
 
-      // Show preview
-      zone.classList.add('has-image');
-      zone.innerHTML=`<img class="img-preview" src="${dataUrl}" alt="List preview">
-        <p style="font-size:.7rem;color:var(--green);margin-top:8px">✓ Image ready — Claude will read your handwriting</p>`;
+      // Resize image to max 1024px on longest side before sending to API
+      // This prevents "internal error" responses from Gemini on large phone photos
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1024;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const resized = canvas.toDataURL('image/jpeg', 0.85);
+        uploadedImageB64 = resized.split(',')[1];
+        uploadedImageType = 'image/jpeg';
+
+        // Show preview
+        zone.classList.add('has-image');
+        zone.innerHTML=`<img class="img-preview" src="${resized}" alt="List preview">
+          <p style="font-size:.7rem;color:var(--green);margin-top:8px">✓ Image ready — Gemini will read your handwriting</p>`;
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(f);
   } else {
