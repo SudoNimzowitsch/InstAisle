@@ -1909,21 +1909,13 @@ async function processListInput(){
   if(!raw){ showToast('Enter at least one item'); return; }
   const names=raw.split('\n').map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
-  showProcessing('Asking Claude to classify your items…');
-  try {
-    const results=await classifyWithClaude(names,store);
-    state.lists[store.id]=applyCorr(results,store);
-    hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
-    persistActiveStore();
-  } catch(err){
-    hideProcessing(); console.error(err);
-    state.lists[store.id]=applyCorr(
-      names.map(name=>({name,aisleIndex:kwMatch(normalise(name),store.aisles),aiClassified:false,checked:false})),
-      store
-    );
-    renderListScreen(); showToast('Used keyword matching (AI unavailable)');
-    persistActiveStore();
-  }
+  showProcessing('Sorting items by aisle…');
+  const results = classifyWithClaude(names, store);
+  state.lists[store.id] = applyCorr(results, store);
+  hideProcessing();
+  renderListScreen();
+  showToast(`${names.length} items organised ✓`);
+  persistActiveStore();
 }
 
 function resetUploadZone(){
@@ -1961,53 +1953,13 @@ async function parseImageWithGemini(b64, mimeType){
   return Array.isArray(data.items) ? data.items.filter(Boolean) : [];
 }
 
-async function classifyWithClaude(items,store){
-  const apiKey = window._anthropicKey;
-  if(!apiKey){ showToast('Add your Anthropic API key in Settings'); return []; }
-  const aisleDesc=store.aisles.map((a,i)=>
-    `Aisle ${i} — "${a.name}": ${a.keywords.slice(0,18).join(', ')}`
-  ).join('\n');
-
-  const prompt=`You are a grocery store assistant. Assign each item below to the most appropriate aisle.
-
-Store layout:
-${aisleDesc}
-
-Items to classify (0-indexed):
-${items.map((item,i)=>`${i}: ${item}`).join('\n')}
-
-Reply ONLY with a valid JSON array, no markdown, no explanation:
-[{"index":0,"aisleIndex":2},{"index":1,"aisleIndex":0}]
-
-Rules:
-- aisleIndex must be an integer 0–${store.aisles.length-1}
-- Never use null — always choose the most plausible aisle
-- Base decisions on the aisle keywords and general grocery knowledge`;
-
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body:JSON.stringify({
-      model:'claude-opus-4-5',
-      max_tokens:1000,
-      messages:[{role:'user',content:prompt}]
-    })
-  });
-  if(!res.ok) throw new Error(`API ${res.status}`);
-  const data=await res.json();
-  const text=data.content.map(c=>c.text||'').join('').trim()
-    .replace(/^```json?\s*/i,'').replace(/```\s*$/i,'').trim();
-  const parsed=JSON.parse(text);
-  return parsed.map(r=>({
-    name: items[r.index]??items[0],
-    aisleIndex: Math.max(0,Math.min(store.aisles.length-1, +r.aisleIndex)),
-    aiClassified: true,
-    checked: false,
+function classifyWithClaude(items, store) {
+  // Uses built-in keyword matching — no API key needed
+  return items.map(name => ({
+    name,
+    aisleIndex: kwMatch(normalise(name), store.aisles),
+    aiClassified: false,
+    checked: false
   }));
 }
 
