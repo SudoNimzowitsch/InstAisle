@@ -341,6 +341,53 @@ textarea.input{resize:vertical;min-height:90px;}
 
 /* MISC */
 .divider{height:1px;background:var(--border);margin:16px 0;}
+/* ── STORE LIBRARY & NEARBY ── */
+.lib-chain-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.lib-chain-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 10px;cursor:pointer;transition:all .15s;text-align:left;
+  display:flex;flex-direction:column;gap:4px;
+}
+.lib-chain-card:hover{border-color:var(--green);background:rgba(74,222,128,.06);}
+.lib-chain-card.selected{border-color:var(--green);background:rgba(74,222,128,.10);}
+.lib-chain-name{font-size:.78rem;font-weight:600;color:var(--text);}
+.lib-chain-meta{font-size:.62rem;color:var(--muted);}
+.lib-chain-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.lib-chain-row{display:flex;align-items:flex-start;gap:7px;}
+.nearby-list{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
+.nearby-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:12px;
+}
+.nearby-card:hover{border-color:var(--green);}
+.nearby-card.selected{border-color:var(--green);background:rgba(74,222,128,.10);}
+.nearby-card-info{flex:1;min-width:0;}
+.nearby-name{font-size:.82rem;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nearby-address{font-size:.65rem;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nearby-meta{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap;}
+.nearby-dist{font-size:.65rem;color:var(--muted);}
+.nearby-open{font-size:.62rem;font-weight:600;padding:1px 6px;border-radius:6px;}
+.nearby-open.open{background:rgba(74,222,128,.15);color:var(--green);}
+.nearby-open.closed{background:rgba(248,113,113,.12);color:var(--red);}
+.nearby-match-pill{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:8px;
+  background:rgba(74,222,128,.15);color:var(--green);flex-shrink:0;white-space:nowrap;}
+.nearby-no-match-pill{font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:8px;
+  background:var(--surface);color:var(--muted);flex-shrink:0;white-space:nowrap;}
+.lib-tabs{display:flex;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.lib-tab{flex:1;padding:8px 4px;font-family:'Outfit',sans-serif;font-size:.75rem;
+  font-weight:600;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .15s;}
+.lib-tab.active{background:var(--surface);color:var(--text);}
+.lib-panel{display:none;}
+.lib-panel.active{display:block;}
+.source-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:6px;
+  background:rgba(96,165,250,.12);color:var(--blue);display:inline-block;margin-left:4px;}
+.source-badge.real{background:rgba(74,222,128,.12);color:var(--green);}
+.loc-status{font-size:.72rem;color:var(--muted);text-align:center;padding:20px;}
+
 .spacer{flex:1;}
 .text-muted{color:var(--muted);font-size:.78rem;}
 ::-webkit-scrollbar{width:4px;}
@@ -552,7 +599,40 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-title">Choose Store</div>
     <div id="store-switch-list"></div>
     <div class="divider"></div>
-    <button class="btn btn-ghost btn-full" onclick="closeModal('modal-store-switch');openNewStore()">+ Add New Store</button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="closeModal('modal-store-switch');openLibraryModal()">🏪 Add from Store Library</button>
+    <button class="btn btn-ghost btn-full" onclick="closeModal('modal-store-switch');openNewStore()">+ Build My Own Store</button>
+  </div>
+</div>
+
+<!-- Store Library Modal -->
+<div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Store Library</div>
+    <div class="lib-tabs">
+      <button class="lib-tab active" id="libtab-nearby" onclick="switchLibTab('nearby')">📍 Nearby</button>
+      <button class="lib-tab" id="libtab-browse" onclick="switchLibTab('browse')">Browse All</button>
+    </div>
+    <!-- Nearby panel -->
+    <div class="lib-panel active" id="libpanel-nearby">
+      <div id="nearby-status" class="loc-status">Tap below to find stores near you</div>
+      <div id="nearby-list-container"></div>
+      <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:12px">📍 Find Stores Near Me</button>
+    </div>
+    <!-- Browse panel -->
+    <div class="lib-panel" id="libpanel-browse">
+      <input class="input" id="lib-search-input" placeholder="Search chains (Market Basket, Trader Joe's…)"
+        oninput="renderLibraryBrowse()" style="margin-bottom:12px">
+      <div id="lib-browse-grid" class="lib-chain-grid"></div>
+    </div>
+    <div class="divider"></div>
+    <div id="lib-selected-preview" style="display:none">
+      <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Selected</div>
+      <div id="lib-selected-name" style="font-size:.92rem;font-weight:600;margin-bottom:4px"></div>
+      <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:12px"></div>
+      <button class="btn btn-primary btn-full" onclick="addStoreFromLibrary()">Add This Store →</button>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-library')">Cancel</button>
   </div>
 </div>
 
@@ -1094,6 +1174,1278 @@ window._fbReady = true;
 // ══════════════════════════════
 // CONSTANTS
 // ══════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// INSTAISLE STORE LIBRARY
+// ══════════════════════════════════════════════════════════════════════════
+//
+// Each chain entry has:
+//   id          – stable identifier (never changes)
+//   name        – display name
+//   type        – 'grocery' | 'pharmacy' | 'hardware' | etc. (extensible)
+//   color       – suggested app color
+//   searchNames – strings used to fuzzy-match against Google Places results
+//   dataSource  – 'real' (from official docs) | 'curated' (researched typical layout)
+//   aisles      – array of {name, keywords[]}
+//   stores      – optional per-location overrides keyed by place_id or store #
+//
+// AISLE NUMBER NOTE:
+//   Market Basket PDFs use actual numbered aisles. For other chains we use
+//   logical department sections (Produce, Dairy, etc.) which is how those
+//   stores actually sign their departments.
+// ══════════════════════════════════════════════════════════════════════════
+
+const STORE_LIBRARY = {
+
+  // ── CATEGORY: GROCERY ────────────────────────────────────────────────────
+
+  grocery: [
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MARKET BASKET
+    // Source: Official per-store Shopper's Guides (PDFs)
+    // shopmarketbasket.com/market-basket-stores-shoppers-guide-by-state/
+    //
+    // Aisle assignments derived from 3 stores: #89 Warwick RI, #90 Johnston RI,
+    // #24 Burlington MA. Aisle numbers vary by location; this uses the CATEGORY
+    // groupings that are consistent across all stores, with typical aisle names.
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'market-basket',
+      name: 'Market Basket',
+      type: 'grocery',
+      color: '#e63329',
+      searchNames: ['market basket', 'demoulas', 'demoulas market basket'],
+      dataSource: 'real',
+      aisles: [
+        {
+          name: 'Aisle 1 – Dairy & Deli',
+          keywords: [
+            'milk','butter','eggs','cottage cheese','sour cream','cream cheese',
+            'cheese','cheddar','mozzarella','parmesan','brie','feta','ricotta',
+            'grated parmesan','prepackaged cheese','swiss','american cheese',
+            'half and half','heavy cream','whipped cream','kefir'
+          ]
+        },
+        {
+          name: 'Aisle 2 – Soup, Canned Fish & Condiments',
+          keywords: [
+            'soup','chowder','clam chowder','corn chowder','potato chowder',
+            'bouillon','bouillon cubes','noodles','egg noodles','ramen noodles',
+            'canned fish','clams','canned clams','canned tuna','tuna','sardines',
+            'canned meat','canned chicken','spam','canned salmon',
+            'chinese food','asian canned','soy sauce',
+            'mexican food','taco sauce','taco shells','barbecue sauce','bbq sauce',
+            'ketchup','mustard','mayonnaise','mayo','salad dressing','ranch',
+            'vinegar','hot sauce','tabasco','tartar sauce','steak sauce',
+            'olives','pickles','capers','relish','croutons',
+            'chili sauce','worcestershire','baked beans','canned beans'
+          ]
+        },
+        {
+          name: 'Aisle 3 – Pasta, Rice & Sauce',
+          keywords: [
+            'pasta','spaghetti','penne','rigatoni','fettuccine','linguine',
+            'noodles','macaroni','mac and cheese','mac & cheese','lasagna',
+            'rice','white rice','brown rice','rice cakes','rice pilaf',
+            'spaghetti sauce','pasta sauce','marinara','tomato sauce',
+            'tomato paste','canned tomato','tomato',
+            'bread crumbs','breadcrumbs','hamburger helper',
+            'beans','kidney beans','black beans','chickpeas','lentils',
+            'dry beans'
+          ]
+        },
+        {
+          name: 'Aisle 4 – Breakfast & Cereal',
+          keywords: [
+            'cereal','granola','granola bars','oatmeal','oats',
+            'pop tarts','toaster pastries','breakfast bars',
+            'grits','cream of wheat','instant oatmeal',
+            'rice cakes','wheat germ','muesli',
+            'pancake mix','waffle mix','bisquick','baking mix',
+            'maple syrup','syrup','honey','jam','jelly','peanut butter',
+            'nutella','almond butter','nut butter'
+          ]
+        },
+        {
+          name: 'Aisle 5 – Baking',
+          keywords: [
+            'flour','sugar','brown sugar','powdered sugar','confectioners sugar',
+            'baking soda','baking powder','yeast','cornstarch',
+            'vanilla extract','vanilla','food coloring',
+            'cake mix','brownie mix','muffin mix','bread mix',
+            'pie filling','pudding mix','jello','gelatin',
+            'shortening','vegetable shortening','crisco',
+            'chocolate chips','cocoa powder','baking chocolate',
+            'spices','salt','pepper','cinnamon','nutmeg','garlic powder',
+            'onion powder','paprika','cumin','oregano','basil','thyme',
+            'coffee','ground coffee','instant coffee','tea','tea bags',
+            'nuts baking','baking nuts','walnuts','pecans',
+            'molasses','corn syrup','cooking oil','canola oil','vegetable oil',
+            'olive oil','coconut oil'
+          ]
+        },
+        {
+          name: 'Aisle 6 – Canned Vegetables & Fruit',
+          keywords: [
+            'canned vegetables','canned corn','canned green beans','canned peas',
+            'canned carrots','canned beets','canned spinach','artichoke hearts',
+            'canned fruit','canned peaches','canned pears','canned pineapple',
+            'canned cherries','fruit cocktail','applesauce','apple sauce',
+            'cranberry sauce','cranberry','pie filling cherry',
+            'dried fruit','raisins','prunes','dried cranberries','dried apricots',
+            'dates','currants','figs','dried figs',
+            'snack nuts','mixed nuts','cashews','almonds','peanuts','trail mix',
+            'popcorn','popping corn','potato chips','chips','pretzels',
+            'candy','chocolate','m&ms','gummies','crackers snack','snacks',
+            'molasses','honey','jam','jelly'
+          ]
+        },
+        {
+          name: 'Aisle 7 – Gravy, Mushrooms & Juice',
+          keywords: [
+            'gravy','gravy mix','brown gravy','turkey gravy','chicken gravy',
+            'mushrooms canned','canned mushrooms',
+            'vegetables canned','mixed vegetables',
+            'juice','apple juice','orange juice','cranberry juice','grape juice',
+            'tomato juice','v8','lemonade','fruit punch',
+            'canned potatoes','potato canned'
+          ]
+        },
+        {
+          name: 'Aisle 8 – Coffee, Tea & Household Supplies',
+          keywords: [
+            'aluminum foil','foil','plastic wrap','saran wrap','wax paper',
+            'freezer bags','sandwich bags','ziploc','storage bags','trash bags',
+            'garbage bags','paper towels','napkins','plastic cups','paper plates',
+            'straws','toothpicks','plasticware','plastic utensils',
+            'kitchen utensils','kitchen tools','bakeware','cooking tools'
+          ]
+        },
+        {
+          name: 'Aisle 9 – Soda & Water',
+          keywords: [
+            'soda','cola','pepsi','coke','sprite','ginger ale','root beer',
+            'sparkling water','seltzer','tonic water',
+            'water','spring water','distilled water','bottled water',
+            'sports drinks','gatorade','powerade','vitamin water',
+            'energy drinks','red bull','monster',
+            'kool aid','drink mix','iced tea mix','lemonade mix'
+          ]
+        },
+        {
+          name: 'Aisle 10 – Pet & Automotive',
+          keywords: [
+            'dog food','cat food','pet food','cat litter','dog treats','cat treats',
+            'pet supplies','bird food','fish food','aquarium',
+            'charcoal','lighter fluid','bug spray','insect repellent',
+            'automotive','motor oil','windshield washer','car supplies',
+            'bug killer','ant trap','mouse trap','pest control'
+          ]
+        },
+        {
+          name: 'Aisle 11 – Health & Baby',
+          keywords: [
+            'baby food','baby formula','diapers','wipes','baby powder','baby lotion',
+            'cold remedies','cough syrup','cold medicine','aspirin','ibuprofen',
+            'tylenol','vitamins','supplements','eye care','eye drops',
+            'bandages','first aid','band-aids','antiseptic','hydrogen peroxide',
+            'rubbing alcohol','laxative','antacid','tums',
+            'feminine hygiene','pads','tampons','feminine needs',
+            'shaving cream','razors','razor blades','shaving needs',
+            'shoe care','shoe polish'
+          ]
+        },
+        {
+          name: 'Aisle 12 – Personal Care',
+          keywords: [
+            'shampoo','conditioner','hair care','hair spray','hair gel',
+            'soap','body wash','hand soap','bar soap','liquid soap',
+            'deodorant','antiperspirant',
+            'toothpaste','toothbrush','floss','mouthwash','dental care',
+            'lotion','moisturizer','body lotion','hand cream','sunscreen',
+            'bath tissue','toilet paper','facial tissue','kleenex','tissues',
+            'paper towels','napkins','paper plates','paper cups',
+            'batteries','lightbulbs','electrical supplies','stationery'
+          ]
+        },
+        {
+          name: 'Aisle 13 – Cleaning & Laundry',
+          keywords: [
+            'laundry detergent','tide','laundry soap','fabric softener','dryer sheets',
+            'bleach','stain remover','oxygen cleaner',
+            'dish soap','dishwasher detergent','cascade','dawn',
+            'household cleaner','all-purpose cleaner','lysol','windex','409',
+            'disinfectant','disinfecting wipes','clorox',
+            'drain cleaner','drano','broom','mop','sponges','scrub brush',
+            'rubber gloves','steel wool','vacuum bags',
+            'air freshener','febreze','candles household',
+            'ammonia','pine sol','floor cleaner'
+          ]
+        },
+        {
+          name: 'Aisle 14 – Bread & Bakery',
+          keywords: [
+            'bread','white bread','wheat bread','sourdough','rye bread',
+            'bagels','english muffins','pita','tortillas','wraps','flatbread',
+            'rolls','dinner rolls','hamburger buns','hot dog buns',
+            'muffins','donuts','croissants','pastries','danish',
+            'cookies','crackers','graham crackers',
+            'stuffing mix','breadcrumbs','croutons'
+          ]
+        },
+        {
+          name: 'Frozen Foods',
+          keywords: [
+            'frozen','frozen vegetables','frozen peas','frozen corn','frozen broccoli',
+            'frozen fruit','frozen berries','frozen meals','tv dinner',
+            'frozen pizza','frozen burritos','frozen entrees',
+            'ice cream','ice cream bars','popsicles','sorbet','frozen yogurt',
+            'frozen waffles','frozen pancakes','frozen breakfast',
+            'frozen fish','frozen shrimp','frozen chicken','frozen meat',
+            'edamame','frozen edamame','ice cubes'
+          ]
+        },
+        {
+          name: 'Produce',
+          keywords: [
+            'apple','apples','banana','bananas','orange','oranges','lemon','limes',
+            'grapes','strawberries','blueberries','raspberries','blackberries',
+            'peach','pear','mango','pineapple','watermelon','cantaloupe','melon',
+            'avocado','tomato','tomatoes','cucumber','zucchini','squash',
+            'broccoli','cauliflower','lettuce','spinach','kale','arugula','chard',
+            'cabbage','brussels sprouts','asparagus','green beans','snap peas',
+            'carrot','carrots','celery','bell pepper','peppers','jalapeño',
+            'onion','onions','garlic','shallots','leeks','scallions',
+            'potato','potatoes','sweet potato','yam','corn on the cob',
+            'mushrooms fresh','fresh mushrooms','herbs','cilantro','parsley','basil fresh',
+            'ginger fresh','fresh ginger','lemongrass'
+          ]
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: [
+            'chicken','chicken breast','chicken thighs','whole chicken','rotisserie',
+            'ground beef','hamburger','steak','beef','chuck','sirloin','ribeye',
+            'pork','pork chops','pork loin','ribs','bacon','ham','sausage',
+            'turkey','turkey breast','ground turkey',
+            'lamb','lamb chops','veal',
+            'salmon','tuna fresh','cod','tilapia','halibut','shrimp','scallops',
+            'lobster','crab','clams fresh','oysters','mussels',
+            'deli meat','sliced turkey','sliced ham','prosciutto','salami',
+            'hot dogs','bratwurst','kielbasa'
+          ]
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WHOLE FOODS MARKET
+    // Source: Curated based on Whole Foods department structure
+    // Whole Foods uses department labels rather than aisle numbers
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'whole-foods',
+      name: 'Whole Foods Market',
+      type: 'grocery',
+      color: '#00674b',
+      searchNames: ['whole foods','whole foods market','whole foods co'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','grape','berries','strawberry','blueberry','raspberry',
+            'lettuce','spinach','kale','arugula','chard','cabbage','broccoli','cauliflower',
+            'carrot','celery','cucumber','zucchini','squash','pepper','jalapeño',
+            'tomato','avocado','lemon','lime','mango','pineapple','watermelon','melon',
+            'onion','garlic','shallot','scallion','ginger','herbs','cilantro','parsley','basil',
+            'potato','sweet potato','yam','mushroom','corn','asparagus','green beans','peas snap']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','oat milk','almond milk','soy milk','coconut milk',
+            'butter','ghee','eggs','egg','heavy cream','half and half','sour cream',
+            'yogurt','greek yogurt','kefir','cottage cheese',
+            'cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese',
+            'cream cheese','ricotta','gouda','manchego','camembert']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bison',
+            'bacon','sausage','ham','prosciutto','pancetta','deli meat',
+            'salmon','tuna','cod','halibut','tilapia','shrimp','scallops','crab','lobster',
+            'hot dogs','bratwurst','chorizo']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','baguette','multigrain','rye',
+            'bagel','english muffin','pita','tortilla','wrap','flatbread',
+            'croissant','muffin','scone','danish','pastry','cookie bakery',
+            'rolls','buns','focaccia','naan','lavash']
+        },
+        {
+          name: 'Pantry Staples',
+          keywords: ['pasta','spaghetti','penne','fettuccine','linguine','orzo','lasagna',
+            'rice','brown rice','white rice','wild rice','quinoa','farro','barley','bulgur',
+            'flour','sugar','baking soda','baking powder','yeast','cornstarch','vanilla',
+            'olive oil','avocado oil','coconut oil','canola oil','sesame oil',
+            'vinegar','apple cider vinegar','balsamic','red wine vinegar',
+            'soy sauce','tamari','fish sauce','oyster sauce','miso',
+            'pasta sauce','marinara','tomato sauce','tomato paste','crushed tomato',
+            'broth','chicken broth','vegetable broth','bone broth',
+            'beans','lentils','chickpeas','black beans','kidney beans',
+            'canned tomato','canned fish','canned salmon','canned tuna',
+            'nut butter','peanut butter','almond butter','tahini',
+            'honey','maple syrup','agave','jam','jelly','preserves']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','muesli','oatmeal','oats','overnight oats',
+            'granola bars','protein bars','energy bars','trail mix',
+            'pancake mix','waffle mix','syrup','maple syrup']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','tortilla chips','potato chips','pretzels','popcorn',
+            'crackers','rice crackers','nut mix','almonds','cashews','walnuts','pecans',
+            'dried fruit','raisins','dates','jerky','beef jerky',
+            'chocolate','dark chocolate','candy','gummies']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','sparkling water','kombucha','cold brew','juice','orange juice',
+            'coffee','espresso','tea','green tea','herbal tea','matcha',
+            'soda','sparkling juice','coconut water','sports drink',
+            'wine','beer','cider','hard seltzer']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen fruit','frozen berries','frozen meals',
+            'frozen pizza','frozen burritos','frozen fish','frozen shrimp',
+            'ice cream','sorbet','frozen yogurt','popsicles',
+            'frozen waffles','frozen breakfast','edamame']
+        },
+        {
+          name: 'Health & Body Care',
+          keywords: ['vitamins','supplements','protein powder','collagen','probiotics',
+            'shampoo','conditioner','body wash','soap','lotion','sunscreen',
+            'toothpaste','toothbrush','floss','deodorant','razor',
+            'pain reliever','ibuprofen','aspirin','cold medicine']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['dish soap','dishwasher','laundry detergent','fabric softener','dryer sheets',
+            'all-purpose cleaner','bleach','disinfectant wipes','sponge','trash bags',
+            'paper towels','toilet paper','facial tissue','aluminum foil','plastic wrap',
+            'sandwich bags','ziploc','storage bags']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // TRADER JOE'S
+    // Source: Curated — TJ's has no numbered aisles; uses open floor plan
+    // with consistent section groupings. Products organized by section/zone.
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'trader-joes',
+      name: "Trader Joe's",
+      type: 'grocery',
+      color: '#c8102e',
+      searchNames: ["trader joe's","trader joes","tj's"],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Fresh Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','mango',
+            'lettuce','spinach','kale','arugula','bagged salad','salad kit',
+            'broccoli','cauliflower','carrot','celery','cucumber','zucchini',
+            'tomato','pepper','onion','garlic','ginger','herbs','cilantro','basil',
+            'mushroom','potato','sweet potato','berries','grapes','melon']
+        },
+        {
+          name: 'Fresh Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'salmon','cod','shrimp','scallops','tuna steak',
+            'sausage','chicken sausage','bratwurst','merguez',
+            'bacon','prosciutto','pancetta','deli']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','oat milk','almond milk','soy milk','eggs',
+            'butter','cream cheese','sour cream','yogurt','greek yogurt',
+            'cheese','cheddar','brie','goat cheese','feta','manchego',
+            'cottage cheese','ricotta','heavy cream','half and half']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','brioche','multigrain','baguette',
+            'pita','naan','tortillas','flatbread','lavash',
+            'bagel','english muffin','croissant','muffin','scone',
+            'rolls','buns','challah','raisin bread']
+        },
+        {
+          name: 'Refrigerated & Prepared',
+          keywords: ['hummus','salsa','guacamole','tzatziki','dips',
+            'pasta fresh','fresh pasta','gnocchi','pizza dough',
+            'soup refrigerated','chilled soup','tofu','tempeh',
+            'salad dressing refrigerated','pesto fresh',
+            'orange juice fresh','lemonade fresh','cold brew']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen','mandarin chicken','orange chicken','palak paneer',
+            'frozen burritos','frozen pizza','frozen meals','frozen entrees',
+            'frozen vegetables','edamame','peas','corn','broccoli frozen',
+            'frozen fish','frozen shrimp','frozen fruit','frozen berries',
+            'ice cream','sorbet','frozen yogurt','mochi','popsicles',
+            'frozen waffles','hash browns','tater tots','cauliflower gnocchi']
+        },
+        {
+          name: 'Pantry & Dry Goods',
+          keywords: ['pasta','spaghetti','penne','rice','quinoa','farro','lentils',
+            'beans','canned tomato','tomato sauce','pasta sauce','olive oil','coconut oil',
+            'soy sauce','coconut aminos','broth','chicken broth','vegetable broth',
+            'flour','sugar','honey','maple syrup','jam','jelly','nut butter',
+            'peanut butter','almond butter','sunflower butter','tahini']
+        },
+        {
+          name: 'Cereal, Snacks & Nuts',
+          keywords: ['granola','cereal','oatmeal','bars','granola bars','protein bars',
+            'chips','kettle chips','tortilla chips','pretzels','popcorn','pita chips',
+            'crackers','rice crackers','almond crackers',
+            'nuts','almonds','cashews','walnuts','trail mix','dried fruit',
+            'chocolate','dark chocolate','candy','gummies','cookies']
+        },
+        {
+          name: 'Wine, Beer & Beverages',
+          keywords: ['wine','red wine','white wine','prosecco','champagne',
+            'beer','ipa','lager','cider','hard seltzer',
+            'water','sparkling water','juice','kombucha','cold brew',
+            'tea','coffee','coconut water']
+        },
+        {
+          name: 'Health & Wellness',
+          keywords: ['vitamins','supplements','protein powder','collagen','magnesium',
+            'shampoo','conditioner','body wash','lotion','sunscreen',
+            'toothpaste','deodorant','face wash','hand soap']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // STOP & SHOP
+    // Source: Curated based on published department structure
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'stop-and-shop',
+      name: 'Stop & Shop',
+      type: 'grocery',
+      color: '#d4001a',
+      searchNames: ['stop and shop','stop & shop','stop&shop'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato','corn',
+            'grapes','berries','strawberry','blueberry','mango','pineapple','watermelon',
+            'herbs','cilantro','parsley','ginger','zucchini','squash','asparagus']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey',
+            'bacon','sausage','ham','deli meat','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss',
+            'sour cream','cream cheese','yogurt','greek yogurt','cottage cheese',
+            'heavy cream','half and half','almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Deli & Prepared Foods',
+          keywords: ['deli turkey','deli ham','sliced cheese','prosciutto','salami',
+            'rotisserie chicken','prepared meals','soup deli','prepared food',
+            'olives deli','pickles deli','hummus refrigerated']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','white bread','wheat bread','rye',
+            'bagels','english muffins','rolls','buns','tortillas','pita','wraps',
+            'croissant','muffin','danish','cake','pie bakery','cookies bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','oats','granola bars','breakfast bars',
+            'pop tarts','toaster pastries','syrup','maple syrup','pancake mix','waffle mix']
+        },
+        {
+          name: 'Canned & Jarred Goods',
+          keywords: ['soup','chicken broth','vegetable broth','beef broth',
+            'canned tomato','tomato paste','tomato sauce','marinara','pasta sauce',
+            'canned beans','black beans','kidney beans','chickpeas','baked beans',
+            'canned corn','canned peas','canned green beans','canned carrots',
+            'canned fruit','peaches','pears','pineapple','fruit cocktail',
+            'canned tuna','canned salmon','canned clams','sardines',
+            'olives','pickles','salsa','applesauce']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna',
+            'mac and cheese','mac & cheese','noodles',
+            'rice','brown rice','white rice','quinoa','couscous','barley',
+            'stuffing mix','bread mix','polenta','grits']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','brown sugar','baking soda','baking powder',
+            'vanilla extract','yeast','cornstarch','shortening',
+            'cake mix','brownie mix','muffin mix','cookie mix',
+            'chocolate chips','cocoa','spices','salt','pepper','cinnamon',
+            'honey','jam','jelly','peanut butter','almond butter','nutella']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing',
+            'olive oil','vegetable oil','canola oil','cooking spray',
+            'vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce',
+            'worcestershire','fish sauce','teriyaki']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn',
+            'crackers','cheese crackers','graham crackers','rice cakes',
+            'nuts','almonds','cashews','mixed nuts','trail mix',
+            'dried fruit','raisins','fruit snacks','granola bars',
+            'cookies','candy','chocolate','gummies']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','sparkling water','soda','pepsi','coke','ginger ale',
+            'juice','apple juice','orange juice','cranberry juice',
+            'coffee','tea','green tea','iced tea',
+            'sports drinks','gatorade','energy drinks',
+            'wine','beer','hard seltzer','cider']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen fruit','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','frozen shrimp','frozen burritos',
+            'ice cream','frozen yogurt','sorbet','popsicles',
+            'frozen waffles','frozen breakfast','edamame','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','supplements','pain reliever','cold medicine','antacid',
+            'shampoo','conditioner','body wash','soap','lotion','sunscreen',
+            'toothpaste','toothbrush','deodorant','razor','feminine hygiene',
+            'baby food','diapers','baby care']
+        },
+        {
+          name: 'Cleaning & Laundry',
+          keywords: ['laundry detergent','tide','fabric softener','dryer sheets','bleach',
+            'dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes',
+            'paper towels','toilet paper','trash bags','aluminum foil','plastic wrap',
+            'ziploc','storage bags','sponge','scrub']
+        },
+        {
+          name: 'Pet & Household',
+          keywords: ['dog food','cat food','cat litter','dog treats','pet supplies',
+            'light bulbs','batteries','candles','air freshener','laundry bags']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SHAW'S / STAR MARKET
+    // Source: Curated — Shaw's uses standard New England supermarket layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'shaws',
+      name: "Shaw's",
+      type: 'grocery',
+      color: '#005dab',
+      searchNames: ["shaw's","shaws","star market"],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','strawberry','blueberry','mango','pineapple',
+            'herbs','cilantro','parsley','ginger','zucchini','cucumber','corn']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream','half and half',
+            'almond milk','oat milk','soy milk','kefir']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','bagels','english muffins','rolls','buns',
+            'tortillas','pita','wraps','croissant','muffin','danish','cake bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup','waffle mix']
+        },
+        {
+          name: 'Canned Goods & Soups',
+          keywords: ['soup','broth','canned tomato','tomato paste','tomato sauce',
+            'canned beans','canned corn','canned peas','canned fruit','applesauce',
+            'canned tuna','canned salmon','olives','pickles','salsa']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese','noodles',
+            'rice','brown rice','quinoa','couscous','stuffing']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','brownie mix','chocolate chips','cocoa','spices',
+            'salt','pepper','cinnamon','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','tortilla chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','dried fruit','raisins',
+            'cookies','candy','chocolate','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks',
+            'energy drinks','wine','beer','cider','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','frozen chicken',
+            'frozen fish','frozen fruit','ice cream','sorbet','frozen yogurt',
+            'frozen waffles','edamame','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','conditioner','body wash','soap','lotion',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Paper Products',
+          keywords: ['laundry detergent','dish soap','all-purpose cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil','plastic wrap',
+            'ziploc','sponge','disinfecting wipes']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // HANNAFORD
+    // Source: Curated — Hannaford typical New England layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'hannaford',
+      name: 'Hannaford',
+      type: 'grocery',
+      color: '#008542',
+      searchNames: ['hannaford','hannaford supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','strawberry','blueberry','mango','pineapple',
+            'herbs','cilantro','parsley','ginger','zucchini','cucumber']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream',
+            'almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','bagels','english muffins','rolls','buns',
+            'tortillas','pita','croissant','muffin','cake bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup']
+        },
+        {
+          name: 'Canned & Jarred',
+          keywords: ['soup','broth','canned tomato','tomato paste','pasta sauce',
+            'canned beans','canned vegetables','canned fruit','applesauce',
+            'canned tuna','olives','pickles','salsa']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese',
+            'rice','brown rice','quinoa','couscous','lentils','barley']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','chocolate chips','spices','salt','pepper',
+            'honey','jam','peanut butter','nut butter']
+        },
+        {
+          name: 'Condiments & Dressings',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vinegar','soy sauce','hot sauce','bbq sauce','worcestershire']
+        },
+        {
+          name: 'Snacks & Nuts',
+          keywords: ['chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','dried fruit',
+            'cookies','candy','chocolate','granola bars','rice cakes']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea',
+            'sports drinks','energy drinks','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','frozen fruit',
+            'ice cream','sorbet','frozen yogurt','edamame']
+        },
+        {
+          name: 'Health, Beauty & Baby',
+          keywords: ['vitamins','supplements','shampoo','conditioner','body wash',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers','wipes','baby formula']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil',
+            'plastic wrap','ziploc','sponge','disinfecting wipes',
+            'dog food','cat food','cat litter','pet food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // PRICE CHOPPER / MARKET 32
+    // Source: Curated — Price Chopper typical layout (NY/NE)
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'price-chopper',
+      name: 'Price Chopper',
+      type: 'grocery',
+      color: '#f26522',
+      searchNames: ['price chopper','market 32','market32'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','mango','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage','ham',
+            'salmon','tuna','shrimp','cod','deli']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream',
+            'cream cheese','cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','rolls','buns','tortillas','muffin','croissant','cake']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','syrup','pancake mix']
+        },
+        {
+          name: 'Canned Goods',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','rice','quinoa','mac and cheese','lentils']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','vanilla','spices','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','almonds','trail mix','cookies','candy']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer','sports drinks']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','ice cream','sorbet','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','pain reliever','baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','aluminum foil','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BIG Y
+    // Source: Curated — Big Y (Western MA / CT) typical layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'big-y',
+      name: 'Big Y',
+      type: 'grocery',
+      color: '#d4001a',
+      searchNames: ['big y','big y foods','big y world class'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage',
+            'salmon','tuna','shrimp','cod']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream','cream cheese',
+            'cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','rolls','buns','tortillas','muffin','cake']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','syrup','pancake mix']
+        },
+        {
+          name: 'Canned Goods & Soups',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta, Rice & Dry Goods',
+          keywords: ['pasta','spaghetti','rice','quinoa','mac and cheese','lentils','beans dry']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','vanilla','spices','cake mix','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','pretzels','crackers','nuts','trail mix','cookies','candy','popcorn']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','ice cream','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','pain reliever']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // KROGER (and affiliates: Fred Meyer, Fry's, Harris Teeter, Ralphs, etc.)
+    // Source: Curated — standard Kroger department structure
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'kroger',
+      name: 'Kroger',
+      type: 'grocery',
+      color: '#0073a8',
+      searchNames: ['kroger','fred meyer','frys','fry\'s food','harris teeter',
+        'ralphs','ralph\'s','king soopers','smiths','smith\'s','mariano\'s','marianos',
+        'city market','dillons'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','mango','pineapple','herbs','ginger','zucchini']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream',
+            'almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','english muffins','rolls','buns',
+            'tortillas','pita','croissant','muffin','cake','cookies bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup','waffles mix']
+        },
+        {
+          name: 'Canned & Packaged',
+          keywords: ['soup','broth','canned tomato','tomato paste','pasta sauce',
+            'canned beans','canned vegetables','canned fruit','tuna canned',
+            'olives','pickles','salsa','applesauce']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese','noodles',
+            'rice','quinoa','couscous','stuffing']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','brownie mix','chocolate chips','cocoa','spices',
+            'honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','tortilla chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','cookies','candy','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks',
+            'energy drinks','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','ice cream','sorbet','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','conditioner','body wash','lotion',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','all-purpose cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil',
+            'dog food','cat food','cat litter']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WALMART SUPERCENTER / NEIGHBORHOOD MARKET
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'walmart',
+      name: 'Walmart',
+      type: 'grocery',
+      color: '#0071ce',
+      searchNames: ['walmart','walmart supercenter','walmart neighborhood market','walmart grocery'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage',
+            'salmon','shrimp','tilapia','cod']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','american cheese','sour cream',
+            'cream cheese','yogurt','cottage cheese','heavy cream','almond milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','white bread','wheat bread','bagels','rolls','buns','tortillas']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','oatmeal','granola','syrup','pancake mix','pop tarts']
+        },
+        {
+          name: 'Canned Goods',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta & Rice',
+          keywords: ['pasta','spaghetti','mac and cheese','rice','ramen','noodles']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','spices','cake mix','salt','pepper','vanilla']
+        },
+        {
+          name: 'Condiments & Sauces',
+          keywords: ['ketchup','mustard','mayo','salad dressing','oil','vinegar','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','cookies','candy','popcorn','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks','energy drinks']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','frozen chicken',
+            'ice cream','frozen fish','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','soap','lotion',
+            'pain reliever','cold medicine','baby food','diapers']
+        },
+        {
+          name: 'Cleaning',
+          keywords: ['laundry detergent','dish soap','cleaner','bleach','paper towels',
+            'toilet paper','trash bags','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // TARGET
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'target',
+      name: 'Target',
+      type: 'grocery',
+      color: '#cc0000',
+      searchNames: ['target','super target'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','avocado','tomato','lettuce','spinach',
+            'broccoli','carrot','pepper','onion','garlic','potato','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','bacon','sausage','salmon','shrimp']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream','cream cheese',
+            'cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','tortillas','rolls','muffin']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','syrup','pancake mix','granola bars']
+        },
+        {
+          name: 'Canned & Packaged',
+          keywords: ['soup','canned tomato','pasta sauce','canned beans','tuna',
+            'olives','pickles','broth']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','rice','mac and cheese','quinoa','lentils']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','spices','vanilla','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','olive oil','salad dressing','vinegar','hot sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','crackers','nuts','cookies','candy','popcorn','trail mix']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','ice cream','frozen chicken']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','lotion','sunscreen',
+            'pain reliever','baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','cleaning spray','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ALDI
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'aldi',
+      name: 'ALDI',
+      type: 'grocery',
+      color: '#00529b',
+      searchNames: ['aldi','aldi market','aldi grocery'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','avocado','tomato','lettuce','spinach',
+            'broccoli','carrot','pepper','onion','garlic','potato','berries']
+        },
+        {
+          name: 'Meat & Deli',
+          keywords: ['chicken','ground beef','steak','pork','bacon','sausage','ham',
+            'deli meat','salmon','shrimp']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','cheddar','yogurt','sour cream',
+            'cream cheese','cottage cheese','heavy cream']
+        },
+        {
+          name: 'Bread & Bakery',
+          keywords: ['bread','rolls','tortillas','bagels','muffin','cake']
+        },
+        {
+          name: 'Dry Goods & Pasta',
+          keywords: ['pasta','rice','oatmeal','cereal','flour','sugar','mac and cheese',
+            'quinoa','lentils','beans']
+        },
+        {
+          name: 'Canned & Jarred',
+          keywords: ['soup','canned tomato','pasta sauce','canned beans','tuna',
+            'olives','pickles','broth']
+        },
+        {
+          name: 'Baking & Condiments',
+          keywords: ['baking soda','vanilla','spices','ketchup','mustard','mayo',
+            'olive oil','vinegar','hot sauce','jam','peanut butter','honey']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','almonds','cookies','candy','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','juice','coffee','tea','soda','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','ice cream','frozen fish']
+        },
+        {
+          name: 'Household & Health',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','vitamins','shampoo','toothpaste']
+        }
+      ]
+    }
+
+  ] // end grocery array
+
+  // Future categories can be added here:
+  // pharmacy: [...],
+  // hardware: [...],
+  // costco: [...],
+};
+
+// Helper: find a chain template by matching a Google Places store name
+function matchStoreToLibrary(placeName) {
+  if (!placeName) return null;
+  const lower = placeName.toLowerCase();
+  for (const category of Object.keys(STORE_LIBRARY)) {
+    for (const chain of STORE_LIBRARY[category]) {
+      for (const searchName of chain.searchNames) {
+        if (lower.includes(searchName)) return chain;
+      }
+    }
+  }
+  return null;
+}
+
+// Helper: get all chains in a flat list
+function getAllLibraryStores() {
+  return Object.values(STORE_LIBRARY).flat();
+}
+
+
 const AISLE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#e879f9','#facc15','#f87171','#22d3ee'];
 const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#facc15','#f87171'];
 
@@ -1284,6 +2636,283 @@ function openStoreSwitch(){
 }
 
 function setActiveStore(id){ state.activeStoreId=id; closeModal('modal-store-switch'); renderAll(); }
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// STORE LIBRARY — UI LOGIC
+// ══════════════════════════════════════════════════════════════════════════
+
+let _libSelectedChain = null;    // currently highlighted chain in library modal
+let _libNearbyResult  = [];      // cached nearby search results
+let _libNearbyLoaded  = false;
+
+function openLibraryModal() {
+  _libSelectedChain = null;
+  document.getElementById('lib-selected-preview').style.display = 'none';
+  openModal('modal-library');
+  // Auto-trigger nearby if we haven't yet this session
+  if (!_libNearbyLoaded) {
+    switchLibTab('nearby');
+  } else {
+    renderNearbyList();
+  }
+  renderLibraryBrowse();
+}
+
+function switchLibTab(tab) {
+  ['nearby','browse'].forEach(t => {
+    document.getElementById('libtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('libpanel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+// ── Browse tab ─────────────────────────────────────────────────────────────
+function renderLibraryBrowse() {
+  const q = (document.getElementById('lib-search-input')?.value || '').toLowerCase();
+  const all = getAllLibraryStores();
+  const filtered = q
+    ? all.filter(c => c.name.toLowerCase().includes(q) ||
+        c.searchNames.some(s => s.includes(q)))
+    : all;
+
+  const grid = document.getElementById('lib-browse-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="loc-status">No chains match your search</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(chain => {
+    const isSelected = _libSelectedChain?.id === chain.id;
+    const badge = chain.dataSource === 'real'
+      ? '<span class="source-badge real">Official data</span>'
+      : '<span class="source-badge">Curated</span>';
+    return `<button class="lib-chain-card ${isSelected ? 'selected' : ''}"
+        onclick="selectLibChain('${chain.id}', 'browse')">
+      <div class="lib-chain-row">
+        <div class="lib-chain-dot" style="background:${chain.color}"></div>
+        <div>
+          <div class="lib-chain-name">${esc(chain.name)}</div>
+          <div class="lib-chain-meta">${chain.aisles.length} aisles${badge}</div>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+// ── Nearby tab ─────────────────────────────────────────────────────────────
+
+// Session cache — loaded once from Firestore, reused for the life of the page
+let _storeLocationCache  = null;
+let _storeLocationLoading = false;
+
+// Haversine distance in meters between two lat/lng points
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R    = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a    = Math.sin(dLat / 2) ** 2 +
+               Math.cos(lat1 * Math.PI / 180) *
+               Math.cos(lat2 * Math.PI / 180) *
+               Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Load all store_locations from Firestore (once per session, then cached)
+async function loadStoreLocations() {
+  if (_storeLocationCache) return _storeLocationCache;
+
+  // If a load is already in flight, wait for it
+  if (_storeLocationLoading) {
+    await new Promise(resolve => {
+      const t = setInterval(() => { if (!_storeLocationLoading) { clearInterval(t); resolve(); } }, 100);
+    });
+    return _storeLocationCache;
+  }
+
+  _storeLocationLoading = true;
+  try {
+    const { collection, getDocs } = window._fb;
+    const snap = await getDocs(collection(window._fb.db, 'store_locations'));
+    _storeLocationCache = snap.docs.map(d => d.data());
+    console.log(`Loaded ${_storeLocationCache.length} store locations from Firestore`);
+    return _storeLocationCache;
+  } finally {
+    _storeLocationLoading = false;
+  }
+}
+
+async function findNearbyStores() {
+  const statusEl = document.getElementById('nearby-status');
+  const btnEl    = document.getElementById('btn-find-nearby');
+
+  statusEl.style.display = 'block';
+  statusEl.textContent   = 'Requesting your location…';
+  btnEl.disabled         = true;
+
+  try {
+    // Step 1: free GPS coordinates from the browser
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 10000, maximumAge: 300000, enableHighAccuracy: false
+      })
+    );
+    const { latitude: userLat, longitude: userLng } = pos.coords;
+
+    statusEl.textContent = 'Loading store locations…';
+
+    // Step 2: load from Firestore (cached after first call)
+    const allStores = await loadStoreLocations();
+
+    if (!allStores.length) {
+      statusEl.textContent = 'No store data found. Has populate-stores-v2.js been run?';
+      return;
+    }
+
+    // Step 3: compute distance to every store, sort ascending
+    const withDistance = allStores
+      .filter(s => s.lat && s.lng)
+      .map(s => ({ ...s, distance: haversineMeters(userLat, userLng, s.lat, s.lng) }))
+      .sort((a, b) => a.distance - b.distance);
+
+    // Step 4: deduplicate by osm_id (same building tagged twice in OSM),
+    // then take the nearest 30
+    const seen    = new Set();
+    const nearest = withDistance.filter(s => {
+      if (seen.has(s.osm_id)) return false;
+      seen.add(s.osm_id);
+      return true;
+    }).slice(0, 30);
+
+    // Step 5: shape results into the format renderNearbyList expects
+    _libNearbyResult = nearest.map(s => ({
+      place_id: s.osm_id,
+      name:     s.name,
+      address:  s.address,
+      lat:      s.lat,
+      lng:      s.lng,
+      distance: s.distance,
+      open_now: null,
+      rating:   null,
+      chain_id: s.chain_id,   // already known — no fuzzy matching needed
+    }));
+
+    _libNearbyLoaded = true;
+    statusEl.style.display = 'none';
+    renderNearbyList();
+
+  } catch (err) {
+    if (err.code === 1) {
+      statusEl.innerHTML =
+        'Location permission denied.<br>' +
+        '<span style="font-size:.65rem">Enable location access in your browser ' +
+        'settings, or use Browse All to pick a chain manually.</span>';
+    } else {
+      statusEl.textContent = 'Could not load stores: ' + (err.message || 'unknown error');
+    }
+    console.error('findNearbyStores:', err);
+  } finally {
+    btnEl.disabled    = false;
+    btnEl.textContent = '↻ Refresh';
+  }
+}
+
+function formatDistance(meters) {
+  if (meters < 1000) return Math.round(meters) + ' m';
+  return (meters / 1609.34).toFixed(1) + ' mi';
+}
+
+function renderNearbyList() {
+  const container = document.getElementById('nearby-list-container');
+  if (!_libNearbyResult.length) { container.innerHTML = ''; return; }
+
+  container.innerHTML = '<div class="nearby-list">' +
+    _libNearbyResult.map(store => {
+      // chain_id from Firestore means we can match directly — no fuzzy name matching
+      const chain      = store.chain_id
+        ? getAllLibraryStores().find(c => c.id === store.chain_id)
+        : matchStoreToLibrary(store.name);
+      const isSelected = _libSelectedChain?._placeId === store.place_id;
+
+      const matchPill = chain
+        ? `<span class="nearby-match-pill">✓ ${esc(chain.name)} data</span>`
+        : `<span class="nearby-no-match-pill">No template</span>`;
+
+      return `<div class="nearby-card ${isSelected ? 'selected' : ''}"
+          onclick="selectNearbyStore('${store.place_id}')">
+        <div class="nearby-card-info">
+          <div class="nearby-name">${esc(store.name)}</div>
+          <div class="nearby-address">${esc(store.address)}</div>
+          <div class="nearby-meta">
+            <span class="nearby-dist">${formatDistance(store.distance)}</span>
+          </div>
+        </div>
+        ${matchPill}
+      </div>`;
+    }).join('') +
+  '</div>';
+}
+
+function selectNearbyStore(placeId) {
+  const store = _libNearbyResult.find(s => s.place_id === placeId);
+  if (!store) return;
+  // Use chain_id directly if available, otherwise fall back to name matching
+  const chain = store.chain_id
+    ? getAllLibraryStores().find(c => c.id === store.chain_id)
+    : matchStoreToLibrary(store.name);
+  _libSelectedChain = chain
+    ? { ...chain, _placeId: placeId, _placeName: store.name, _placeAddress: store.address }
+    : { _placeId: placeId, _placeName: store.name, _placeAddress: store.address,
+        id: null, name: store.name, color: STORE_COLORS[0], aisles: [] };
+  renderNearbyList();
+  showLibraryPreview(store.name, store.address, chain);
+}
+
+function selectLibChain(chainId, source) {
+  const chain = getAllLibraryStores().find(c => c.id === chainId);
+  if (!chain) return;
+  _libSelectedChain = { ...chain, _placeId: null, _placeName: null, _placeAddress: null };
+  if (source === 'browse') renderLibraryBrowse();
+  showLibraryPreview(chain.name, chain.aisles.length + ' aisles pre-loaded', chain);
+}
+
+function showLibraryPreview(name, meta, chain) {
+  const preview = document.getElementById('lib-selected-preview');
+  document.getElementById('lib-selected-name').textContent = name;
+  const aisleCnt = chain ? chain.aisles?.length : 0;
+  const srcLabel = chain?.dataSource === 'real' ? '✅ Official store data' : '📋 Curated typical layout';
+  document.getElementById('lib-selected-meta').textContent =
+    meta + (chain && aisleCnt ? ' · ' + aisleCnt + ' aisles · ' + srcLabel : '');
+  preview.style.display = 'block';
+}
+
+async function addStoreFromLibrary() {
+  if (!_libSelectedChain) return;
+  const chain = _libSelectedChain;
+
+  // Build the store name: prefer the specific place name if from nearby
+  const storeName = chain._placeName || chain.name;
+  const storeColor = chain.color || STORE_COLORS[state.stores.length % STORE_COLORS.length];
+  const aisles = chain.aisles?.length
+    ? chain.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }))
+    : [
+        { name: 'Produce', keywords: ['apple','banana','vegetable','fruit'] },
+        { name: 'Dairy', keywords: ['milk','cheese','yogurt','eggs'] }
+      ];
+
+  closeModal('modal-library');
+  showProcessing('Creating store…');
+
+  // Open the store editor pre-filled with library data
+  state.editingStoreId = null;
+  pendingScannedKws = {}; aisleImgTargetIdx = null;
+  document.getElementById('store-modal-title').textContent = 'New Store';
+  document.getElementById('store-name-input').value = storeName;
+  tempColor = storeColor;
+  tempAisles = aisles;
+  renderStoreModal();
+  hideProcessing();
+  openModal('modal-store');
+}
+// ══════════════════════════════════════════════════════════════════════════
 
 function openNewStore(){
   state.editingStoreId=null;
