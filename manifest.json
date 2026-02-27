@@ -2,12 +2,29 @@
   "name": "InstAisle",
   "short_name": "InstAisle",
   "description": "Smart grocery lists, sorted by aisle",
+  "id": "online.instaisle.app",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
   "orientation": "portrait",
+  "screenshots": [
+    {
+      "src": "screenshots/screen1.png",
+      "sizes": "1080x2424",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Find nearby stores with pre-loaded aisle templates"
+    },
+    {
+      "src": "screenshots/screen2.png",
+      "sizes": "1080x2424",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Shopping list automatically sorted by aisle"
+    }
+  ],
   "icons": [
     {
       "src": "icon-192.png",
