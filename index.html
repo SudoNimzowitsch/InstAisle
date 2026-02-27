@@ -219,6 +219,20 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 
 /* LIST ITEMS */
+.edit-list-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;
+  margin-bottom:6px;
+}
+.edit-item-name{flex:1;font-size:.9rem;color:var(--text);}
+.edit-item-aisle{font-size:.72rem;padding:2px 8px;border-radius:20px;font-weight:600;flex-shrink:0;}
+.edit-item-delete{
+  background:none;border:none;color:var(--muted);font-size:1.1rem;
+  cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;
+  border-radius:6px;transition:color .15s,background .15s;
+}
+.edit-item-delete:hover{color:#f87171;background:rgba(239,68,68,.1);}
 .list-item{
   display:flex;align-items:center;gap:10px;padding:10px 12px;
   border-radius:10px;background:var(--surface2);margin-bottom:6px;
@@ -761,6 +775,30 @@ textarea.input{resize:vertical;min-height:90px;}
     <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="changePassword()" id="btn-change-pass">Update Password</button>
     <div class="divider"></div>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
+  </div>
+</div>
+
+<!-- Edit List Modal -->
+<div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit List</div>
+
+    <!-- Add item row -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0">
+      <input class="input" id="edit-list-new-item" type="text" placeholder="Add an item…"
+        style="flex:1"
+        onkeydown="if(event.key==='Enter') addItemFromEdit()"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn btn-primary" onclick="addItemFromEdit()" style="flex-shrink:0;padding:0 18px">Add</button>
+    </div>
+
+    <!-- Item list -->
+    <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
+
+    <div style="margin-top:16px;flex-shrink:0">
+      <button class="btn btn-primary btn-full" onclick="closeModal('modal-edit-list')">Done</button>
+    </div>
   </div>
 </div>
 
@@ -2677,6 +2715,7 @@ function renderListScreen(){
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <div style="font-size:.75rem;color:var(--muted)">${done}/${total} items ✓</div>
     <div style="display:flex;gap:8px">
+      <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
       <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
       <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
     </div>
@@ -3733,6 +3772,91 @@ function clearList(){
   state.lists[getActiveStore().id]=[];
   renderListScreen();
   persistActiveStore();
+}
+
+// ── Edit List ─────────────────────────────────────────────────────────────────────────
+
+function openEditList() {
+  const store = getActiveStore();
+  if (!store) return;
+  renderEditListItems();
+  document.getElementById('edit-list-new-item').value = '';
+  openModal('modal-edit-list');
+  setTimeout(() => document.getElementById('edit-list-new-item').focus(), 300);
+}
+
+function renderEditListItems() {
+  const store = getActiveStore();
+  if (!store) return;
+  const items = state.lists[store.id] || [];
+  const container = document.getElementById('edit-list-items');
+
+  if (!items.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:24px 0">No items — add some above.</div>';
+    return;
+  }
+
+  const groups = {};
+  items.forEach((item, idx) => {
+    const key = (item.aisleIndex !== null && item.aisleIndex !== undefined) ? item.aisleIndex : 'unmatched';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ ...item, idx });
+  });
+  const keys = Object.keys(groups).filter(k => k !== 'unmatched').sort((a, b) => +a - +b);
+  if (groups['unmatched']) keys.push('unmatched');
+
+  let html = '';
+  keys.forEach(key => {
+    const gItems = groups[key];
+    const isUM   = key === 'unmatched';
+    const color  = isUM ? '#fbbf24' : AISLE_COLORS[+key % AISLE_COLORS.length];
+    const aisle  = !isUM ? store.aisles[+key] : null;
+    const aisleName = isUM ? '? Unmatched' : (aisle ? aisle.name : 'Aisle ' + (+key + 1));
+
+    html += '<div style="font-size:.7rem;font-weight:700;text-transform:uppercase;' +
+      'letter-spacing:.06em;color:' + color + ';margin:12px 0 6px;padding:0 2px">' + esc(aisleName) + '</div>';
+
+    gItems.forEach(item => {
+      const badge   = isUM ? '?' : 'A' + (+key + 1);
+      const bgBadge = hexRgba(color, .18);
+      html += '<div class="edit-list-item">' +
+        '<span class="edit-item-name">' + esc(item.name) + '</span>' +
+        '<span class="edit-item-aisle" style="background:' + bgBadge + ';color:' + color + '">' + badge + '</span>' +
+        '<button class="edit-item-delete" onclick="deleteItemFromEdit(' + item.idx + ')" title="Remove">✕</button>' +
+        '</div>';
+    });
+  });
+
+  container.innerHTML = html;
+}
+
+async function deleteItemFromEdit(idx) {
+  const store = getActiveStore();
+  if (!store) return;
+  state.lists[store.id].splice(idx, 1);
+  await window.persistStore(store.id);
+  renderEditListItems();
+  renderListScreen();
+}
+
+async function addItemFromEdit() {
+  const store = getActiveStore();
+  if (!store) return;
+  const input = document.getElementById('edit-list-new-item');
+  const name  = input.value.trim();
+  if (!name) return;
+
+  const results = classifyItems([name], store);
+  const newItem  = applyCorr(results, store)[0];
+
+  state.lists[store.id] = state.lists[store.id] || [];
+  state.lists[store.id].push(newItem);
+  await window.persistStore(store.id);
+
+  input.value = '';
+  input.focus();
+  renderEditListItems();
+  renderListScreen();
 }
 
 function openMoveItem(idx){
