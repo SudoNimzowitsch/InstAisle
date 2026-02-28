@@ -3236,28 +3236,26 @@ async function addStoreFromLibrary() {
   if (!_libSelectedChain) return;
   const chain = _libSelectedChain;
 
-  // Build the store name: prefer the specific place name if from nearby
-  const storeName = chain._placeName || chain.name;
+  const storeName  = chain._placeName || chain.name;
   const storeColor = chain.color || STORE_COLORS[state.stores.length % STORE_COLORS.length];
   const aisles = chain.aisles?.length
     ? chain.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }))
     : [
         { name: 'Produce', keywords: ['apple','banana','vegetable','fruit'] },
-        { name: 'Dairy', keywords: ['milk','cheese','yogurt','eggs'] }
+        { name: 'Dairy',   keywords: ['milk','cheese','yogurt','eggs'] }
       ];
 
-  closeModal('modal-library');
-  showProcessing('Creating store…');
+  // Close library overlay directly (bypass history.back() to avoid popstate race)
+  document.getElementById('modal-library').classList.remove('open');
 
   // Open the store editor pre-filled with library data
   state.editingStoreId = null;
   pendingScannedKws = {}; aisleImgTargetIdx = null;
   document.getElementById('store-modal-title').textContent = 'New Store';
   document.getElementById('store-name-input').value = storeName;
-  tempColor = storeColor;
+  tempColor  = storeColor;
   tempAisles = aisles;
   renderStoreModal();
-  hideProcessing();
   openModal('modal-store');
 }
 // ══════════════════════════════════════════════════════════════════════════
