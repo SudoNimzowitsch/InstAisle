@@ -1378,29 +1378,45 @@ window.setSyncDot = setSyncDot;
 window._fbReady = true;
 
 // ── Browser back/forward navigation ──────────────────────────────────────
+// ── Browser back/forward navigation ──────────────────────────────────────
+// Strategy: always keep a "floor" sentinel entry at the bottom of the stack.
+// On load we push: [sentinel] [list]. When back is pressed and we reach
+// sentinel, we handle it and immediately re-push [list] so there's always
+// something below us. This prevents the browser from ever leaving the app.
+
+function pushAppState(state) {
+  history.pushState(state, '', '');
+}
+
+// Push sentinel + initial screen on page load
+history.replaceState({ type: 'sentinel' }, '', '');
+history.pushState({ type: 'screen', screen: 'list' }, '', '');
+
 window.addEventListener('popstate', function(e) {
   const state = e.state;
 
-  // If a modal is open, just close it — don't navigate screens
-  const openModal = document.querySelector('.modal-overlay.open');
-  if (openModal) {
-    openModal.classList.remove('open');
+  // ── Close open modal first ──
+  const openOverlay = document.querySelector('.modal-overlay.open');
+  if (openOverlay) {
+    openOverlay.classList.remove('open');
+    // Re-push current screen state so forward/back remain meaningful
+    const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '') || 'list';
+    history.pushState({ type: 'screen', screen }, '', '');
     return;
   }
 
-  // Navigate between screens
-  if (state?.type === 'screen') {
-    switchScreen(state.screen, false);
-  } else {
+  // ── Hit the sentinel — re-push so we never fall out of the app ──
+  if (!state || state.type === 'sentinel') {
+    history.pushState({ type: 'screen', screen: 'list' }, '', '');
     switchScreen('list', false);
+    return;
+  }
+
+  // ── Screen navigation ──
+  if (state.type === 'screen') {
+    switchScreen(state.screen, false);
   }
 });
-
-// Seed initial history state so the first back press doesn't leave the app
-(function seedHistory() {
-  // Replace the current entry (not push) so we don't add an extra step
-  history.replaceState({ type: 'screen', screen: 'list' }, '', '');
-})();
 
 </script>
 
