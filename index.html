@@ -719,12 +719,8 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title">New Shopping List</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-      <span class="ai-badge">✦ AI</span>
-      <span class="text-muted">Claude classifies items using your aisle keywords as context</span>
-    </div>
     <div class="input-wrap">
-      <label class="input-label">Items (one per line)</label>
+      <label class="input-label">Items</label>
       <textarea class="input" id="list-text-input" placeholder="Bananas&#10;Chicken breast&#10;Greek yogurt&#10;Olive oil&#10;Shampoo"></textarea>
     </div>
     <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
@@ -734,7 +730,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <input type="file" id="file-input" accept="*/*" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
     <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
-    <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organise with AI →</button>
+    <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
   </div>
 </div>
 
@@ -985,7 +981,7 @@ async function seedDemoStore(uid) {
   const id = 'store-' + uid.substring(0,8);
   const demo = {
     ownerUid: uid, members: [], shareCode: null,
-    name: 'Whole Foods', color: '#4ade80',
+    name: 'General Store', color: '#4ade80',
     createdAt: serverTimestamp(),
     aisles: [
       {name:'Aisle 1 – Produce',       keywords:['apple','banana','orange','grape','berries','lettuce','spinach','kale','broccoli','carrot','tomato','cucumber','pepper','onion','garlic','lemon','lime','avocado','mushroom','fruit','vegetable','herbs','cilantro','ginger','zucchini','celery','arugula']},
@@ -3672,12 +3668,27 @@ function rematch(itemName,store){
 }
 
 async function deleteStore(id){
-  if(!confirm('Delete this store and its list?')) return;
-  state.stores=state.stores.filter(s=>s.id!==id);
+  const store = state.stores.find(s => s.id === id);
+  if (!store) return;
+
+  // Only the owner can delete a store
+  const uid = window._currentUser?.uid;
+  if (store.ownerUid && uid && store.ownerUid !== uid) {
+    showToast('Only the store owner can delete it'); return;
+  }
+
+  // Prevent deleting the last store
+  if (state.stores.length === 1) {
+    showToast('You must have at least one store'); return;
+  }
+
+  if (!confirm('Delete "' + store.name + '" and its list? This cannot be undone.')) return;
+
+  state.stores = state.stores.filter(s => s.id !== id);
   delete state.lists[id]; delete state.corrections[id];
-  if(state.activeStoreId===id) state.activeStoreId=state.stores[0]?.id||null;
-  if(window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
-  renderAll(); showToast('Store deleted');
+  if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
+  if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
+  renderAll(); showToast('"' + store.name + '" deleted');
 }
 
 // ══════════════════════════════
