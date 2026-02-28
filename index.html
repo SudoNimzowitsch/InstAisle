@@ -73,7 +73,7 @@ body{
   font-family:'Outfit',sans-serif;font-size:0.62rem;font-weight:500;
   letter-spacing:.04em;text-transform:uppercase;transition:color .15s;
 }
-.nav-btn .nav-icon{font-size:1.875rem;}
+.nav-btn .nav-icon{font-size:1.875rem;display:flex;align-items:center;justify-content:center;} .nav-btn .nav-icon svg{width:1.875rem;height:1.875rem;}
 .nav-btn.active{color:var(--green);}
 
 /* BUTTONS */
@@ -653,10 +653,31 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- BOTTOM NAV -->
 <div class="bottomnav">
   <button class="nav-btn active" id="nav-list" onclick="switchScreen('list')">
-    <span class="nav-icon">🛒</span>List
+    <span class="nav-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="4" y="2" width="16" height="20" rx="2"/>
+  <line x1="8" y1="6" x2="8" y2="6"/>
+  <line x1="10" y1="6" x2="17" y2="6"/>
+  <line x1="8" y1="10" x2="8" y2="10"/>
+  <line x1="10" y1="10" x2="16" y2="10"/>
+  <line x1="8" y1="14" x2="8" y2="14"/>
+  <line x1="10" y1="14" x2="15" y2="14"/>
+  <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
+  <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
+  <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
+  <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
+</svg></span>List
   </button>
   <button class="nav-btn" id="nav-stores" onclick="switchScreen('stores')">
-    <span class="nav-icon">🏪</span>Stores
+    <span class="nav-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg></span>Stores
   </button>
 </div>
 
@@ -2808,9 +2829,30 @@ function renderTopbar(){
 function renderListScreen(){
   const cont=document.getElementById('list-content');
   const store=getActiveStore();
-  if(!store){ cont.innerHTML=`<div class="empty"><div class="empty-icon">🏪</div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; return; }
+  if(!store){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; return; }
   const items=state.lists[store.id]||[];
-  if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon">🛒</div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; return; }
+  if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="4" y="2" width="16" height="20" rx="2"/>
+  <line x1="8" y1="6" x2="8" y2="6"/>
+  <line x1="10" y1="6" x2="17" y2="6"/>
+  <line x1="8" y1="10" x2="8" y2="10"/>
+  <line x1="10" y1="10" x2="16" y2="10"/>
+  <line x1="8" y1="14" x2="8" y2="14"/>
+  <line x1="10" y1="14" x2="15" y2="14"/>
+  <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
+  <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
+  <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
+  <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
+</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; return; }
 
   // group
   const groups={};
@@ -2882,7 +2924,14 @@ function renderListScreen(){
 
 function renderStoresScreen(){
   const cont=document.getElementById('stores-list');
-  if(!state.stores.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon">🏪</div><div class="empty-title">No stores yet</div><div class="empty-sub">Add your first store to get started.</div></div>`; return; }
+  if(!state.stores.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg></div><div class="empty-title">No stores yet</div><div class="empty-sub">Add your first store to get started.</div></div>`; return; }
   cont.innerHTML=state.stores.map(store=>{
     const ll=(state.lists[store.id]||[]).length;
     const cc=Object.keys(state.corrections[store.id]||{}).length;
