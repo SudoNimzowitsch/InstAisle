@@ -3301,7 +3301,9 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Load all store_locations from Firestore (once per session, then cached)
+// Load all store locations from static JSON (once per session, then cached)
+// Source: /stores.json served from GitHub Pages — no Firestore reads needed.
+// To update: run export-store-locations.js and commit the new stores.json.
 async function loadStoreLocations() {
   if (_storeLocationCache) return _storeLocationCache;
   if (_storeLocationLoading) {
@@ -3312,9 +3314,9 @@ async function loadStoreLocations() {
   }
   _storeLocationLoading = true;
   try {
-    const { collection, getDocs } = window._fb;
-    const snap = await getDocs(collection(window._fb.db, 'store_locations'));
-    _storeLocationCache = snap.docs.map(d => d.data());
+    const resp = await fetch('/stores.json');
+    if (!resp.ok) throw new Error('stores.json not found (' + resp.status + ')');
+    _storeLocationCache = await resp.json();
     return _storeLocationCache;
   } finally {
     _storeLocationLoading = false;
