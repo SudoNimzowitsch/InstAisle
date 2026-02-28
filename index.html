@@ -1041,7 +1041,7 @@ async function loadUserData(uid) {
   setSyncDot('ok');
 
   // Preload store locations in background so nearby tab is instant
-  loadStoreLocations();
+  loadStoreLocations().catch(() => {}); // silent — stores.json may not exist yet
 
   // Set up real-time listeners for each store
   window._storeUnsubs.forEach(fn => fn());
@@ -3315,9 +3315,12 @@ async function loadStoreLocations() {
   _storeLocationLoading = true;
   try {
     const resp = await fetch('/stores.json');
-    if (!resp.ok) throw new Error('stores.json not found (' + resp.status + ')');
+    if (!resp.ok) { console.warn('stores.json not available (' + resp.status + ')'); return []; }
     _storeLocationCache = await resp.json();
     return _storeLocationCache;
+  } catch (err) {
+    console.warn('loadStoreLocations:', err.message);
+    return [];
   } finally {
     _storeLocationLoading = false;
   }
