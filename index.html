@@ -604,6 +604,19 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center">Delete Store?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem">
+      This will permanently delete <strong id="delete-confirm-name"></strong> and its list. This cannot be undone.
+    </p>
+    <button class="btn btn-danger btn-full" onclick="confirmDelete()" style="margin-bottom:8px">Delete</button>
+    <button class="btn btn-ghost btn-full" onclick="cancelDelete()">Cancel</button>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">InstAisle</div>
@@ -3753,14 +3766,44 @@ async function deleteStore(id){
     showToast('You must have at least one store'); return;
   }
 
-  if (!confirm('Delete "' + store.name + '" and its list? This cannot be undone.')) return;
-
-  state.stores = state.stores.filter(s => s.id !== id);
-  delete state.lists[id]; delete state.corrections[id];
-  if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
-  if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
-  renderAll(); showToast('"' + store.name + '" deleted');
+  // Use custom confirm modal instead of confirm() which is blocked on some mobile browsers
+  showDeleteConfirm(store.name, async () => {
+    // Unsubscribe the real-time listener for this store
+    if (window._storeUnsubs) {
+      const idx = state.stores.findIndex(s => s.id === id);
+      if (idx !== -1 && window._storeUnsubs[idx]) {
+        window._storeUnsubs[idx]();
+        window._storeUnsubs.splice(idx, 1);
+      }
+    }
+    state.stores = state.stores.filter(s => s.id !== id);
+    delete state.lists[id]; delete state.corrections[id];
+    if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
+    if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
+    renderAll(); showToast('"' + store.name + '" deleted');
+  });
 }
+
+// Custom confirm dialog (avoids mobile browser confirm() suppression)
+function showDeleteConfirm(name, onConfirm) {
+  const overlay = document.getElementById('modal-delete-confirm');
+  document.getElementById('delete-confirm-name').textContent = '"' + name + '"';
+  window._deleteConfirmCallback = onConfirm;
+  openModal('modal-delete-confirm');
+}
+
+window.confirmDelete = function() {
+  closeModal('modal-delete-confirm');
+  if (window._deleteConfirmCallback) {
+    window._deleteConfirmCallback();
+    window._deleteConfirmCallback = null;
+  }
+};
+
+window.cancelDelete = function() {
+  closeModal('modal-delete-confirm');
+  window._deleteConfirmCallback = null;
+};
 
 // ══════════════════════════════
 // LIST – AI MATCHING
