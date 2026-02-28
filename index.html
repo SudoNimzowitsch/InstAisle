@@ -1377,6 +1377,31 @@ window.setSyncDot = setSyncDot;
 // Signal that the Firebase module is fully loaded
 window._fbReady = true;
 
+// ── Browser back/forward navigation ──────────────────────────────────────
+window.addEventListener('popstate', function(e) {
+  const state = e.state;
+
+  // If a modal is open, just close it — don't navigate screens
+  const openModal = document.querySelector('.modal-overlay.open');
+  if (openModal) {
+    openModal.classList.remove('open');
+    return;
+  }
+
+  // Navigate between screens
+  if (state?.type === 'screen') {
+    switchScreen(state.screen, false);
+  } else {
+    switchScreen('list', false);
+  }
+});
+
+// Seed initial history state so the first back press doesn't leave the app
+(function seedHistory() {
+  // Replace the current entry (not push) so we don't add an extra step
+  history.replaceState({ type: 'screen', screen: 'list' }, '', '');
+})();
+
 </script>
 
 <script>
@@ -2712,11 +2737,12 @@ function boot() {
 
 // NAVIGATION
 // ══════════════════════════════
-function switchScreen(name) {
+function switchScreen(name, pushHistory=true) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
+  if (pushHistory) history.pushState({ type: 'screen', screen: name }, '', '');
 }
 
 // ══════════════════════════════
@@ -4169,8 +4195,19 @@ function hideProcessing(){
 // UTILS
 // ══════════════════════════════
 function getActiveStore(){ return state.stores.find(s=>s.id===state.activeStoreId)||null; }
-function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  history.pushState({ type: 'modal', modalId: id }, '', '');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.classList.contains('open')) return;
+  el.classList.remove('open');
+  // If the current history state is for this modal, go back
+  if (history.state?.type === 'modal' && history.state?.modalId === id) {
+    history.back();
+  }
+}
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
