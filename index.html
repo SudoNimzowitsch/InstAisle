@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>InstAisle</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -66,10 +66,10 @@ body{
 @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 
 /* BOTTOM NAV */
-.bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;z-index:10;}
+.bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px);}
 .nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:10px 0 14px;cursor:pointer;border:none;background:none;color:var(--muted);
+  padding:10px 0;cursor:pointer;border:none;background:none;color:var(--muted);
   font-family:'Outfit',sans-serif;font-size:0.62rem;font-weight:500;
   letter-spacing:.04em;text-transform:uppercase;transition:color .15s;
 }
@@ -2895,12 +2895,12 @@ function renderStoresScreen(){
 // ══════════════════════════════
 function openStoreSwitch(){
   document.getElementById('store-switch-list').innerHTML=state.stores.map(s=>`
-    <div class="card" style="cursor:pointer;border-color:${state.activeStoreId===s.id?s.color:'var(--border)'};margin-bottom:8px" onclick="setActiveStore('${s.id}')">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
-        <span style="font-weight:${state.activeStoreId===s.id?'600':'400'}">${esc(s.name)}</span>
-        ${state.activeStoreId===s.id?'<span style="margin-left:auto;color:var(--green);font-size:.75rem">Active</span>':''}
-      </div>
+    <div class="card" style="cursor:pointer;border-color:${state.activeStoreId===s.id?s.color:'var(--border)'};margin-bottom:8px;display:flex;align-items:center;gap:10px" onclick="setActiveStore('${s.id}')">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+      <span style="font-weight:${state.activeStoreId===s.id?'600':'400'};flex:1">${esc(s.name)}</span>
+      ${state.activeStoreId===s.id?'<span style="color:var(--green);font-size:.75rem">Active</span>':''}
+      <button class="btn btn-sm btn-danger" style="flex-shrink:0;margin-left:8px"
+        onclick="event.stopPropagation();deleteStore('${s.id}')">✕</button>
     </div>`).join('')||'<p class="text-muted" style="text-align:center;padding:12px 0">No stores yet.</p>';
   openModal('modal-store-switch');
 }
