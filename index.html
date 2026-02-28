@@ -660,9 +660,19 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <!-- Nearby panel -->
     <div class="lib-panel active" id="libpanel-nearby">
-      <div id="nearby-status" class="loc-status">Tap below to find stores near you</div>
+      <!-- Location search bar -->
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input class="input" id="nearby-location-input" type="text"
+          placeholder="Search a location, or use GPS below…"
+          style="flex:1;font-size:.82rem"
+          onkeydown="if(event.key==='Enter') searchNearbyLocation()"
+          autocomplete="off">
+        <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
+      <div id="nearby-status" class="loc-status" style="display:none"></div>
       <div id="nearby-list-container"></div>
-      <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:12px">📍 Find Stores Near Me</button>
+      <div id="nearby-load-more-trigger" style="height:1px"></div>
     </div>
     <!-- Browse panel -->
     <div class="lib-panel" id="libpanel-browse">
@@ -2878,11 +2888,16 @@ function renderLibraryBrowse() {
   }).join('');
 }
 
-// ── Nearby tab ─────────────────────────────────────────────────────────────
+// ── Nearby tab ─────────────────────────────────────────────────────────────────────────
 
 // Session cache — loaded once from Firestore, reused for the life of the page
-let _storeLocationCache  = null;
+let _storeLocationCache   = null;
 let _storeLocationLoading = false;
+
+// Infinite scroll state
+const NEARBY_PAGE_SIZE = 15;
+let   _nearbyPage      = 0;       // how many pages rendered so far
+let   _nearbyObserver  = null;    // IntersectionObserver for load-more trigger
 
 // Haversine distance in meters between two lat/lng points
 function haversineMeters(lat1, lng1, lat2, lng2) {
@@ -2899,25 +2914,50 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
 // Load all store_locations from Firestore (once per session, then cached)
 async function loadStoreLocations() {
   if (_storeLocationCache) return _storeLocationCache;
-
-  // If a load is already in flight, wait for it
   if (_storeLocationLoading) {
     await new Promise(resolve => {
       const t = setInterval(() => { if (!_storeLocationLoading) { clearInterval(t); resolve(); } }, 100);
     });
     return _storeLocationCache;
   }
-
   _storeLocationLoading = true;
   try {
     const { collection, getDocs } = window._fb;
     const snap = await getDocs(collection(window._fb.db, 'store_locations'));
     _storeLocationCache = snap.docs.map(d => d.data());
-    console.log(`Loaded ${_storeLocationCache.length} store locations from Firestore`);
     return _storeLocationCache;
   } finally {
     _storeLocationLoading = false;
   }
+}
+
+// Shared helper: sort stores by distance from a given lat/lng and populate _libNearbyResult
+async function computeNearbyFromCoords(lat, lng) {
+  const allStores = await loadStoreLocations();
+  if (!allStores.length) return false;
+
+  const withDistance = allStores
+    .filter(s => s.lat && s.lng)
+    .map(s => ({ ...s, distance: haversineMeters(lat, lng, s.lat, s.lng) }))
+    .sort((a, b) => a.distance - b.distance);
+
+  const seen = new Set();
+  const deduped = withDistance.filter(s => {
+    if (seen.has(s.osm_id)) return false;
+    seen.add(s.osm_id);
+    return true;
+  });
+
+  _libNearbyResult = deduped.map(s => ({
+    place_id: s.osm_id,
+    name:     s.name,
+    address:  s.address,
+    lat:      s.lat,
+    lng:      s.lng,
+    distance: s.distance,
+    chain_id: s.chain_id,
+  }));
+  return true;
 }
 
 async function findNearbyStores() {
@@ -2929,106 +2969,146 @@ async function findNearbyStores() {
   btnEl.disabled         = true;
 
   try {
-    // Step 1: free GPS coordinates from the browser
     const pos = await new Promise((resolve, reject) =>
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         timeout: 10000, maximumAge: 300000, enableHighAccuracy: false
       })
     );
     const { latitude: userLat, longitude: userLng } = pos.coords;
-
     statusEl.textContent = 'Loading store locations…';
 
-    // Step 2: load from Firestore (cached after first call)
-    const allStores = await loadStoreLocations();
-
-    if (!allStores.length) {
-      statusEl.textContent = 'No store data found. Has populate-stores-v2.js been run?';
-      return;
-    }
-
-    // Step 3: compute distance to every store, sort ascending
-    const withDistance = allStores
-      .filter(s => s.lat && s.lng)
-      .map(s => ({ ...s, distance: haversineMeters(userLat, userLng, s.lat, s.lng) }))
-      .sort((a, b) => a.distance - b.distance);
-
-    // Step 4: deduplicate by osm_id (same building tagged twice in OSM),
-    // then take the nearest 30
-    const seen    = new Set();
-    const nearest = withDistance.filter(s => {
-      if (seen.has(s.osm_id)) return false;
-      seen.add(s.osm_id);
-      return true;
-    }).slice(0, 30);
-
-    // Step 5: shape results into the format renderNearbyList expects
-    _libNearbyResult = nearest.map(s => ({
-      place_id: s.osm_id,
-      name:     s.name,
-      address:  s.address,
-      lat:      s.lat,
-      lng:      s.lng,
-      distance: s.distance,
-      open_now: null,
-      rating:   null,
-      chain_id: s.chain_id,   // already known — no fuzzy matching needed
-    }));
+    const ok = await computeNearbyFromCoords(userLat, userLng);
+    if (!ok) { statusEl.textContent = 'No store data found.'; return; }
 
     _libNearbyLoaded = true;
     statusEl.style.display = 'none';
-    renderNearbyList();
+    document.getElementById('nearby-location-input').value = '';
+    initNearbyScroll();
 
   } catch (err) {
+    statusEl.style.display = 'block';
     if (err.code === 1) {
       statusEl.innerHTML =
         'Location permission denied.<br>' +
         '<span style="font-size:.65rem">Enable location access in your browser ' +
-        'settings, or use Browse All to pick a chain manually.</span>';
+        'settings, or search a location above.</span>';
     } else {
-      statusEl.textContent = 'Could not load stores: ' + (err.message || 'unknown error');
+      statusEl.textContent = 'Could not get location: ' + (err.message || 'unknown error');
     }
-    console.error('findNearbyStores:', err);
   } finally {
     btnEl.disabled    = false;
-    btnEl.textContent = '↻ Refresh';
+    btnEl.textContent = '↻ Use My Location';
   }
+}
+
+async function searchNearbyLocation() {
+  const input    = document.getElementById('nearby-location-input');
+  const query    = input.value.trim();
+  if (!query) return;
+
+  const statusEl = document.getElementById('nearby-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent   = 'Searching for "' + query + '"…';
+
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
+      encodeURIComponent(query);
+    const resp = await fetch(url, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'InstAisle/1.0' }
+    });
+    const results = await resp.json();
+
+    if (!results.length) {
+      statusEl.textContent = 'Location not found. Try a city name or zip code.';
+      return;
+    }
+
+    const { lat, lon, display_name } = results[0];
+    statusEl.textContent = 'Loading stores near ' + display_name.split(',').slice(0, 2).join(',') + '…';
+
+    const ok = await computeNearbyFromCoords(parseFloat(lat), parseFloat(lon));
+    if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+
+    _libNearbyLoaded = true;
+    statusEl.style.display = 'none';
+    initNearbyScroll();
+
+  } catch (err) {
+    statusEl.textContent = 'Search failed. Check your connection and try again.';
+    console.error('searchNearbyLocation:', err);
+  }
+}
+
+// ── Infinite scroll rendering ──────────────────────────────────────────────
+
+function initNearbyScroll() {
+  // Disconnect old observer if any
+  if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+
+  _nearbyPage = 0;
+  const container = document.getElementById('nearby-list-container');
+  container.innerHTML = '<div class="nearby-list" id="nearby-list-inner"></div>';
+
+  renderNearbyPage();   // render first page immediately
+
+  // Set up IntersectionObserver on the trigger div
+  const trigger = document.getElementById('nearby-load-more-trigger');
+  _nearbyObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) renderNearbyPage();
+  }, { rootMargin: '120px' });
+  _nearbyObserver.observe(trigger);
+}
+
+function renderNearbyPage() {
+  const start = _nearbyPage * NEARBY_PAGE_SIZE;
+  const slice = _libNearbyResult.slice(start, start + NEARBY_PAGE_SIZE);
+  if (!slice.length) {
+    if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+    return;
+  }
+
+  const inner = document.getElementById('nearby-list-inner');
+  if (!inner) return;
+
+  slice.forEach(store => {
+    const chain      = store.chain_id
+      ? getAllLibraryStores().find(c => c.id === store.chain_id)
+      : matchStoreToLibrary(store.name);
+    const isSelected = _libSelectedChain?._placeId === store.place_id;
+
+    const matchPill = chain
+      ? '<span class="nearby-match-pill">✓ ' + esc(chain.name) + ' data</span>'
+      : '<span class="nearby-no-match-pill">No template</span>';
+
+    const card = document.createElement('div');
+    card.className = 'nearby-card' + (isSelected ? ' selected' : '');
+    card.setAttribute('data-place-id', store.place_id);
+    card.onclick = () => selectNearbyStore(store.place_id);
+    card.innerHTML =
+      '<div class="nearby-card-info">' +
+        '<div class="nearby-name">' + esc(store.name) + '</div>' +
+        '<div class="nearby-address">' + esc(store.address) + '</div>' +
+        '<div class="nearby-meta"><span class="nearby-dist">' + formatDistance(store.distance) + '</span></div>' +
+      '</div>' + matchPill;
+    inner.appendChild(card);
+  });
+
+  _nearbyPage++;
+
+  // Stop observing if we've rendered everything
+  if (_nearbyPage * NEARBY_PAGE_SIZE >= _libNearbyResult.length) {
+    if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+  }
+}
+
+// Legacy renderNearbyList — now delegates to initNearbyScroll when results exist
+function renderNearbyList() {
+  if (_libNearbyResult.length) initNearbyScroll();
 }
 
 function formatDistance(meters) {
   if (meters < 1000) return Math.round(meters) + ' m';
   return (meters / 1609.34).toFixed(1) + ' mi';
-}
-
-function renderNearbyList() {
-  const container = document.getElementById('nearby-list-container');
-  if (!_libNearbyResult.length) { container.innerHTML = ''; return; }
-
-  container.innerHTML = '<div class="nearby-list">' +
-    _libNearbyResult.map(store => {
-      // chain_id from Firestore means we can match directly — no fuzzy name matching
-      const chain      = store.chain_id
-        ? getAllLibraryStores().find(c => c.id === store.chain_id)
-        : matchStoreToLibrary(store.name);
-      const isSelected = _libSelectedChain?._placeId === store.place_id;
-
-      const matchPill = chain
-        ? `<span class="nearby-match-pill">✓ ${esc(chain.name)} data</span>`
-        : `<span class="nearby-no-match-pill">No template</span>`;
-
-      return `<div class="nearby-card ${isSelected ? 'selected' : ''}"
-          onclick="selectNearbyStore('${store.place_id}')">
-        <div class="nearby-card-info">
-          <div class="nearby-name">${esc(store.name)}</div>
-          <div class="nearby-address">${esc(store.address)}</div>
-          <div class="nearby-meta">
-            <span class="nearby-dist">${formatDistance(store.distance)}</span>
-          </div>
-        </div>
-        ${matchPill}
-      </div>`;
-    }).join('') +
-  '</div>';
 }
 
 function selectNearbyStore(placeId) {
