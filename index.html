@@ -643,7 +643,14 @@ textarea.input{resize:vertical;min-height:90px;}
       <span class="section-title">My Stores</span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="openLibraryModal()">🏪 Store Library</button>
+      <button class="btn btn-primary" style="flex:1" onclick="openLibraryModal()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg>Store Library</button>
       <button class="btn btn-ghost" style="flex:1" onclick="openNewStore()">+ Build My Own</button>
     </div>
     <div id="stores-list"></div>
@@ -700,7 +707,14 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-title">Choose Store</div>
     <div id="store-switch-list"></div>
     <div class="divider"></div>
-    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="document.getElementById('modal-store-switch').classList.remove('open');openLibraryModal()">🏪 Add from Store Library</button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="document.getElementById('modal-store-switch').classList.remove('open');openLibraryModal()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg>Add from Store Library</button>
     <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-store-switch').classList.remove('open');openNewStore()">+ Build My Own Store</button>
   </div>
 </div>
