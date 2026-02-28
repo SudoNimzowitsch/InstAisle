@@ -1005,6 +1005,9 @@ async function loadUserData(uid) {
   renderAll();
   setSyncDot('ok');
 
+  // Preload store locations in background so nearby tab is instant
+  loadStoreLocations();
+
   // Set up real-time listeners for each store
   window._storeUnsubs.forEach(fn => fn());
   window._storeUnsubs = storeDocs.map(snap =>
