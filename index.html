@@ -812,11 +812,20 @@ textarea.input{resize:vertical;min-height:90px;}
     <div id="change-pass-msg" style="display:none;font-size:.8rem;padding:8px 12px;border-radius:8px;margin-bottom:10px"></div>
     <div class="input-wrap" id="change-pass-fields">
       <label class="input-label">Current Password</label>
-      <input class="input" id="current-password" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="pw-wrap">
+        <input class="input" id="current-password" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button class="pw-eye" type="button" onclick="window.togglePw('current-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
       <label class="input-label" style="margin-top:10px">New Password</label>
-      <input class="input" id="new-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+      <div class="pw-wrap">
+        <input class="input" id="new-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+        <button class="pw-eye" type="button" onclick="window.togglePw('new-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
       <label class="input-label" style="margin-top:10px">Confirm New Password</label>
-      <input class="input" id="confirm-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+      <div class="pw-wrap">
+        <input class="input" id="confirm-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+        <button class="pw-eye" type="button" onclick="window.togglePw('confirm-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
     </div>
     <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="changePassword()" id="btn-change-pass">Update Password</button>
     <div class="divider"></div>
