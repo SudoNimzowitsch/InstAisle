@@ -641,7 +641,10 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="screen" id="screen-stores">
     <div class="section-header">
       <span class="section-title">My Stores</span>
-      <button class="btn btn-sm btn-primary" onclick="openNewStore()">+ Add Store</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="openLibraryModal()">🏪 Store Library</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="openNewStore()">+ Build My Own</button>
     </div>
     <div id="stores-list"></div>
   </div>
