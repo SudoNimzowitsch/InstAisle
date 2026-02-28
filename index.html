@@ -435,6 +435,14 @@ textarea.input{resize:vertical;min-height:90px;}
   padding:10px 14px;font-size:.82rem;margin-bottom:12px;
 }
 .auth-success.show{display:block;}
+.pw-wrap{position:relative;display:flex;align-items:center;}
+.pw-wrap .input{flex:1;padding-right:42px;}
+.pw-eye{
+  position:absolute;right:12px;background:none;border:none;
+  color:var(--muted);cursor:pointer;padding:4px;line-height:1;
+  font-size:1rem;transition:color .15s;
+}
+.pw-eye:hover{color:var(--text);}
 .btn-link-subtle{
   background:none;border:none;color:var(--muted);font-size:.8rem;
   cursor:pointer;padding:2px 4px;text-decoration:underline;
@@ -573,8 +581,18 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <div class="input-wrap">
       <label class="input-label">Password</label>
-      <input class="input" id="signup-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password"
-        onkeydown="if(event.key==='Enter') signUpEmail()">
+      <div class="pw-wrap">
+        <input class="input" id="signup-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+        <button class="pw-eye" type="button" onclick="togglePw('signup-password',this)" tabindex="-1" aria-label="Show password">👁</button>
+      </div>
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Confirm Password</label>
+      <div class="pw-wrap">
+        <input class="input" id="signup-password-confirm" type="password" placeholder="Re-enter password" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter') signUpEmail()">
+        <button class="pw-eye" type="button" onclick="togglePw('signup-password-confirm',this)" tabindex="-1" aria-label="Show password">👁</button>
+      </div>
     </div>
     <button class="btn btn-primary btn-full" onclick="signUpEmail()" id="btn-signup">Create Account</button>
     <div class="auth-divider">or</div>
@@ -1192,11 +1210,13 @@ window.signInEmail = async function() {
 
 window.signUpEmail = async function() {
   const { auth, createUserWithEmailAndPassword, updateProfile } = window._fb;
-  const name  = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const pass  = document.getElementById('signup-password').value;
-  if (!name || !email || !pass) { showAuthError('signup','Please fill in all fields'); return; }
-  if (pass.length < 6) { showAuthError('signup','Password must be at least 6 characters'); return; }
+  const name    = document.getElementById('signup-name').value.trim();
+  const email   = document.getElementById('signup-email').value.trim();
+  const pass    = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-password-confirm').value;
+  if (!name || !email || !pass || !confirm) { showAuthError('signup','Please fill in all fields'); return; }
+  if (pass.length < 6)  { showAuthError('signup','Password must be at least 6 characters'); return; }
+  if (pass !== confirm) { showAuthError('signup','Passwords do not match'); return; }
   document.getElementById('btn-signup').disabled = true;
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -1218,6 +1238,14 @@ window.signInGoogle = async function() {
     }
   }
 };
+
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
 
 window.showForgotPassword = function() {
   document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
