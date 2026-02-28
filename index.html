@@ -3032,6 +3032,549 @@ const STORE_LIBRARY = {
       ]
     },
 
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SPROUTS FARMERS MARKET
+    // Source: Curated based on typical Sprouts layout
+    // Health/natural-focused chain, Sun Belt, ~400 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'sprouts',
+      name: 'Sprouts Farmers Market',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#5a9e3a',
+      searchNames: ['sprouts','sprouts farmers market','sprouts market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower','leek','fennel','chard','collard greens','microgreens','sprouts'] },
+        { name: 'Bulk Foods', keywords: ['bulk','granola','oats','nuts','almonds','cashews','walnuts','pecans','dried fruit','raisins','dried mango','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','coffee','tea','spices','nutritional yeast','protein powder'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic chicken','wild caught','bison','venison'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','sliced cheese','sandwich','prepared food','rotisserie','soup','salad','hummus','olive','pickle','guacamole','charcuterie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','tortilla','english muffin','gluten free bread','pita','cookies','cake','pie','donut','brownie'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen shrimp','frozen acai','frozen smoothie'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','energy drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake','smoothie'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium'] },
+        { name: 'Natural & Organic Grocery', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','baking powder','canned tomato','canned beans','spices','curry','miso'] },
+        { name: 'Body Care & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm','hair care'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','natural cleaner','dryer sheets','aluminum foil','plastic wrap','beeswax wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WINN-DIXIE
+    // Source: Curated based on typical Winn-Dixie layout
+    // Southeast US chain (Southeastern Grocers), ~490 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'winn-dixie',
+      name: 'Winn-Dixie',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['winn-dixie','winn dixie','winndixie'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs','cilantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish','crab','oyster'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','bread','bagel','roll','bun','loaf','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','cider','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','spirits','vodka','whiskey','bourbon','rum','tequila'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BI-LO / HARVEYS (Southeastern Grocers)
+    // Source: Curated — same parent as Winn-Dixie, similar layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'bilo',
+      name: 'BI-LO',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#004b8d',
+      searchNames: ['bi-lo','bilo','harveys','harveys supermarket','fresco y mas'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WINCO FOODS
+    // Source: Curated based on typical WinCo layout
+    // Employee-owned discount warehouse, ~130 locations, West/Northwest
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'winco',
+      name: 'WinCo Foods',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#003087',
+      searchNames: ['winco','winco foods','win-co'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cabbage','cauliflower','corn'] },
+        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','quinoa','lentils','rice','flour','sugar','cocoa','spices','candy','chocolate covered','gummy'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','sparkling water','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // LIDL
+    // Source: Curated based on typical Lidl US layout
+    // German discount chain, ~170 US locations, Southeast/Mid-Atlantic
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'lidl',
+      name: 'Lidl',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#0050aa',
+      searchNames: ['lidl','lidl us'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','herbs','corn'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
+        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','pepperoni','prosciutto','sliced cheese','american cheese','swiss','provolone','brie','gouda','cheddar','feta','goat cheese','charcuterie'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pretzel','cookies','cake','pie','donut','pastry','danish','brownie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','schnitzel','frozen fish','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','muesli'] },
+        { name: 'Snacks & Sweets', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','candy','chocolate','gummies','cookies','wafers','marzipan','stollen','biscuits'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','sunscreen'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','dryer sheets','aluminum foil','plastic wrap'] },
+        { name: 'Middle Aisle (Weekly Specials)', keywords: ['tools','clothing','electronics','garden','sports','seasonal','kitchen gadgets','bedding','luggage','toys','outdoor','camping','fitness'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SAVE-A-LOT
+    // Source: Curated based on typical Save-A-Lot layout
+    // Deep-discount chain, ~900 locations, nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'save-a-lot',
+      name: 'Save-A-Lot',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e8171f',
+      searchNames: ['save-a-lot','save a lot','savealot'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','potato','sweet potato','cabbage','corn'] },
+        { name: 'Meat & Poultry', keywords: ['chicken','beef','pork','ground beef','ground turkey','sausage','bacon','ham','turkey','hot dogs','fish','tilapia'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','american cheese'] },
+        { name: 'Bread & Bakery', keywords: ['bread','bagel','roll','bun','tortilla','english muffin','cookies','cake','donut'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Household', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // GROCERY OUTLET
+    // Source: Curated based on typical Grocery Outlet layout
+    // Deep-discount opportunistic buyer, ~450 locations, West Coast/expanding
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'grocery-outlet',
+      name: 'Grocery Outlet',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e8171f',
+      searchNames: ['grocery outlet','grocery outlet bargain market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
+        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','prepared food','rotisserie','pickle','hummus'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','brie','whipped cream','almond milk','oat milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','tortilla','cookies','cake','donut','pastry','brownie'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','almond milk','oat milk'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','sunscreen'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // STATER BROS
+    // Source: Curated based on typical Stater Bros layout
+    // Southern California regional chain, ~170 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'stater-bros',
+      name: 'Stater Bros.',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['stater bros','stater brothers','stater bros markets'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','carne asada','chorizo','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish','ribs'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','queso fresco','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','tamales','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','horchata','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','masa','sugar','salt','oil','lard','vinegar','pasta sauce','salsa','enchilada sauce','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','pinto beans','black beans','oats','cereal','honey','jam','peanut butter','crackers','tortilla chips','nuts','popcorn','baking soda','canned tomato','canned chile','canned beans','spices','cumin','chili powder'] },
+        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // THE FRESH MARKET
+    // Source: Curated based on typical Fresh Market layout
+    // Upscale specialty grocer, ~160 locations, Southeast focus
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'fresh-market',
+      name: 'The Fresh Market',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#2e7d32',
+      searchNames: ['fresh market','the fresh market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','fennel','leek','beet','radish','exotic fruit','dragon fruit','passion fruit'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','oyster','sausage','bacon','lamb','veal','duck','bison','wild boar','venison'] },
+        { name: 'Prepared Foods & Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','sandwich','sushi','prepared food','rotisserie','hot bar','soup','salad','hummus','olive','pickle','charcuterie','pâté','terrine'] },
+        { name: 'Cheese & Charcuterie', keywords: ['cheese','brie','camembert','manchego','gruyère','gouda','aged cheddar','blue cheese','gorgonzola','stilton','fontina','havarti','goat cheese','chevre','pecorino','prosciutto','salami','mortadella','soppressata'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','ciabatta','focaccia','brioche','cake','pie','cookie','donut','pastry','eclair','macaron','tart','scone'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','french fries','ice','frozen fruit','frozen appetizer','frozen dessert'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','cold brew','matcha','lemonade','cider','coconut water'] },
+        { name: 'Pantry & Specialty', keywords: ['pasta','rice','flour','sugar','salt','olive oil','truffle oil','vinegar','balsamic','pasta sauce','salsa','soy sauce','fish sauce','sriracha','miso','tahini','soup','broth','beans','lentils','quinoa','farro','oats','cereal','honey','maple syrup','jam','peanut butter','almond butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','spices','curry paste','coconut milk'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','vitamins','supplements','essential oil','natural beauty'] },
+        { name: 'Household & Floral', keywords: ['flowers','bouquet','plant','candle','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','aluminum foil'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // NATURAL GROCERS (Vitamin Cottage)
+    // Source: Curated based on typical Natural Grocers layout
+    // Organic/natural chain, ~160 locations, Mountain West
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'natural-grocers',
+      name: 'Natural Grocers',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#6aaa3a',
+      searchNames: ['natural grocers','vitamin cottage','natural grocers vitamin cottage'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','potato','sweet potato','ginger','herbs','arugula','beet','radish','chard','collard greens','microgreens'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic','wild caught','bison','venison'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','sourdough','tortilla','gluten free bread','pita','cookies','cake','brownie','sprouted bread'] },
+        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','spices','nutritional yeast'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen acai'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium','adaptogen','CBD','herbal','homeopathic'] },
+        { name: 'Grocery & Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','canned tomato','canned beans','spices','miso','curry'] },
+        { name: 'Body Care', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','natural cleaner','beeswax wrap','dryer balls'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // LUCKY SUPERMARKETS
+    // Source: Curated based on typical Lucky's layout
+    // California regional chain
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'lucky',
+      name: 'Lucky Supermarkets',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['lucky','lucky supermarkets','lucky stores','lucky supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','turkey','hot dogs','fish','crab'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sparkling water','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // FIESTA MART
+    // Source: Curated based on typical Fiesta Mart layout
+    // Texas Hispanic-focused chain, ~70 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'fiesta-mart',
+      name: 'Fiesta Mart',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['fiesta mart','fiesta','fiesta supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','jalapeño','tomatillo','cilantro','mango','papaya','pineapple','guava','mushroom','potato','sweet potato','cabbage','chayote','jicama','nopales','plantain','yuca','corn','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','carne asada','fajita','chorizo','carnitas','barbacoa','chicharron','tripe','menudo','beef tongue','salmon','tilapia','shrimp','catfish','crab','whole fish','sausage','bacon','ham','turkey'] },
+        { name: 'Tortilleria & Bakery', keywords: ['tortilla','flour tortilla','corn tortilla','pan dulce','bolillo','conchas','telera','bread','roll','bun','tres leches','cake','cookies','donut','pastry','empanada'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','chicharron','prepared food','rotisserie','fried chicken','carnitas','tamales','pozole','menudo','soup','hot bar','guacamole','pico de gallo','salsa','hummus'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso fresco','cotija','oaxaca cheese','panela','manchego','asadero','whipped cream','evaporated milk','condensed milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','burritos','enchiladas','taquitos','edamame','french fries','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','horchata','agua fresca','Jamaica','tamarind','coconut water','almond milk','Jarritos','Mexican soda','cider'] },
+        { name: 'Hispanic Foods & Pantry', keywords: ['tortilla','masa','masa harina','cornmeal','rice','beans','pinto beans','black beans','refried beans','chile','ancho','pasilla','guajillo','chipotle','adobo','mole','enchilada sauce','salsa','tomatillo','tamarind','piloncillo','cajeta','dulce de leche','hot sauce','Valentina','Tapatio','flour','sugar','salt','oil','lard','manteca','vinegar','soy sauce','spices','cumin','chili powder','oregano','cinnamon','vanilla'] },
+        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','chicharron','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Mexican candy','tamarind candy','churros','pepino','chamoy'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SEDANO'S
+    // Source: Curated based on typical Sedano's layout
+    // Florida Hispanic-focused chain, ~30 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'sedanos',
+      name: "Sedano's",
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ["sedano's","sedanos","sedano's supermarkets"],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','cilantro','mango','papaya','pineapple','guava','plantain','yuca','boniato','malanga','chayote','corn','herbs','ají','culantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','ground beef','carne asada','palomilla','vaca frita','pernil','lechon','chorizo','morcilla','salmon','tilapia','shrimp','snapper','crab','whole fish','sausage','bacon','ham','turkey','masitas'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','Cuban sandwich','medianoche','croqueta','prepared food','rotisserie','fried chicken','ropa vieja','picadillo','congri','hot bar','tamales','guacamole','salsa'] },
+        { name: 'Bakery', keywords: ['Cuban bread','pan cubano','bread','roll','bun','medianoche','mallorca','pan dulce','cookies','cake','donut','pastry','tres leches','flan'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso blanco','queso fresco','gouda','whipped cream','evaporated milk','condensed milk','café con leche'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','tostones','yuca frita','plantains','pastelitos','croquetas','french fries','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','café','Bustelo','Pilon','horchata','coconut water','almond milk','Materva','Ironbeer','Jupina','Goya soda','malta','cider'] },
+        { name: 'Cuban & Latin Foods & Pantry', keywords: ['rice','black beans','red beans','sofrito','Goya','Sazon','Adobo','Bijol','olive oil','vinegar','mojo','naranja agria','hot sauce','guava paste','guava jelly','dulce de leche','coconut cream','plantain chips','tostones','yuca','malanga','boniato','corn flour','masa','spices','cumin','oregano','bay leaf','cinnamon','vanilla'] },
+        { name: 'Snacks & Candy', keywords: ['chips','plantain chips','mariquitas','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Cuban crackers','galletas'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BROOKSHIRE'S / SUPER 1 FOODS
+    // Source: Curated based on typical Brookshire's layout
+    // Texas/Louisiana/Arkansas regional chain, ~150 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'brookshires',
+      name: "Brookshire's",
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ["brookshire's",'brookshires','brookshire grocery','super 1 foods','super one foods','spring market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','corn','cabbage','herbs','cilantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','catfish','tilapia','shrimp','salmon','tuna','sausage','andouille','bacon','ham','turkey','hot dogs','fish','crab','crawfish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food','kolache'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sweet tea','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','red beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','Cajun seasoning','Tony Chachere'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','pork rinds'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DOLLAR GENERAL (grocery items)
+    // Source: Curated based on typical Dollar General grocery layout
+    // Discount/convenience, ~19,000 locations nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'dollar-general',
+      name: 'Dollar General',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#ffcb05',
+      searchNames: ['dollar general','dgx','dollar general market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','rice cake'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','creamer','kool-aid','powdered drink'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','cold','flu','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags','sponge','mop','broom','light bulbs','batteries','candles','air freshener'] },
+        { name: 'Seasonal & General', keywords: ['seasonal','holiday','clothing','socks','underwear','school supplies','office','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','automotive','tools'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // FAMILY DOLLAR (grocery items)
+    // Source: Curated based on typical Family Dollar grocery layout
+    // Discount/convenience, ~8,000 locations nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'family-dollar',
+      name: 'Family Dollar',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#8b0000',
+      searchNames: ['family dollar'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','kool-aid','powdered drink'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','sponge','light bulbs','batteries','candles','air freshener'] },
+        { name: 'Clothing & General', keywords: ['clothing','socks','underwear','school supplies','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','seasonal','holiday'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DOLLAR TREE (grocery items)
+    // Source: Curated based on typical Dollar Tree grocery layout
+    // Everything-$1.25 discount chain, ~8,000 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'dollar-tree',
+      name: 'Dollar Tree',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#007a3d',
+      searchNames: ['dollar tree'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','hot sauce','mustard','ketchup','soup','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks','granola bar'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','kool-aid','powdered drink','creamer'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','deli meat','hot dogs'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','waffle','burrito','ice'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips','makeup','nail polish'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','aluminum foil','plastic wrap','zip bags','sponge','light bulbs','batteries','candles','air freshener','storage','baskets','organizers'] },
+        { name: 'Party & Seasonal', keywords: ['party supplies','balloons','plates','cups','napkins','gift wrap','greeting cards','seasonal','holiday','decorations','toys','crafts','stationery','school supplies','office','pet food'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // CVS PHARMACY (grocery items)
+    // Source: Curated based on typical CVS grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'cvs',
+      name: 'CVS Pharmacy',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#cc0000',
+      searchNames: ['cvs','cvs pharmacy','cvs health'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','protein powder','fiber'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor','glucose meter'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','dried fruit','cereal','oats','soup','canned goods','pasta','rice','peanut butter','jam','honey','crackers','instant noodles','mac and cheese'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','kombucha','sparkling water','lemonade','coconut water'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat','hummus','salad'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit','frozen vegetable'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','toner','serum','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','nail care','perfume','cologne','deodorant','razors','shaving cream','waxing','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','baby shampoo','baby powder','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','detergent','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','sponge','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','office','stationery'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WALGREENS (grocery items)
+    // Source: Curated based on typical Walgreens grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'walgreens',
+      name: 'Walgreens',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['walgreens','walgreens pharmacy','duane reade'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber','protein powder'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles','mac and cheese'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade','coconut water'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // RITE AID (grocery items)
+    // Source: Curated based on typical Rite Aid grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'rite-aid',
+      name: 'Rite Aid',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#003087',
+      searchNames: ['rite aid','rite-aid'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','ice','frozen fruit'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
+      ]
+    },
   ] // end grocery array
 
   // Future categories can be added here:
