@@ -1112,6 +1112,44 @@ async function seedDemoStore(uid) {
 // ══════════════════════════════
 // SAVE TO FIRESTORE
 // ══════════════════════════════
+// Compute structural diff between library template aisles and user's current aisles.
+// Returns an object describing renames, reorders, additions, and deletions.
+function computeAisleEdits(snapshot, current) {
+  const snapNames = snapshot.map(a => a.name);
+  const currNames = current.map(a => a.name);
+
+  const added    = currNames.filter(n => !snapNames.includes(n));
+  const deleted  = snapNames.filter(n => !currNames.includes(n));
+
+  // Renames: aisle at same index with a different name (and new name isn't a known addition)
+  const renamed = [];
+  const minLen  = Math.min(snapNames.length, currNames.length);
+  for (let i = 0; i < minLen; i++) {
+    if (snapNames[i] !== currNames[i] && !added.includes(currNames[i]) && !deleted.includes(snapNames[i])) {
+      renamed.push({ from: snapNames[i], to: currNames[i] });
+    }
+  }
+
+  // Reorder: surviving aisles appear in a different order
+  const surviving     = currNames.filter(n => snapNames.includes(n));
+  const snapSurviving = snapNames.filter(n => currNames.includes(n));
+  const reordered     = JSON.stringify(surviving) !== JSON.stringify(snapSurviving);
+
+  // Keyword edits per aisle
+  const keyword_edits = [];
+  for (const currAisle of current) {
+    const snapAisle = snapshot.find(a => a.name === currAisle.name);
+    if (!snapAisle) continue; // new aisle, not a keyword edit
+    const added_kws   = currAisle.keywords.filter(k => !snapAisle.keywords.includes(k));
+    const deleted_kws = snapAisle.keywords.filter(k => !currAisle.keywords.includes(k));
+    if (added_kws.length || deleted_kws.length) {
+      keyword_edits.push({ aisle: currAisle.name, added: added_kws, deleted: deleted_kws });
+    }
+  }
+
+  return { added, deleted, renamed, reordered, keyword_edits, recorded_at: new Date().toISOString() };
+}
+
 window.persistStore = async function(storeId) {
   if (!window._currentUser) return;
   const { db, doc, updateDoc } = window._fb;
@@ -1120,11 +1158,18 @@ window.persistStore = async function(storeId) {
   setSyncDot('syncing');
   window._isSaving = true;
   try {
-    await updateDoc(doc(db, 'stores', storeId), {
+    // Compute structural aisle edits vs. library snapshot for library-sourced stores
+    let aisle_edits = null;
+    if (store.library_chain_id && store.library_aisles_snapshot) {
+      aisle_edits = computeAisleEdits(store.library_aisles_snapshot, store.aisles);
+    }
+    const updatePayload = {
       name: store.name, color: store.color, aisles: store.aisles,
       list: state.lists[storeId] || [],
       corrections: state.corrections[storeId] || {}
-    });
+    };
+    if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
+    await updateDoc(doc(db, 'stores', storeId), updatePayload);
     setSyncDot('ok');
   } catch(e) {
     console.error('Sync error', e);
@@ -1142,7 +1187,9 @@ window.createStoreInFirestore = async function(storeData) {
   await setDoc(doc(db, 'stores', storeData.id), {
     ownerUid: uid, members: [], shareCode: null,
     name: storeData.name, color: storeData.color, aisles: storeData.aisles,
-    list: [], corrections: {}, createdAt: serverTimestamp()
+    list: [], corrections: {}, createdAt: serverTimestamp(),
+    library_chain_id: storeData.library_chain_id || null,
+    library_aisles_snapshot: storeData.library_aisles_snapshot || null
   });
   setSyncDot('ok');
   // subscribe
@@ -1531,6 +1578,7 @@ const STORE_LIBRARY = {
     {
       id: 'market-basket',
       name: 'Market Basket',
+      confidence: 0.8,
       type: 'grocery',
       color: '#e63329',
       searchNames: ['market basket', 'demoulas', 'demoulas market basket'],
@@ -1765,6 +1813,7 @@ const STORE_LIBRARY = {
     {
       id: 'whole-foods',
       name: 'Whole Foods Market',
+      confidence: 0.7,
       type: 'grocery',
       color: '#00674b',
       searchNames: ['whole foods','whole foods market','whole foods co'],
@@ -1868,6 +1917,7 @@ const STORE_LIBRARY = {
     {
       id: 'trader-joes',
       name: "Trader Joe's",
+      confidence: 0.7,
       type: 'grocery',
       color: '#c8102e',
       searchNames: ["trader joe's","trader joes","tj's"],
@@ -1958,6 +2008,7 @@ const STORE_LIBRARY = {
     {
       id: 'stop-and-shop',
       name: 'Stop & Shop',
+      confidence: 0.7,
       type: 'grocery',
       color: '#d4001a',
       searchNames: ['stop and shop','stop & shop','stop&shop'],
@@ -2084,6 +2135,7 @@ const STORE_LIBRARY = {
     {
       id: 'shaws',
       name: "Shaw's",
+      confidence: 0.7,
       type: 'grocery',
       color: '#005dab',
       searchNames: ["shaw's","shaws","star market"],
@@ -2180,6 +2232,7 @@ const STORE_LIBRARY = {
     {
       id: 'hannaford',
       name: 'Hannaford',
+      confidence: 0.7,
       type: 'grocery',
       color: '#008542',
       searchNames: ['hannaford','hannaford supermarket'],
@@ -2277,6 +2330,7 @@ const STORE_LIBRARY = {
     {
       id: 'price-chopper',
       name: 'Price Chopper',
+      confidence: 0.7,
       type: 'grocery',
       color: '#f26522',
       searchNames: ['price chopper','market 32','market32'],
@@ -2354,6 +2408,7 @@ const STORE_LIBRARY = {
     {
       id: 'big-y',
       name: 'Big Y',
+      confidence: 0.7,
       type: 'grocery',
       color: '#d4001a',
       searchNames: ['big y','big y foods','big y world class'],
@@ -2431,6 +2486,7 @@ const STORE_LIBRARY = {
     {
       id: 'kroger',
       name: 'Kroger',
+      confidence: 0.7,
       type: 'grocery',
       color: '#0073a8',
       searchNames: ['kroger','fred meyer','frys','fry\'s food','harris teeter',
@@ -2525,6 +2581,7 @@ const STORE_LIBRARY = {
     {
       id: 'walmart',
       name: 'Walmart',
+      confidence: 0.7,
       type: 'grocery',
       color: '#0071ce',
       searchNames: ['walmart','walmart supercenter','walmart neighborhood market','walmart grocery'],
@@ -2603,6 +2660,7 @@ const STORE_LIBRARY = {
     {
       id: 'target',
       name: 'Target',
+      confidence: 0.7,
       type: 'grocery',
       color: '#cc0000',
       searchNames: ['target','super target'],
@@ -2678,6 +2736,7 @@ const STORE_LIBRARY = {
     {
       id: 'aldi',
       name: 'ALDI',
+      confidence: 0.7,
       type: 'grocery',
       color: '#00529b',
       searchNames: ['aldi','aldi market','aldi grocery'],
@@ -2745,6 +2804,7 @@ const STORE_LIBRARY = {
     {
       id: 'publix',
       name: 'Publix',
+      confidence: 0.7,
       type: 'grocery',
       color: '#009f4d',
       searchNames: ['publix','publix super market','publix supermarket'],
@@ -2773,6 +2833,7 @@ const STORE_LIBRARY = {
     {
       id: 'heb',
       name: 'H-E-B',
+      confidence: 0.7,
       type: 'grocery',
       color: '#e31837',
       searchNames: ['h-e-b','heb','h e b','central market','heb plus'],
@@ -2801,6 +2862,7 @@ const STORE_LIBRARY = {
     {
       id: 'meijer',
       name: 'Meijer',
+      confidence: 0.7,
       type: 'grocery',
       color: '#e31837',
       searchNames: ['meijer','meijer superstore','meijer supercenter'],
@@ -2830,6 +2892,7 @@ const STORE_LIBRARY = {
     {
       id: 'wegmans',
       name: 'Wegmans',
+      confidence: 0.7,
       type: 'grocery',
       color: '#004b87',
       searchNames: ['wegmans','wegmans food markets','wegman\'s'],
@@ -2859,6 +2922,7 @@ const STORE_LIBRARY = {
     {
       id: 'safeway',
       name: 'Safeway',
+      confidence: 0.7,
       type: 'grocery',
       color: '#e31837',
       searchNames: ['safeway','albertsons','vons','pavilions','randalls','tom thumb','acme','jewel','jewel-osco','star market','united supermarkets','market street'],
@@ -2888,6 +2952,7 @@ const STORE_LIBRARY = {
     {
       id: 'food-lion',
       name: 'Food Lion',
+      confidence: 0.7,
       type: 'grocery',
       color: '#0066cc',
       searchNames: ['food lion','food lion llc'],
@@ -2914,6 +2979,7 @@ const STORE_LIBRARY = {
     {
       id: 'giant',
       name: 'Giant Food',
+      confidence: 0.7,
       type: 'grocery',
       color: '#e31837',
       searchNames: ['giant','giant food','giant food stores','martins','martin\'s food','martin\'s'],
@@ -2942,6 +3008,7 @@ const STORE_LIBRARY = {
     {
       id: 'costco',
       name: 'Costco',
+      confidence: 0.7,
       type: 'grocery',
       color: '#005daa',
       searchNames: ['costco','costco wholesale','costco warehouse'],
@@ -3005,6 +3072,7 @@ let state = {
   editingStoreId: null,
 };
 let tempAisles = [];
+let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
 let tempColor = STORE_COLORS[0];
 let moveItemIndex = null;
 
@@ -3597,6 +3665,10 @@ async function addStoreFromLibrary() {
   // Open the store editor pre-filled with library data
   state.editingStoreId = null;
   pendingScannedKws = {}; aisleImgTargetIdx = null;
+  // Record library provenance so it's saved with the store
+  pendingLibraryMeta = chain.id
+    ? { chain_id: chain.id, aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
+    : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
   document.getElementById('store-name-input').value = storeName;
   tempColor  = storeColor;
@@ -3609,6 +3681,7 @@ async function addStoreFromLibrary() {
 function openNewStore(){
   state.editingStoreId=null;
   pendingScannedKws={}; aisleImgTargetIdx=null;
+  pendingLibraryMeta=null;
   document.getElementById('store-modal-title').textContent='New Store';
   document.getElementById('store-name-input').value='';
   tempColor=STORE_COLORS[state.stores.length%STORE_COLORS.length];
@@ -3623,6 +3696,7 @@ function openNewStore(){
 function editStore(id){
   const store=state.stores.find(s=>s.id===id);
   pendingScannedKws={}; aisleImgTargetIdx=null;
+  pendingLibraryMeta=null;
   state.editingStoreId=id;
   document.getElementById('store-modal-title').textContent='Edit Store';
   document.getElementById('store-name-input').value=store.name;
@@ -4087,10 +4161,14 @@ async function saveStore(){
     if(window.persistStore) await window.persistStore(store.id);
   } else {
     const id='store-'+Date.now();
-    const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,members:[],shareCode:null,isShared:false};
+    const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,members:[],shareCode:null,isShared:false,
+      library_chain_id: pendingLibraryMeta?.chain_id || null,
+      library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
+    };
     state.stores.push(newStore);
     state.lists[id]=[]; state.corrections[id]={};
     if(!state.activeStoreId) state.activeStoreId=id;
+    pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
