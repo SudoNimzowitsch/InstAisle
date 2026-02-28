@@ -686,43 +686,48 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- Store Library Modal -->
 <div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Store Library</div>
-    <div class="lib-tabs">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-handle" style="flex-shrink:0"></div>
+    <div class="modal-title" style="flex-shrink:0">Store Library</div>
+    <div class="lib-tabs" style="flex-shrink:0">
       <button class="lib-tab active" id="libtab-nearby" onclick="switchLibTab('nearby')">📍 Nearby</button>
       <button class="lib-tab" id="libtab-browse" onclick="switchLibTab('browse')">Browse All</button>
     </div>
-    <!-- Nearby panel -->
-    <div class="lib-panel active" id="libpanel-nearby">
-      <!-- Location search bar -->
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <input class="input" id="nearby-location-input" type="text"
-          placeholder="Search a location, or use GPS below…"
-          style="flex:1;font-size:.82rem"
-          onkeydown="if(event.key==='Enter') searchNearbyLocation()"
-          autocomplete="off">
-        <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+    <!-- Scrollable panel area -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
+      <!-- Nearby panel -->
+      <div class="lib-panel active" id="libpanel-nearby">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input class="input" id="nearby-location-input" type="text"
+            placeholder="Search a location, or use GPS below…"
+            style="flex:1;font-size:.82rem"
+            onkeydown="if(event.key==='Enter') searchNearbyLocation()"
+            autocomplete="off">
+          <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+        </div>
+        <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
+        <div id="nearby-status" class="loc-status" style="display:none"></div>
+        <div id="nearby-list-container"></div>
+        <div id="nearby-load-more-trigger" style="height:1px"></div>
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
-      <div id="nearby-status" class="loc-status" style="display:none"></div>
-      <div id="nearby-list-container"></div>
-      <div id="nearby-load-more-trigger" style="height:1px"></div>
+      <!-- Browse panel -->
+      <div class="lib-panel" id="libpanel-browse">
+        <input class="input" id="lib-search-input" placeholder="Search chains (Market Basket, Trader Joe's…)"
+          oninput="renderLibraryBrowse()" style="margin-bottom:12px">
+        <div id="lib-browse-grid" class="lib-chain-grid"></div>
+      </div>
     </div>
-    <!-- Browse panel -->
-    <div class="lib-panel" id="libpanel-browse">
-      <input class="input" id="lib-search-input" placeholder="Search chains (Market Basket, Trader Joe's…)"
-        oninput="renderLibraryBrowse()" style="margin-bottom:12px">
-      <div id="lib-browse-grid" class="lib-chain-grid"></div>
+    <!-- Fixed bottom section -->
+    <div style="flex-shrink:0">
+      <div class="divider"></div>
+      <div id="lib-selected-preview" style="display:none">
+        <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Selected</div>
+        <div id="lib-selected-name" style="font-size:.92rem;font-weight:600;margin-bottom:4px"></div>
+        <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:12px"></div>
+        <button class="btn btn-primary btn-full" onclick="addStoreFromLibrary()">Add This Store →</button>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-library')">Cancel</button>
     </div>
-    <div class="divider"></div>
-    <div id="lib-selected-preview" style="display:none">
-      <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Selected</div>
-      <div id="lib-selected-name" style="font-size:.92rem;font-weight:600;margin-bottom:4px"></div>
-      <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:12px"></div>
-      <button class="btn btn-primary btn-full" onclick="addStoreFromLibrary()">Add This Store →</button>
-    </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-library')">Cancel</button>
   </div>
 </div>
 
