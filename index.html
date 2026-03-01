@@ -758,7 +758,8 @@ textarea.input{resize:vertical;min-height:90px;}
       <div id="lib-selected-preview" style="display:none">
         <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Selected</div>
         <div id="lib-selected-name" style="font-size:.92rem;font-weight:600;margin-bottom:4px"></div>
-        <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:12px"></div>
+        <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:10px"></div>
+        <div id="lib-aisle-preview" style="margin-bottom:12px;max-height:180px;overflow-y:auto"></div>
         <button class="btn btn-primary btn-full" onclick="addStoreFromLibrary()">Add This Store →</button>
       </div>
       <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-library')">Cancel</button>
@@ -4182,11 +4183,40 @@ function selectLibChain(chainId, source) {
 function showLibraryPreview(name, meta, chain) {
   const preview = document.getElementById('lib-selected-preview');
   document.getElementById('lib-selected-name').textContent = name;
-  const aisleCnt = chain ? chain.aisles?.length : 0;
+  const aisles   = chain?.aisles || [];
+  const aisleCnt = aisles.length;
   const srcLabel = chain?.dataSource === 'real' ? '✅ Official store data' : '📋 Curated typical layout';
   document.getElementById('lib-selected-meta').textContent =
     meta + (chain && aisleCnt ? ' · ' + aisleCnt + ' aisles · ' + srcLabel : '');
+
+  // Render collapsible aisle list
+  const container = document.getElementById('lib-aisle-preview');
+  if (!aisleCnt) { container.innerHTML = ''; }
+  else {
+    container.innerHTML = aisles.map((a, i) => `
+      <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:5px;overflow:hidden">
+        <button onclick="toggleLibAisle(${i})" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:none;border:none;cursor:pointer;text-align:left;gap:6px">
+          <span style="font-size:.75rem;font-weight:600;color:var(--text)">${a.name}</span>
+          <span id="lib-aisle-chevron-${i}" style="font-size:.65rem;color:var(--muted);flex-shrink:0">＋</span>
+        </button>
+        <div id="lib-aisle-kws-${i}" style="display:none;padding:0 10px 8px;display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${a.keywords.map(k => `<span style="font-size:.62rem;padding:2px 6px;background:var(--surface2,#f0f0f0);border-radius:99px;color:var(--muted)">${k}</span>`).join('')}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
   preview.style.display = 'block';
+}
+
+function toggleLibAisle(idx) {
+  const kws     = document.getElementById('lib-aisle-kws-' + idx);
+  const chevron = document.getElementById('lib-aisle-chevron-' + idx);
+  if (!kws) return;
+  const open = kws.style.display === 'block';
+  kws.style.display     = open ? 'none' : 'block';
+  chevron.textContent   = open ? '＋' : '－';
 }
 
 async function addStoreFromLibrary() {
@@ -4280,8 +4310,13 @@ function renderAisleRows(){
       </div>
       <input class="input" id="aisle-name-${i}" value="${esc(aisle.name)}"
         placeholder="e.g. Produce" style="font-size:.82rem;padding:8px 12px;margin-bottom:12px">
-      <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-weight:600">Keywords</div>
-      <div class="chips" id="chips-${i}" data-aisle="${i}">${renderChips(i)}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
+        <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Keywords</div>
+        <span id="kw-toggle-${i}" style="font-size:.7rem;color:var(--muted);line-height:1">＋</span>
+      </div>
+      <div id="kw-collapsible-${i}" style="display:none">
+        <div class="chips" id="chips-${i}" data-aisle="${i}">${renderChips(i)}</div>
+      </div>
       <div class="kw-section">
         <div class="kw-tabs">
           <button class="kw-tab active" id="tab-one-${i}" onclick="switchKwTab(${i},'one')">Add one</button>
@@ -4326,6 +4361,15 @@ function renderAisleRows(){
 
   // Wire up aisle drag-to-reorder
   initAisleDrag();
+}
+
+function toggleKwSection(i) {
+  const panel  = document.getElementById('kw-collapsible-' + i);
+  const toggle = document.getElementById('kw-toggle-' + i);
+  if (!panel) return;
+  const open = panel.style.display === 'block';
+  panel.style.display  = open ? 'none' : 'block';
+  toggle.textContent   = open ? '＋' : '－';
 }
 
 function renderChips(i){
