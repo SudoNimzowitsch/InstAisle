@@ -692,7 +692,6 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="processing-overlay" id="processing-overlay">
   <div class="spinner"></div>
   <div class="processing-title">Reading your list…</div>
-  <div class="processing-text" id="processing-text">Classifying your items by aisle</div>
 </div>
 
 <!-- TOAST -->
@@ -5260,7 +5259,7 @@ function saveCorr(item,aisleIndex,store){
 // PROCESSING OVERLAY
 // ══════════════════════════════
 function showProcessing(msg){
-  document.getElementById('processing-text').textContent=msg||'';
+  const el=document.getElementById('processing-text'); if(el) el.textContent=msg||'';
   document.getElementById('processing-overlay').classList.add('show');
 }
 function hideProcessing(){
