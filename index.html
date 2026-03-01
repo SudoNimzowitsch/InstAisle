@@ -766,6 +766,19 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Move List to Another Store -->
+<div class="modal-overlay" id="modal-move-list" onclick="closeModal('modal-move-list')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Move List to Another Store</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">
+      All items will be re-sorted into the aisles of the destination store.
+    </div>
+    <div id="move-list-options"></div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-move-list')">Cancel</button>
+  </div>
+</div>
+
 <!-- New / Edit Store -->
 <div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
   <div class="modal" onclick="event.stopPropagation()">
@@ -3721,6 +3734,7 @@ function renderListScreen(){
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <div style="font-size:.75rem;color:var(--muted)">${done}/${total} items ✓</div>
     <div style="display:flex;gap:8px">
+      <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move list →</button>
       <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
       <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
       <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
@@ -3828,6 +3842,58 @@ function openStoreSwitch(){
 }
 
 function setActiveStore(id){ state.activeStoreId=id; closeModal('modal-store-switch'); renderAll(); }
+
+function openMoveList() {
+  const current = getActiveStore();
+  if (!current) return;
+  const others = state.stores.filter(s => s.id !== current.id);
+  if (!others.length) {
+    showToast('No other stores to move to'); return;
+  }
+  document.getElementById('move-list-options').innerHTML =
+    others.map(s => `
+      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:12px 14px"
+           onclick="moveListToStore('${s.id}')">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <span style="font-weight:500;flex:1">${esc(s.name)}</span>
+        <span style="font-size:.7rem;color:var(--muted)">${s.aisles.length} aisles</span>
+      </div>`).join('');
+  openModal('modal-move-list');
+}
+
+function moveListToStore(destId) {
+  const src  = getActiveStore();
+  const dest = state.stores.find(s => s.id === destId);
+  if (!src || !dest) return;
+
+  const items = state.lists[src.id] || [];
+  if (!items.length) { showToast('List is empty'); closeModal('modal-move-list'); return; }
+
+  // Copy items to destination, re-sorting each into the new store's aisles
+  const moved = items.map(item => ({
+    ...item,
+    checked: false,          // uncheck everything in the new store
+    aisleIndex: rematch(item.name, dest),
+  }));
+
+  // Merge with any existing items in destination (avoid duplicates by name)
+  const existingNames = new Set(
+    (state.lists[dest.id] || []).map(i => normalise(i.name))
+  );
+  const toAdd = moved.filter(i => !existingNames.has(normalise(i.name)));
+  state.lists[dest.id] = [...(state.lists[dest.id] || []), ...toAdd];
+
+  // Switch active store to destination and persist both
+  state.activeStoreId = dest.id;
+  if (window.persistStore) {
+    window.persistStore(src.id);
+    window.persistStore(dest.id);
+  }
+
+  closeModal('modal-move-list');
+  renderAll();
+  showToast(`Moved ${toAdd.length} item${toAdd.length !== 1 ? 's' : ''} to ${dest.name} ✓`);
+}
 
 
 // ══════════════════════════════════════════════════════════════════════════
