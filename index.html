@@ -66,6 +66,15 @@ body{
 .screen.active{display:block;}
 @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 
+/* LIST TOOLBAR */
+#list-toolbar{
+  display:none;flex-shrink:0;
+  padding:8px 20px;background:var(--bg);
+  border-bottom:1px solid var(--border);
+  gap:6px;flex-wrap:wrap;z-index:9;
+}
+#list-toolbar.visible{display:flex;}
+
 /* BOTTOM NAV */
 .bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px);}
 .nav-btn{
@@ -640,6 +649,16 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <div class="icon-btn" onclick="openAddList()" title="New list">＋</div>
   </div>
+</div>
+
+<!-- LIST TOOLBAR (sticky, shown only on list screen) -->
+<div id="list-toolbar">
+  <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto" id="list-toolbar-count"></div>
+  <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move list →</button>
+  <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
+  <button class="btn btn-sm btn-ghost" onclick="uncheckAll()">Uncheck all</button>
+  <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
+  <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
 </div>
 
 <!-- SCREENS -->
@@ -3939,6 +3958,8 @@ function boot() {
 // ══════════════════════════════
 function switchScreen(name, pushHistory=true) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const tb = document.getElementById('list-toolbar');
+  if (tb) tb.classList.toggle('visible', id === 'screen-list');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
@@ -3966,7 +3987,7 @@ function renderListScreen(){
   <rect x="8" y="13" width="8" height="5" rx="1"/>
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; return; }
+</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; const _tb1=document.getElementById('list-toolbar'); if(_tb1) _tb1.classList.remove('visible'); return; }
   const items=state.lists[store.id]||[];
   if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
   <rect x="4" y="2" width="16" height="20" rx="2"/>
@@ -3982,7 +4003,7 @@ function renderListScreen(){
   <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
   <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
   <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
-</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; return; }
+</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; const _tb2=document.getElementById('list-toolbar'); if(_tb2) _tb2.classList.remove('visible'); return; }
 
   // group
   const groups={};
@@ -3995,16 +4016,12 @@ function renderListScreen(){
   if(groups['unmatched']) keys.push('unmatched');
 
   const total=items.length, done=items.filter(i=>i.checked).length;
-  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="font-size:.75rem;color:var(--muted)">${done}/${total} items ✓</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move list →</button>
-      <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
-      <button class="btn btn-sm btn-ghost" onclick="uncheckAll()">Uncheck all</button>
-      <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
-      <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
-    </div>
-  </div>`;
+  // Update sticky toolbar count
+  const tcEl = document.getElementById('list-toolbar-count');
+  if (tcEl) tcEl.textContent = done + '/' + total + ' items ✓';
+  const tb = document.getElementById('list-toolbar');
+  if (tb) tb.classList.add('visible');
+  let html=``;
 
   keys.forEach(key=>{
     const gItems=groups[key];
