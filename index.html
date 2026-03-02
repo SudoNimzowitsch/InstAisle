@@ -1353,16 +1353,17 @@ function aisleMatchScore(histEntry, currentAisle) {
 async function generateSuggestions(store, aisleKey) {
   var aisle     = store.aisles[+aisleKey] || null;
   var listItems = {};
-  // Only block items that are real (non-suggested) list entries
   (state.lists[store.id] || []).forEach(function(i){
     if (!i.isSuggested) listItems[normalise(i.name)] = 1;
   });
-  // Use in-memory caches loaded at login — no Firestore reads here
   var dismissed = state._dismissedCache || await window.fetchDismissed();
   var history   = state._historyCache;
-  // If cache not yet loaded (login still in progress), fall back to fetch
   if (!history) history = await window.fetchHistory();
-  if (!history || !history.length) return [];
+  if (!history || !history.length) {
+    console.log('[suggestions] no history available');
+    return [];
+  }
+  console.log('[suggestions] aisle:', aisle?.name, '| history entries:', history.length, '| dismissed:', dismissed.size);
 
   var scored = {};
   for (var h of history) {
@@ -1376,10 +1377,12 @@ async function generateSuggestions(store, aisleKey) {
     scored[norm].score += s;
   }
 
-  return Object.values(scored)
+  var results = Object.values(scored)
     .sort(function(a,b){ return b.score - a.score; })
     .slice(0, 2)
     .map(function(r){ return r.item; });
+  console.log('[suggestions] scored candidates:', Object.keys(scored).length, '| returning:', results);
+  return results;
 }
 
 async function maybeSuggest(store, aisleKey) {
@@ -3959,7 +3962,7 @@ function boot() {
 function switchScreen(name, pushHistory=true) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const tb = document.getElementById('list-toolbar');
-  if (tb) tb.classList.toggle('visible', id === 'screen-list');
+  if (tb) tb.classList.toggle('visible', name === 'list');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
