@@ -3951,6 +3951,7 @@ function renderListScreen(){
     <div style="display:flex;gap:8px">
       <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move list →</button>
       <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
+      <button class="btn btn-sm btn-ghost" onclick="uncheckAll()">Uncheck all</button>
       <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
       <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
     </div>
@@ -5296,6 +5297,16 @@ function toggleCheck(idx){
 
   renderListScreen();
   persistActiveStore();
+}
+function uncheckAll(){
+  const store=getActiveStore();
+  const checked=state.lists[store.id].filter(i=>i.checked).length;
+  if(!checked){ showToast('No checked items'); return; }
+  if(!confirm(`Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`)) return;
+  state.lists[store.id].forEach(i=>{ i.checked=false; });
+  renderListScreen();
+  persistActiveStore();
+  showToast('All items unchecked ✓');
 }
 function clearChecked(){
   const store=getActiveStore();
