@@ -1186,15 +1186,37 @@ function computeAisleEdits(snapshot, current) {
 
 window.loadUserDoc = async function() {
   if (!window._currentUser) return;
-  const { db, doc, getDoc } = window._fb;
+  const { db, doc, getDoc, collection, query, orderBy, limit, getDocs } = window._fb;
+  const uid = window._currentUser.uid;
   try {
-    const snap = await getDoc(doc(db, 'users', window._currentUser.uid));
+    // Load prefs + dismissed suggestions from user doc (1 read)
+    const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
       const d = snap.data();
       if (typeof d.suggestionsEnabled === 'boolean')
         state.suggestionsEnabled = d.suggestionsEnabled;
+      // Populate dismissed cache — filter to last 60 days
+      const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+      const arr = d.dismissedSuggestions || [];
+      state._dismissedCache = new Set(
+        arr.filter(d => (d.ts || 0) >= cutoff).map(d => (d.item || '').toLowerCase())
+      );
+    } else {
+      state._dismissedCache = new Set();
     }
-  } catch(e) { console.warn('loadUserDoc:', e.message); }
+  } catch(e) {
+    console.warn('loadUserDoc prefs:', e.message);
+    state._dismissedCache = new Set();
+  }
+  try {
+    // Load purchase history into cache (up to 120 reads, done once per session)
+    const q    = query(collection(db, 'users', uid, 'history'), orderBy('ts', 'desc'), limit(120));
+    const snap = await getDocs(q);
+    state._historyCache = snap.docs.map(d => d.data());
+  } catch(e) {
+    console.warn('loadUserDoc history:', e.message);
+    state._historyCache = [];
+  }
 };
 
 window.persistUserPrefs = async function() {
@@ -1211,14 +1233,22 @@ window.recordItemChecked = async function(itemName, store, aisleIndex) {
   const { db, collection, addDoc, serverTimestamp } = window._fb;
   const aisle = (aisleIndex !== null && aisleIndex !== undefined)
     ? store.aisles[aisleIndex] : null;
+  const entry = {
+    item:       itemName.toLowerCase().trim(),
+    store_id:   store.id,
+    chain_id:   store.library_chain_id || null,
+    aisle_name: aisle ? aisle.name : null,
+    keywords:   aisle ? aisle.keywords : [],
+    ts:         Date.now(), // local ts for cache; Firestore gets serverTimestamp
+  };
+  // Update in-memory cache immediately (prepend, keep max 120)
+  if (state._historyCache) {
+    state._historyCache.unshift(entry);
+    if (state._historyCache.length > 120) state._historyCache.pop();
+  }
   try {
     await addDoc(collection(db, 'users', window._currentUser.uid, 'history'), {
-      item:       itemName.toLowerCase().trim(),
-      store_id:   store.id,
-      chain_id:   store.library_chain_id || null,
-      aisle_name: aisle ? aisle.name : null,
-      keywords:   aisle ? aisle.keywords : [],
-      ts:         serverTimestamp(),
+      ...entry, ts: serverTimestamp()
     });
   } catch(e) { console.warn('recordItemChecked:', e.message); }
 };
@@ -1254,6 +1284,8 @@ window.fetchDismissed = async function() {
 
 // Persist a dismissal as {item, ts}. Prunes entries older than 60 days on every write.
 window.persistDismissal = async function(itemName) {
+  // Update in-memory cache immediately so it takes effect this session
+  if (state._dismissedCache) state._dismissedCache.add(itemName.toLowerCase());
   if (!window._currentUser) return;
   const { db, doc, getDoc, setDoc } = window._fb;
   const uid     = window._currentUser.uid;
@@ -1296,8 +1328,9 @@ async function generateSuggestions(store, aisleKey) {
   var aisle     = store.aisles[+aisleKey] || null;
   var listItems = {};
   (state.lists[store.id] || []).forEach(function(i){ listItems[normalise(i.name)]=1; });
-  var dismissed = await window.fetchDismissed();
-  var history   = await window.fetchHistory();
+  // Use in-memory caches loaded at login — no Firestore reads here
+  var dismissed = state._dismissedCache || await window.fetchDismissed();
+  var history   = state._historyCache  || await window.fetchHistory();
 
   var scored = {};
   for (var h of history) {
@@ -3825,6 +3858,8 @@ let state = {
   editingStoreId: null,
   suggestionsEnabled: true,
   _aislesFirstCheckDone: {},
+  _historyCache: null,      // loaded once on login, array of history entries
+  _dismissedCache: null,    // loaded once on login, Set of normalised item names
 };
 let tempAisles = [];
 let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
