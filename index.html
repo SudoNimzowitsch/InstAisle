@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>InstAisle</title>
 <link rel="manifest" href="manifest.json">
@@ -1333,10 +1334,16 @@ function aisleMatchScore(histEntry, currentAisle) {
 async function generateSuggestions(store, aisleKey) {
   var aisle     = store.aisles[+aisleKey] || null;
   var listItems = {};
-  (state.lists[store.id] || []).forEach(function(i){ listItems[normalise(i.name)]=1; });
+  // Only block items that are real (non-suggested) list entries
+  (state.lists[store.id] || []).forEach(function(i){
+    if (!i.isSuggested) listItems[normalise(i.name)] = 1;
+  });
   // Use in-memory caches loaded at login — no Firestore reads here
   var dismissed = state._dismissedCache || await window.fetchDismissed();
-  var history   = state._historyCache  || await window.fetchHistory();
+  var history   = state._historyCache;
+  // If cache not yet loaded (login still in progress), fall back to fetch
+  if (!history) history = await window.fetchHistory();
+  if (!history || !history.length) return [];
 
   var scored = {};
   for (var h of history) {
@@ -5330,6 +5337,7 @@ function toggleCheck(idx){
     var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
     var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
     var aisleItems = (state.lists[store.id] || []).filter(function(i){
+      if (i.isSuggested) return false; // don't count suggested items
       if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
       return i.aisleIndex !== null && i.aisleIndex !== undefined && String(i.aisleIndex) === aisleKey;
     });
