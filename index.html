@@ -948,7 +948,8 @@ import { getAuth, onAuthStateChanged, signOut as fbSignOut,
          reauthenticateWithCredential, EmailAuthProvider }
                                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, collection, setDoc, getDoc, onSnapshot,
-         updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove }
+         updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
+         addDoc, orderBy, limit }
                                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ══════════════════════════════════════════════════════════════
@@ -979,7 +980,8 @@ window._fb = { auth, db, fbSignOut, createUserWithEmailAndPassword,
                sendPasswordResetEmail, updatePassword,
                reauthenticateWithCredential, EmailAuthProvider,
                doc, collection, setDoc, getDoc, onSnapshot,
-               updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove };
+               updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
+               addDoc, orderBy, limit };
 
 // ── Auth state listener ──
 onAuthStateChanged(auth, async (user) => {
@@ -1352,6 +1354,11 @@ function acceptSuggestion(idx) {
   persistActiveStore();
   renderListScreen();
 }
+
+// Expose to plain script scope
+window.maybeSuggest      = maybeSuggest;
+window.dismissSuggestion = dismissSuggestion;
+window.acceptSuggestion  = acceptSuggestion;
 
 window.persistStore = async function(storeId) {
   if (!window._currentUser) return;
@@ -3969,8 +3976,8 @@ function renderListScreen(){
         html+=`<div class="list-item suggested"
             data-item-idx="${item.idx}" data-aisle-key="${key}">
           <span class="suggested-label">Suggested</span>
-          <div class="item-name" style="flex:1;cursor:pointer" onclick="acceptSuggestion(${item.idx})">${esc(item.name)}</div>
-          <button class="dismiss-suggestion" onclick="dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
+          <div class="item-name" style="flex:1;cursor:pointer" onclick="window.acceptSuggestion(${item.idx})">${esc(item.name)}</div>
+          <button class="dismiss-suggestion" onclick="window.dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
         </div>`;
       } else {
         html+=`<div class="list-item ${item.checked?'checked':''}"
@@ -5282,7 +5289,7 @@ function toggleCheck(idx){
              (aisleKey === 'unmatched' && i.aisleIndex == null);
     });
     var checkedCount = aisleItems.filter(function(i){ return i.checked; }).length;
-    if (checkedCount === 1) maybeSuggest(store, aisleKey);
+    if (checkedCount === 1) window.maybeSuggest(store, aisleKey);
   }
 
   renderListScreen();
