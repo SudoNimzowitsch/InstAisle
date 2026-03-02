@@ -5310,6 +5310,9 @@ function uncheckAll(){
 }
 function clearChecked(){
   const store=getActiveStore();
+  const checked=state.lists[store.id].filter(i=>i.checked).length;
+  if(!checked){ showToast('No checked items'); return; }
+  if(!confirm(`Remove ${checked} checked item${checked!==1?'s':''} from your list? This cannot be undone.`)) return;
   state.lists[store.id]=state.lists[store.id].filter(i=>!i.checked);
   renderListScreen(); showToast('Checked items removed');
   persistActiveStore();
