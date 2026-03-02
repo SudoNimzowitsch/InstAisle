@@ -3823,6 +3823,8 @@ let state = {
   lists: {},
   corrections: {},
   editingStoreId: null,
+  suggestionsEnabled: true,
+  _aislesFirstCheckDone: {},
 };
 let tempAisles = [];
 let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
