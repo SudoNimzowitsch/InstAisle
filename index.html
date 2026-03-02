@@ -247,6 +247,12 @@ textarea.input{resize:vertical;min-height:90px;}
 .drag-handle:active{cursor:grabbing;color:var(--green);}
 .list-item.checked{opacity:.45;}
 .list-item.checked .item-name{text-decoration:line-through;}
+.list-item.suggested{background:#2a2f42;border-color:#3a4060;}
+.list-item.suggested .item-name{color:var(--muted);font-style:italic;}
+.suggested-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;font-weight:600;opacity:.6;flex-shrink:0;margin-right:4px;}
+.dismiss-suggestion{background:none;border:none;cursor:pointer;
+  font-size:.8rem;color:#e05555;padding:0 2px;line-height:1;flex-shrink:0;}
 .item-check{
   width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
   flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -1352,10 +1358,11 @@ async function generateSuggestions(store, aisleKey) {
 
 async function maybeSuggest(store, aisleKey) {
   if (!state.suggestionsEnabled) return;
+  if (!state._aislesFirstCheckDone) state._aislesFirstCheckDone = {};
   if (!state._aislesFirstCheckDone[store.id])
     state._aislesFirstCheckDone[store.id] = new Set();
-  if (state._aislesFirstCheckDone[store.id].has(aisleKey)) return;
-  state._aislesFirstCheckDone[store.id].add(aisleKey);
+  if (state._aislesFirstCheckDone[store.id].has(String(aisleKey))) return;
+  state._aislesFirstCheckDone[store.id].add(String(aisleKey));
 
   var suggestions = await generateSuggestions(store, aisleKey);
   if (!suggestions.length) return;
@@ -5320,11 +5327,11 @@ function toggleCheck(idx){
       window.recordItemChecked(item.name, store, item.aisleIndex);
 
     // Trigger suggestion if this is first check in this aisle
-    var aisleKey = (item.aisleIndex !== null && item.aisleIndex !== undefined)
-      ? String(item.aisleIndex) : 'unmatched';
+    var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
+    var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
     var aisleItems = (state.lists[store.id] || []).filter(function(i){
-      return String(i.aisleIndex) === aisleKey ||
-             (aisleKey === 'unmatched' && i.aisleIndex == null);
+      if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
+      return i.aisleIndex !== null && i.aisleIndex !== undefined && String(i.aisleIndex) === aisleKey;
     });
     var checkedCount = aisleItems.filter(function(i){ return i.checked; }).length;
     if (checkedCount === 1) window.maybeSuggest(store, aisleKey);
