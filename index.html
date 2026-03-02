@@ -1333,20 +1333,40 @@ window.persistDismissal = async function(itemName) {
 function aisleMatchScore(histEntry, currentAisle) {
   if (!currentAisle) return 0;
   var score = 0;
-  var hName = (histEntry.aisle_name || '').toLowerCase();
-  var cName = (currentAisle.name    || '').toLowerCase();
-  if (hName && cName) {
-    if (hName === cName) { score += 10; }
-    else {
-      var hWords  = hName.split(/\W+/).filter(function(w){ return w.length > 2; });
-      var cSet    = {};
-      cName.split(/\W+/).filter(function(w){ return w.length > 2; }).forEach(function(w){ cSet[w]=1; });
-      hWords.forEach(function(w){ if (cSet[w]) score += 3; });
+  var itemNorm = normalise(histEntry.item || '');
+
+  // Primary signal: does the item's name match the current aisle's keywords?
+  // This is the strongest signal — if "yogurt" matches dairy keywords, suggest it.
+  var cKws = (currentAisle.keywords || []);
+  var itemKwMatch = 0;
+  cKws.forEach(function(k){
+    if (itemNorm.includes(k.toLowerCase())) itemKwMatch += k.length;
+  });
+  if (itemKwMatch > 0) score += itemKwMatch * 2;
+
+  // Secondary signal: did the user buy this in a matching aisle before?
+  // Only adds to score if the primary signal is already positive.
+  if (score > 0) {
+    var hName = (histEntry.aisle_name || '').toLowerCase();
+    var cName = (currentAisle.name    || '').toLowerCase();
+    if (hName && cName) {
+      if (hName === cName) {
+        score += 20; // same store, same aisle name — very strong
+      } else {
+        // Word overlap between aisle names
+        var cWords = {};
+        cName.split(/\W+/).filter(function(w){ return w.length > 2; })
+          .forEach(function(w){ cWords[w] = 1; });
+        hName.split(/\W+/).filter(function(w){ return w.length > 2; })
+          .forEach(function(w){ if (cWords[w]) score += 5; });
+        // Keyword overlap between aisles
+        var hKws = {};
+        (histEntry.keywords || []).forEach(function(k){ hKws[k.toLowerCase()] = 1; });
+        cKws.forEach(function(k){ if (hKws[k.toLowerCase()]) score += 2; });
+      }
     }
   }
-  var hKws = {};
-  (histEntry.keywords || []).forEach(function(k){ hKws[k.toLowerCase()]=1; });
-  (currentAisle.keywords || []).forEach(function(k){ if (hKws[k.toLowerCase()]) score++; });
+
   return score;
 }
 
@@ -4024,6 +4044,21 @@ function renderListScreen(){
   if (tcEl) tcEl.textContent = done + '/' + total + ' items ✓';
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
+
+  // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
+  // on page load, so a new check in that aisle still fires suggestions.
+  // We only do this once per store per session (if the Set already exists, skip).
+  if (!state._aislesFirstCheckDone[store.id]) {
+    state._aislesFirstCheckDone[store.id] = new Set();
+    items.forEach(function(item) {
+      if (item.checked && !item.isSuggested) {
+        var ak = (item.aisleIndex !== null && item.aisleIndex !== undefined)
+          ? String(item.aisleIndex) : 'unmatched';
+        state._aislesFirstCheckDone[store.id].add(ak);
+      }
+    });
+  }
+
   let html=``;
 
   keys.forEach(key=>{
@@ -5374,6 +5409,8 @@ function uncheckAll(){
   if(!checked){ showToast('No checked items'); return; }
   if(!confirm(`Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`)) return;
   state.lists[store.id].forEach(i=>{ i.checked=false; });
+  // Reset session tracking for this store so suggestions fire fresh
+  if (state._aislesFirstCheckDone) delete state._aislesFirstCheckDone[store.id];
   renderListScreen();
   persistActiveStore();
   showToast('All items unchecked ✓');
