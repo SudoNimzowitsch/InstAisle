@@ -877,6 +877,22 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="changePassword()" id="btn-change-pass">Update Password</button>
     <div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:.88rem;font-weight:600;margin-bottom:2px">Shopping Suggestions</div>
+        <div style="font-size:.72rem;color:var(--muted)">Suggest forgotten items as you shop</div>
+      </div>
+      <button id="suggestions-toggle-btn"
+        onclick="toggleSuggestionsEnabled()"
+        style="width:44px;height:26px;border-radius:13px;border:none;cursor:pointer;
+               transition:background .2s;flex-shrink:0;position:relative"
+        aria-label="Toggle shopping suggestions">
+        <span style="position:absolute;top:3px;width:20px;height:20px;border-radius:50%;
+                     background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"
+              id="suggestions-toggle-knob"></span>
+      </button>
+    </div>
+    <div class="divider"></div>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
   </div>
 </div>
@@ -1055,6 +1071,7 @@ async function loadUserData(uid) {
 
   // Preload store locations + user GPS in background so nearby tab opens instantly
   loadStoreLocations().catch(() => {}); // silent — stores.json may not exist yet
+  if (window.loadUserDoc) window.loadUserDoc(); // load prefs (suggestions toggle etc.)
   preloadUserLocation();                // silent — fires GPS early, result cached
 
   // Set up real-time listeners for each store
@@ -1161,6 +1178,179 @@ function computeAisleEdits(snapshot, current) {
   }
 
   return { added, deleted, renamed, reordered, keyword_edits, recorded_at: new Date().toISOString() };
+}
+
+// ── User doc: prefs + history + dismissals ────────────────────────────────
+
+window.loadUserDoc = async function() {
+  if (!window._currentUser) return;
+  const { db, doc, getDoc } = window._fb;
+  try {
+    const snap = await getDoc(doc(db, 'users', window._currentUser.uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (typeof d.suggestionsEnabled === 'boolean')
+        state.suggestionsEnabled = d.suggestionsEnabled;
+    }
+  } catch(e) { console.warn('loadUserDoc:', e.message); }
+};
+
+window.persistUserPrefs = async function() {
+  if (!window._currentUser) return;
+  const { db, doc, setDoc } = window._fb;
+  try {
+    await setDoc(doc(db, 'users', window._currentUser.uid),
+      { suggestionsEnabled: state.suggestionsEnabled }, { merge: true });
+  } catch(e) { console.warn('persistUserPrefs:', e.message); }
+};
+
+window.recordItemChecked = async function(itemName, store, aisleIndex) {
+  if (!window._currentUser) return;
+  const { db, collection, addDoc, serverTimestamp } = window._fb;
+  const aisle = (aisleIndex !== null && aisleIndex !== undefined)
+    ? store.aisles[aisleIndex] : null;
+  try {
+    await addDoc(collection(db, 'users', window._currentUser.uid, 'history'), {
+      item:       itemName.toLowerCase().trim(),
+      store_id:   store.id,
+      chain_id:   store.library_chain_id || null,
+      aisle_name: aisle ? aisle.name : null,
+      keywords:   aisle ? aisle.keywords : [],
+      ts:         serverTimestamp(),
+    });
+  } catch(e) { console.warn('recordItemChecked:', e.message); }
+};
+
+window.fetchHistory = async function() {
+  if (!window._currentUser) return [];
+  const { db, collection, query, orderBy, limit, getDocs } = window._fb;
+  try {
+    const q    = query(
+      collection(db, 'users', window._currentUser.uid, 'history'),
+      orderBy('ts', 'desc'), limit(120)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch(e) { console.warn('fetchHistory:', e.message); return []; }
+};
+
+// Returns a Set of normalised item names dismissed within the last 60 days
+window.fetchDismissed = async function() {
+  if (!window._currentUser) return new Set();
+  const { db, doc, getDoc } = window._fb;
+  try {
+    const snap   = await getDoc(doc(db, 'users', window._currentUser.uid));
+    const arr    = snap.exists() ? (snap.data().dismissedSuggestions || []) : [];
+    const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    return new Set(
+      arr
+        .filter(function(d){ return (d.ts || 0) >= cutoff; })
+        .map(function(d){ return (d.item || '').toLowerCase(); })
+    );
+  } catch(e) { console.warn('fetchDismissed:', e.message); return new Set(); }
+};
+
+// Persist a dismissal as {item, ts}. Prunes entries older than 60 days on every write.
+window.persistDismissal = async function(itemName) {
+  if (!window._currentUser) return;
+  const { db, doc, getDoc, setDoc } = window._fb;
+  const uid     = window._currentUser.uid;
+  const cutoff  = Date.now() - 60 * 24 * 60 * 60 * 1000;
+  const newEntry = { item: itemName.toLowerCase(), ts: Date.now() };
+  try {
+    const snap     = await getDoc(doc(db, 'users', uid));
+    const existing = snap.exists() ? (snap.data().dismissedSuggestions || []) : [];
+    const pruned   = existing.filter(function(d){
+      return (d.ts || 0) >= cutoff && d.item !== newEntry.item;
+    });
+    await setDoc(doc(db, 'users', uid),
+      { dismissedSuggestions: [...pruned, newEntry] }, { merge: true });
+  } catch(e) { console.warn('persistDismissal:', e.message); }
+};
+
+// ── Suggestion engine ─────────────────────────────────────────────────────
+
+function aisleMatchScore(histEntry, currentAisle) {
+  if (!currentAisle) return 0;
+  var score = 0;
+  var hName = (histEntry.aisle_name || '').toLowerCase();
+  var cName = (currentAisle.name    || '').toLowerCase();
+  if (hName && cName) {
+    if (hName === cName) { score += 10; }
+    else {
+      var hWords  = hName.split(/\W+/).filter(function(w){ return w.length > 2; });
+      var cSet    = {};
+      cName.split(/\W+/).filter(function(w){ return w.length > 2; }).forEach(function(w){ cSet[w]=1; });
+      hWords.forEach(function(w){ if (cSet[w]) score += 3; });
+    }
+  }
+  var hKws = {};
+  (histEntry.keywords || []).forEach(function(k){ hKws[k.toLowerCase()]=1; });
+  (currentAisle.keywords || []).forEach(function(k){ if (hKws[k.toLowerCase()]) score++; });
+  return score;
+}
+
+async function generateSuggestions(store, aisleKey) {
+  var aisle     = store.aisles[+aisleKey] || null;
+  var listItems = {};
+  (state.lists[store.id] || []).forEach(function(i){ listItems[normalise(i.name)]=1; });
+  var dismissed = await window.fetchDismissed();
+  var history   = await window.fetchHistory();
+
+  var scored = {};
+  for (var h of history) {
+    if (!h.item) continue;
+    var norm = normalise(h.item);
+    if (listItems[norm]) continue;
+    if (dismissed.has(norm)) continue;
+    var s = aisleMatchScore(h, aisle);
+    if (s <= 0) continue;
+    if (!scored[norm]) scored[norm] = { item: h.item, score: 0 };
+    scored[norm].score += s;
+  }
+
+  return Object.values(scored)
+    .sort(function(a,b){ return b.score - a.score; })
+    .slice(0, 2)
+    .map(function(r){ return r.item; });
+}
+
+async function maybeSuggest(store, aisleKey) {
+  if (!state.suggestionsEnabled) return;
+  if (!state._aislesFirstCheckDone[store.id])
+    state._aislesFirstCheckDone[store.id] = new Set();
+  if (state._aislesFirstCheckDone[store.id].has(aisleKey)) return;
+  state._aislesFirstCheckDone[store.id].add(aisleKey);
+
+  var suggestions = await generateSuggestions(store, aisleKey);
+  if (!suggestions.length) return;
+
+  for (var name of suggestions) {
+    state.lists[store.id].push({
+      name: name, checked: false,
+      aisleIndex:   +aisleKey,
+      isSuggested:  true,
+      aiClassified: false,
+    });
+  }
+  renderListScreen();
+}
+
+function dismissSuggestion(idx) {
+  var store = getActiveStore();
+  var item  = state.lists[store.id][idx];
+  if (!item || !item.isSuggested) return;
+  state.lists[store.id].splice(idx, 1);
+  if (window.persistDismissal) window.persistDismissal(item.name);
+  renderListScreen();
+}
+
+function acceptSuggestion(idx) {
+  var store = getActiveStore();
+  if (!store) return;
+  state.lists[store.id][idx].isSuggested = false;
+  persistActiveStore();
+  renderListScreen();
 }
 
 window.persistStore = async function(storeId) {
@@ -3665,6 +3855,22 @@ function copyShareCode()            { if(window._fbReady) window.copyShareCode()
 
 function openProfileModal() {
   openModal('modal-profile');
+  renderSuggestionsToggle();
+}
+
+function renderSuggestionsToggle() {
+  const btn  = document.getElementById('suggestions-toggle-btn');
+  const knob = document.getElementById('suggestions-toggle-knob');
+  if (!btn || !knob) return;
+  const on = state.suggestionsEnabled;
+  btn.style.background = on ? 'var(--green,#22c55e)' : 'var(--border,#444)';
+  knob.style.left      = on ? '21px' : '3px';
+}
+
+function toggleSuggestionsEnabled() {
+  state.suggestionsEnabled = !state.suggestionsEnabled;
+  renderSuggestionsToggle();
+  if (window.persistUserPrefs) window.persistUserPrefs();
 }
 
 function boot() {
@@ -3759,25 +3965,34 @@ function renderListScreen(){
     gItems.forEach(item=>{
       const bgBadge=hexRgba(color,.18);
       const aiDot=item.aiClassified?`<span class="ai-dot" title="AI classified">✦</span>`:'';
-      html+=`<div class="list-item ${item.checked?'checked':''}"
-          data-item-idx="${item.idx}" data-aisle-key="${key}"
-          draggable="true"
-          ondragstart="dStart(event,${item.idx},'${key}')"
-          ondragend="dEnd(event)"
-          ondragover="dOver(event)"
-          ondrop="dDrop(event,${item.idx},'${key}')"
-          ontouchstart="tStart(event,${item.idx},'${key}')"
-          ontouchmove="tMove(event)"
-          ontouchend="tEnd(event)">
-        <div class="drag-handle" title="Drag to reorder">⠿</div>
-        <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
-          ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
-        </div>
-        <div class="item-name">${esc(item.name)} ${aiDot}</div>
-        <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
-          ${isUM?'?':`A${+key+1}`}
-        </div>
-      </div>`;
+      if (item.isSuggested) {
+        html+=`<div class="list-item suggested"
+            data-item-idx="${item.idx}" data-aisle-key="${key}">
+          <span class="suggested-label">Suggested</span>
+          <div class="item-name" style="flex:1;cursor:pointer" onclick="acceptSuggestion(${item.idx})">${esc(item.name)}</div>
+          <button class="dismiss-suggestion" onclick="dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
+        </div>`;
+      } else {
+        html+=`<div class="list-item ${item.checked?'checked':''}"
+            data-item-idx="${item.idx}" data-aisle-key="${key}"
+            draggable="true"
+            ondragstart="dStart(event,${item.idx},'${key}')"
+            ondragend="dEnd(event)"
+            ondragover="dOver(event)"
+            ondrop="dDrop(event,${item.idx},'${key}')"
+            ontouchstart="tStart(event,${item.idx},'${key}')"
+            ontouchmove="tMove(event)"
+            ontouchend="tEnd(event)">
+          <div class="drag-handle" title="Drag to reorder">⠿</div>
+          <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
+            ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
+          </div>
+          <div class="item-name">${esc(item.name)} ${aiDot}</div>
+          <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
+            ${isUM?'?':`A${+key+1}`}
+          </div>
+        </div>`;
+      }
     });
 
     // Drop zone at bottom of each aisle group
@@ -5044,8 +5259,32 @@ function normalise(s){ return s.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim();
 // ITEM ACTIONS
 // ══════════════════════════════
 function toggleCheck(idx){
-  const store=getActiveStore();
-  state.lists[store.id][idx].checked=!state.lists[store.id][idx].checked;
+  var store = getActiveStore();
+  var item  = state.lists[store.id][idx];
+  if (!item) return;
+
+  // Accept suggestion when user checks it
+  if (item.isSuggested) item.isSuggested = false;
+
+  var wasChecked = item.checked;
+  item.checked = !item.checked;
+
+  if (!wasChecked && item.checked) {
+    // Record to purchase history
+    if (window.recordItemChecked)
+      window.recordItemChecked(item.name, store, item.aisleIndex);
+
+    // Trigger suggestion if this is first check in this aisle
+    var aisleKey = (item.aisleIndex !== null && item.aisleIndex !== undefined)
+      ? String(item.aisleIndex) : 'unmatched';
+    var aisleItems = (state.lists[store.id] || []).filter(function(i){
+      return String(i.aisleIndex) === aisleKey ||
+             (aisleKey === 'unmatched' && i.aisleIndex == null);
+    });
+    var checkedCount = aisleItems.filter(function(i){ return i.checked; }).length;
+    if (checkedCount === 1) maybeSuggest(store, aisleKey);
+  }
+
   renderListScreen();
   persistActiveStore();
 }
