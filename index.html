@@ -337,6 +337,21 @@ textarea.input{resize:vertical;min-height:90px;}
 .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
 .modal-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;margin-bottom:16px;}
 
+/* STORE MODAL — sticky header + scrollable aisles */
+.modal-store-shell{
+  display:flex;flex-direction:column;
+  max-height:85vh;overflow:hidden;padding:24px 20px 0;
+}
+.store-modal-sticky{
+  flex-shrink:0;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding-bottom:0;margin:0 -20px;padding:0 20px 0;
+}
+.store-modal-scroll{
+  flex:1;overflow-y:auto;padding:12px 0 36px;
+}
+#store-color-picker.color-picker{margin-top:0;}
+
 /* UPLOAD ZONE */
 .upload-zone{
   border:2px dashed var(--border);border-radius:14px;padding:22px;
@@ -803,24 +818,29 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- New / Edit Store -->
 <div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal modal-store-shell" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="store-modal-title">New Store</div>
-    <div class="input-wrap">
-      <label class="input-label">Store Name</label>
-      <input class="input" id="store-name-input" placeholder="e.g. Trader Joe's">
+    <!-- Sticky header: title + color + name + aisles toolbar -->
+    <div class="store-modal-sticky">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="modal-title" id="store-modal-title" style="margin-bottom:0">New Store</div>
+        <div class="color-picker" id="store-color-picker" style="margin-top:0;justify-content:flex-end"></div>
+      </div>
+      <div class="input-wrap" style="margin-bottom:12px">
+        <label class="input-label">Store Name</label>
+        <input class="input" id="store-name-input" placeholder="e.g. Trader Joe's">
+      </div>
+      <div class="divider" style="margin:0 0 10px"></div>
+      <div class="section-header" style="margin-bottom:0;padding-bottom:10px">
+        <span class="section-title">Aisles</span>
+        <button class="btn btn-sm btn-ghost" onclick="addAisleRow()">+ Aisle</button>
+      </div>
     </div>
-    <div class="input-wrap">
-      <label class="input-label">Color</label>
-      <div class="color-picker" id="store-color-picker"></div>
+    <!-- Scrollable aisle list -->
+    <div class="store-modal-scroll">
+      <div id="aisle-rows"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
     </div>
-    <div class="divider"></div>
-    <div class="section-header">
-      <span class="section-title">Aisles</span>
-      <button class="btn btn-sm btn-ghost" onclick="addAisleRow()">+ Aisle</button>
-    </div>
-    <div id="aisle-rows"></div>
-    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
   </div>
 </div>
 
@@ -5013,18 +5033,10 @@ function renderAisleRows(){
       </div>
       <div class="kw-section">
         <div class="kw-tabs">
-          <button class="kw-tab active" id="tab-one-${i}" onclick="switchKwTab(${i},'one')">Add one</button>
-          <button class="kw-tab" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Paste list</button>
+          <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add</button>
           <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
         </div>
-        <div class="kw-panel active" id="panel-one-${i}">
-          <div class="kw-add-row">
-            <input class="kw-input" id="kw-${i}" placeholder="e.g. frozen peas…"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addKw(${i});}">
-            <button class="kw-add-btn" onclick="addKw(${i})">Add</button>
-          </div>
-        </div>
-        <div class="kw-panel" id="panel-bulk-${i}">
+        <div class="kw-panel active" id="panel-bulk-${i}">
           <textarea class="kw-bulk" id="kw-bulk-${i}"
             placeholder="Paste keywords separated by commas or line breaks:&#10;brown eggs, 2% milk&#10;instant ramen"></textarea>
           <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
@@ -5079,12 +5091,11 @@ function refreshChips(i){
 }
 
 function switchKwTab(i, tab){
-  ['one','bulk','scan'].forEach(t=>{
+  ['bulk','scan'].forEach(t=>{
     document.getElementById('tab-'+t+'-'+i)?.classList.toggle('active', t===tab);
     document.getElementById('panel-'+t+'-'+i)?.classList.toggle('active', t===tab);
   });
-  if(tab==='one') document.getElementById('kw-'+i)?.focus();
-  else if(tab==='bulk') document.getElementById('kw-bulk-'+i)?.focus();
+  if(tab==='bulk') document.getElementById('kw-bulk-'+i)?.focus();
 }
 
 function addKw(i){
@@ -5209,7 +5220,7 @@ function acceptScanKws(i){
   }
   if(panel) panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
   showToast(`${added} keyword${added!==1?'s':''} added from photo ✓`);
-  switchKwTab(i,'one');
+  switchKwTab(i,'bulk');
 }
 
 function discardScan(i){
