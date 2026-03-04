@@ -518,11 +518,7 @@ textarea.input{resize:vertical;min-height:90px;}
   letter-spacing:.2em;color:var(--green);margin:8px 0 4px;
 }
 .share-code-hint{font-size:.7rem;color:var(--muted);}
-.shared-badge{
-  display:inline-flex;align-items:center;gap:5px;
-  background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.25);
-  border-radius:20px;padding:2px 8px;font-size:.62rem;color:var(--blue);font-weight:600;
-}
+
 
 /* ── PROFILE MODAL ── */
 .profile-avatar-lg{
@@ -869,16 +865,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div id="profile-display-name" style="font-size:1.1rem;font-weight:600;margin-bottom:4px">User</div>
       <div id="profile-email" class="text-muted"></div>
     </div>
-    <div class="divider"></div>
-    <div class="section-header" style="margin-bottom:10px">
-      <span class="section-title">Join a Shared Store</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input class="input" id="join-code-input" placeholder="Enter 6-letter code" maxlength="6"
-        style="text-transform:uppercase;letter-spacing:.1em;font-weight:600"
-        oninput="this.value=this.value.toUpperCase()">
-      <button class="btn btn-primary" onclick="joinStoreByCode()" style="flex-shrink:0">Join</button>
-    </div>
+
     <div class="divider"></div>
     <div class="section-header" style="margin-bottom:10px">
       <span class="section-title">Change Password</span>
@@ -948,22 +935,35 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
-<!-- Share Store Modal -->
-<div class="modal-overlay" id="modal-share-store" onclick="closeModal('modal-share-store')">
-  <div class="modal" onclick="event.stopPropagation()">
+
+</div>
+
+<!-- Edit List Modal -->
+<div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
     <div class="modal-handle"></div>
-    <div class="modal-title">Share Store</div>
-    <p class="text-muted" style="margin-bottom:16px">Share this code with others so they can join and sync this store's list in real time.</p>
-    <div class="share-code-box">
-      <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Share Code</div>
-      <div class="share-code" id="share-code-display">------</div>
-      <div class="share-code-hint">Others enter this in their profile → Join Store</div>
+    <div class="modal-title">Edit List</div>
+
+    <!-- Add item row -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;align-items:flex-end">
+      <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
+        rows="2"
+        style="flex:1;resize:none;line-height:1.4"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
+        autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+      <button class="btn btn-primary" onclick="addItemFromEdit()" style="flex-shrink:0;padding:0 18px;height:44px">Add</button>
     </div>
-    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="copyShareCode()">📋 Copy Code</button>
-    <button class="btn btn-ghost btn-full btn-sm" onclick="closeModal('modal-share-store')">Close</button>
+
+    <!-- Item list -->
+    <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
+
+    <div style="margin-top:16px;flex-shrink:0">
+      <button class="btn btn-primary btn-full" onclick="closeModal('modal-edit-list')">Done</button>
+    </div>
   </div>
 </div>
 
+<!-- Share Store Modal -->
 <script type="module">
 // ── Firebase imports (must be first in a module) ──
 import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1062,11 +1062,11 @@ async function loadUserData(uid) {
   // owned stores
   const ownedQ   = query(storesRef, where('ownerUid', '==', uid));
   // shared stores
-  const sharedQ  = query(storesRef, where('members', 'array-contains', uid));
 
-  const [ownedSnap, sharedSnap] = await Promise.all([getDocs(ownedQ), getDocs(sharedQ)]);
 
-  const storeDocs = [...ownedSnap.docs, ...sharedSnap.docs];
+  const ownedSnap = await getDocs(ownedQ);
+
+  const storeDocs = [...ownedSnap.docs];
 
   // Rebuild local state from Firestore
   state.stores = [];
@@ -1083,8 +1083,8 @@ async function loadUserData(uid) {
     const d = snap.data();
     state.stores.push({
       id: snap.id, name: d.name, color: d.color, aisles: d.aisles || [],
-      ownerUid: d.ownerUid, members: d.members || [], shareCode: d.shareCode || null,
-      isShared: (d.members || []).length > 0 || d.ownerUid !== uid
+      ownerUid: d.ownerUid,
+      
     });
     state.lists[snap.id]       = d.list        || [];
     state.corrections[snap.id] = d.corrections || {};
@@ -1112,7 +1112,7 @@ async function loadUserData(uid) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [], members: data.members || [], shareCode: data.shareCode || null };
+          aisles: data.aisles || [] };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -1126,7 +1126,7 @@ async function seedDemoStore(uid) {
   const { db, doc, setDoc, serverTimestamp } = window._fb;
   const id = 'store-' + uid.substring(0,8);
   const demo = {
-    ownerUid: uid, members: [], shareCode: null,
+    ownerUid: uid,
     name: 'General Store', color: '#4ade80',
     createdAt: serverTimestamp(),
     aisles: [
@@ -1142,7 +1142,7 @@ async function seedDemoStore(uid) {
     list: [], corrections: {}
   };
   await setDoc(doc(db, 'stores', id), demo);
-  state.stores = [{...demo, id, isShared: false}];
+  state.stores = [{...demo, id}];
   state.lists[id] = [];
   state.corrections[id] = {};
   state.activeStoreId = id;
@@ -1158,7 +1158,7 @@ async function seedDemoStore(uid) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [], members: data.members || [], shareCode: data.shareCode || null };
+          aisles: data.aisles || [] };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -1484,7 +1484,7 @@ window.createStoreInFirestore = async function(storeData) {
   const uid = window._currentUser.uid;
   setSyncDot('syncing');
   await setDoc(doc(db, 'stores', storeData.id), {
-    ownerUid: uid, members: [], shareCode: null,
+    ownerUid: uid,
     name: storeData.name, color: storeData.color, aisles: storeData.aisles,
     list: [], corrections: {}, createdAt: serverTimestamp(),
     library_chain_id: storeData.library_chain_id || null,
@@ -1500,7 +1500,7 @@ window.createStoreInFirestore = async function(storeData) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [], members: data.members || [], shareCode: data.shareCode || null };
+          aisles: data.aisles || [] };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -1519,91 +1519,13 @@ window.deleteStoreFromFirestore = async function(storeId) {
 // ══════════════════════════════
 // SHARE STORE
 // ══════════════════════════════
-window.generateShareCode = async function(storeId) {
-  if (!window._currentUser) return;
-  const { db, doc, updateDoc } = window._fb;
-  // Generate a random 6-char code — collision probability is negligible
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-  await updateDoc(doc(db, 'stores', storeId), { shareCode: code });
-  const idx = state.stores.findIndex(s => s.id === storeId);
-  if (idx !== -1) state.stores[idx].shareCode = code;
-  return code;
-};
 
-window.openShareStoreModal = async function(storeId) {
-  const store = state.stores.find(s => s.id === storeId);
-  if (!store) return;
-  let code = store.shareCode;
-  if (!code) {
-    showProcessing('Generating share code…');
-    code = await window.generateShareCode(storeId);
-    hideProcessing();
-  }
-  document.getElementById('share-code-display').textContent = code;
-  document.getElementById('share-code-display').dataset.storeId = storeId;
-  openModal('modal-share-store');
-};
 
-window.copyShareCode = function() {
-  const code = document.getElementById('share-code-display').textContent;
-  navigator.clipboard.writeText(code).then(() => showToast('Code copied ✓')).catch(()=>{
-    showToast('Code: ' + code);
-  });
-};
 
-window.joinStoreByCode = async function() {
-  if (!window._currentUser) return;
-  const { db, collection, query, where, getDocs, doc, updateDoc, arrayUnion, onSnapshot } = window._fb;
-  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
-  if (code.length < 4) { showToast('Enter a valid code'); return; }
-  showProcessing('Looking up store…');
-  try {
-    const q = query(collection(db,'stores'), where('shareCode','==',code));
-    const snap = await getDocs(q);
-    if (snap.empty) { hideProcessing(); showToast('No store found with that code'); return; }
-    const storeDoc = snap.docs[0];
-    const uid = window._currentUser.uid;
-    if (storeDoc.data().ownerUid === uid || (storeDoc.data().members||[]).includes(uid)) {
-      hideProcessing(); showToast('You already have access to this store'); return;
-    }
-    await updateDoc(doc(db,'stores',storeDoc.id), { members: arrayUnion(uid) });
-    // subscribe and load
-    const data = storeDoc.data();
-    state.stores.push({
-      id: storeDoc.id, name: data.name, color: data.color, aisles: data.aisles||[],
-      ownerUid: data.ownerUid, members: [...(data.members||[]), uid],
-      shareCode: data.shareCode, isShared: true
-    });
-    state.lists[storeDoc.id]       = data.list        || [];
-    state.corrections[storeDoc.id] = data.corrections || {};
-    if (!state.activeStoreId) state.activeStoreId = storeDoc.id;
-    window._storeUnsubs.push(
-      onSnapshot(doc(db,'stores',storeDoc.id), (d) => {
-        if (!d.exists()) return;
-        if (window._isSaving) return;
-        const dd = d.data();
-        const idx = state.stores.findIndex(s => s.id === d.id);
-        if (idx !== -1) {
-          state.stores[idx] = { ...state.stores[idx], name: dd.name, color: dd.color,
-            aisles: dd.aisles||[], members: dd.members||[], shareCode: dd.shareCode||null };
-          state.lists[d.id]       = dd.list        || [];
-          state.corrections[d.id] = dd.corrections || {};
-          renderAll();
-        }
-      })
-    );
-    renderAll();
-    hideProcessing();
-    closeModal('modal-profile');
-    document.getElementById('join-code-input').value = '';
-    showToast(`Joined "${data.name}" ✓`);
-  } catch(e) {
-    hideProcessing();
-    console.error(e);
-    showToast('Could not join store — try again');
-  }
-};
+
+
+
+
 
 // ══════════════════════════════
 // AUTH ACTIONS (exposed globally)
@@ -3949,9 +3871,8 @@ function signOut()          { if(window._fbReady) window.signOut();          els
 function sendResetEmail()   { if(window._fbReady) window.sendResetEmail();   else showToast('Loading… please try again'); }
 function showForgotPassword(){ if(window._fbReady) window.showForgotPassword(); else showToast('Loading… please try again'); }
 function changePassword()   { if(window._fbReady) window.changePassword();   else showToast('Loading… please try again'); }
-function joinStoreByCode()          { if(window._fbReady) window.joinStoreByCode();          else showToast('Loading…'); }
-function openShareStoreModal(id)    { if(window._fbReady) window.openShareStoreModal(id);    else showToast('Loading…'); }
-function copyShareCode()            { if(window._fbReady) window.copyShareCode();            else showToast('Loading…'); }
+
+
 
 function openProfileModal() {
   openModal('modal-profile');
@@ -4132,7 +4053,7 @@ function renderStoresScreen(){
     const ll=(state.lists[store.id]||[]).length;
     const cc=Object.keys(state.corrections[store.id]||{}).length;
     const isOwner=!window._currentUser||store.ownerUid===window._currentUser?.uid;
-    const sharedBadge=store.isShared||store.shareCode?`<span class="shared-badge">🔗 Shared</span>`:'';
+
     return `<div class="card">
       <div class="card-header">
         <div style="display:flex;align-items:center;gap:10px">
@@ -4143,7 +4064,7 @@ function renderStoresScreen(){
           </div>
         </div>
         <div style="display:flex;gap:6px">
-          ${isOwner?`<button class="btn btn-sm btn-ghost" onclick="window.openShareStoreModal('${store.id}')">🔗 Share</button>`:''}
+
           ${isOwner?`<button class="btn btn-sm btn-ghost" onclick="editStore('${store.id}')">Edit</button>`:''}
           <button class="btn btn-sm btn-danger" onclick="deleteStore('${store.id}')">✕</button>
         </div>
@@ -5142,7 +5063,7 @@ async function saveStore(){
     if(window.persistStore) await window.persistStore(store.id);
   } else {
     const id='store-'+Date.now();
-    const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,members:[],shareCode:null,isShared:false,
+    const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,
       library_chain_id: pendingLibraryMeta?.chain_id || null,
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
     };
