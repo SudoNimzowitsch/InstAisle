@@ -1505,7 +1505,10 @@ window.persistStore = async function(storeId) {
     setSyncDot('ok');
     // Contribute changes to library (non-blocking, best-effort)
     if (window.contributeToLibrary) {
+      console.log('[library] triggering contribution for store:', store.name, '| library_location_id:', store.library_location_id);
       window.contributeToLibrary(store).catch(e => console.warn('[library] contribution error:', e.message));
+    } else {
+      console.warn('[library] contributeToLibrary not available yet');
     }
   } catch(e) {
     console.error('Sync error', e);
@@ -1624,18 +1627,22 @@ async function resolveIndexConflict(choice) {
 
 window.contributeToLibrary = async function(store) {
   const locId = store.library_location_id;
-  if (!locId || !window._currentUser) return;
+  console.log('[library] contributeToLibrary called. locId:', locId, '| user:', window._currentUser?.uid, '| store:', store.name);
+  if (!locId) { console.warn('[library] aborting: no library_location_id on store'); return; }
+  if (!window._currentUser) { console.warn('[library] aborting: no current user'); return; }
   const uid = window._currentUser.uid;
   const { db, doc, getDoc, setDoc, updateDoc, collection,
           getDocs, addDoc, serverTimestamp, query, where } = window._fb;
 
   const locRef  = doc(db, 'store_locations', String(locId));
   const locSnap = await getDoc(locRef);
-  if (!locSnap.exists()) return;
+  console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + locId);
+  if (!locSnap.exists()) { console.warn('[library] aborting: location doc not found in Firestore'); return; }
 
   const locData    = locSnap.data();
   const dataStatus = locData.data_status || 'none';
-  const libAisles  = locData.aisles || null; // null = no real data yet
+  const libAisles  = locData.aisles || null;
+  console.log('[library] data_status:', dataStatus, '| has aisles:', !!libAisles);
 
   // ── CASE 1: No real data — donate full aisle set immediately ─────────
   if (dataStatus === 'none' || !libAisles) {
