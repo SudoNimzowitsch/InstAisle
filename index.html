@@ -930,6 +930,28 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Aisle Name Conflict Modal -->
+<div class="modal-overlay" id="modal-name-conflict" onclick="event.stopPropagation()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Help Us Improve the Map</div>
+    <p class="text-muted" style="font-size:.85rem;margin-bottom:16px" id="name-conflict-msg"></p>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;font-size:.8rem">
+        <div style="font-weight:600;margin-bottom:4px;color:var(--text)" id="name-conflict-lib-name"></div>
+        <div style="color:var(--muted)" id="name-conflict-lib-kws"></div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;font-size:.8rem">
+        <div style="font-weight:600;margin-bottom:4px;color:var(--text)" id="name-conflict-user-name"></div>
+        <div style="color:var(--muted)" id="name-conflict-user-kws"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="window.resolveNameConflict('same')">Yes, same aisle — use the existing name</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="window.resolveNameConflict('different')">No, these are different aisles</button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="window.resolveNameConflict('skip')">Not sure</button>
+  </div>
+</div>
+
 <!-- Index Conflict Modal -->
 <div class="modal-overlay" id="modal-index-conflict" onclick="event.stopPropagation()">
   <div class="modal" onclick="event.stopPropagation()">
@@ -1542,6 +1564,17 @@ function betterAisleName(a, b) {
   return a.split(' ').length >= b.split(' ').length ? a : b;
 }
 
+// Compute keyword overlap ratio between two keyword arrays (Jaccard-style)
+// Returns 0.0–1.0 representing overlap relative to the smaller set
+function keywordOverlapRatio(kwsA, kwsB) {
+  const setA = new Set(kwsA.map(k => k.toLowerCase().trim()).filter(Boolean));
+  const setB = new Set(kwsB.map(k => k.toLowerCase().trim()).filter(Boolean));
+  if (!setA.size || !setB.size) return 0;
+  let shared = 0;
+  for (const k of setA) { if (setB.has(k)) shared++; }
+  return shared / Math.min(setA.size, setB.size);
+}
+
 // Generate a normalised key for a pending change for deduplication matching
 function pendingKey(type, payload) {
   if (type === 'rename_aisle') {
@@ -1555,6 +1588,77 @@ function pendingKey(type, payload) {
   }
   return type + ':' + JSON.stringify(payload);
 }
+
+// ── Aisle name conflict prompt (keyword overlap) ─────────────────────────
+
+let _activeNameConflict = null;
+
+async function maybeShowNameConflictPrompt() {
+  if (!state._pendingNameConflicts || !state._pendingNameConflicts.length) {
+    // Fall through to index conflict prompt
+    window.maybeShowIndexConflictPrompt();
+    return;
+  }
+  const conflict = state._pendingNameConflicts.shift();
+  _activeNameConflict = conflict;
+
+  document.getElementById('name-conflict-msg').textContent =
+    'You added an aisle called "' + conflict.user_aisle_name +
+    '". Another shopper added one called "' + conflict.lib_aisle_name +
+    '" with very similar items. Are these the same aisle?';
+  document.getElementById('name-conflict-lib-name').textContent = conflict.lib_aisle_name;
+  document.getElementById('name-conflict-lib-kws').textContent =
+    conflict.lib_keywords.slice(0, 8).join(', ') + (conflict.lib_keywords.length > 8 ? '…' : '');
+  document.getElementById('name-conflict-user-name').textContent = conflict.user_aisle_name;
+  document.getElementById('name-conflict-user-kws').textContent =
+    conflict.user_keywords.slice(0, 8).join(', ') + (conflict.user_keywords.length > 8 ? '…' : '');
+
+  openModal('modal-name-conflict');
+}
+
+async function resolveNameConflict(choice) {
+  closeModal('modal-name-conflict');
+  const conflict = _activeNameConflict;
+  _activeNameConflict = null;
+  if (!conflict || choice === 'skip') {
+    maybeShowNameConflictPrompt();
+    return;
+  }
+
+  if (choice === 'same') {
+    // Merge: remove the tentatively-added user aisle, merge keywords into library aisle
+    if (window._fb && window._currentUser) {
+      const { db, doc, getDoc, updateDoc } = window._fb;
+      try {
+        const locRef  = doc(db, 'store_locations', sanitizeLocId(conflict.locId));
+        const locSnap = await getDoc(locRef);
+        if (locSnap.exists()) {
+          const aisles = locSnap.data().aisles || [];
+          const libIdx = aisles.findIndex(a => a.name === conflict.lib_aisle_name);
+          if (libIdx !== -1) {
+            // Merge keywords (union)
+            const merged = new Set([
+              ...aisles[libIdx].keywords.map(k => k.toLowerCase()),
+              ...conflict.user_keywords.map(k => k.toLowerCase())
+            ]);
+            aisles[libIdx].keywords = [...merged];
+            // Remove the tentatively-added user aisle if it snuck in
+            const updatedAisles = aisles.filter(a => a.name !== conflict.user_aisle_name);
+            updatedAisles[libIdx] = aisles[libIdx];
+            await updateDoc(locRef, { aisles: updatedAisles });
+            console.log('[library] merged', conflict.user_aisle_name, '→', conflict.lib_aisle_name);
+          }
+        }
+      } catch(e) { console.warn('[library] name conflict merge error:', e.message); }
+    }
+  }
+  // If 'different', the tentatively-added aisle stays as-is
+
+  maybeShowNameConflictPrompt();
+}
+
+window.resolveNameConflict         = resolveNameConflict;
+window.maybeShowNameConflictPrompt = maybeShowNameConflictPrompt;
 
 // ── Index conflict prompt ─────────────────────────────────────────────────
 
@@ -1690,10 +1794,37 @@ window.contributeToLibrary = async function(store) {
   for (const userAisle of store.aisles) {
     const match = libAisles.find(la => aisleNamesMatch(la.name, userAisle.name));
     if (!match) {
-      // Genuinely new aisle — add immediately
-      immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
-        action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
-      };
+      // No name match — check keyword overlap against unmatched library aisles
+      const OVERLAP_THRESHOLD = 0.6;
+      const overlappingLibAisle = libAisles.find(la => {
+        // Skip aisles that already matched a user aisle by name
+        const alreadyMatched = store.aisles.some(ua => aisleNamesMatch(ua.name, la.name));
+        if (alreadyMatched) return false;
+        return keywordOverlapRatio(userAisle.keywords, la.keywords) >= OVERLAP_THRESHOLD;
+      });
+
+      if (overlappingLibAisle) {
+        // Possible duplicate with different name — flag for user prompt
+        if (!state._pendingNameConflicts) state._pendingNameConflicts = [];
+        state._pendingNameConflicts.push({
+          locId,
+          user_aisle_name:  userAisle.name,
+          user_keywords:    [...userAisle.keywords],
+          lib_aisle_name:   overlappingLibAisle.name,
+          lib_keywords:     [...overlappingLibAisle.keywords],
+          overlap:          keywordOverlapRatio(userAisle.keywords, overlappingLibAisle.keywords),
+        });
+        // Tentatively add the user's aisle — if they confirm it's the same,
+        // the prompt handler will merge it instead
+        immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
+          action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
+        };
+      } else {
+        // Genuinely new aisle — add immediately
+        immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
+          action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
+        };
+      }
     } else {
       // Aisle exists — check for keyword additions (immediate) and removals (pending)
       const libKws  = new Set(match.keywords.map(k => k.toLowerCase()));
@@ -5493,7 +5624,7 @@ async function saveStore(){
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
   // Show index conflict prompt if any were flagged during contribution
-  setTimeout(window.maybeShowIndexConflictPrompt, 800);
+  setTimeout(window.maybeShowNameConflictPrompt, 800);
 }
 
 function rematch(itemName,store){
