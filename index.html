@@ -5489,6 +5489,7 @@ async function saveStore(){
     if(!state.activeStoreId) state.activeStoreId=id;
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
+    if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
   // Show index conflict prompt if any were flagged during contribution
