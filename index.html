@@ -936,9 +936,9 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-handle"></div>
     <div class="modal-title">Help Us Improve the Map</div>
     <p class="text-muted" style="margin-bottom:16px;font-size:.85rem" id="index-conflict-msg"></p>
-    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-a" onclick="resolveIndexConflict('a')"></button>
-    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-b" onclick="resolveIndexConflict('b')"></button>
-    <button class="btn btn-ghost btn-full btn-sm" onclick="resolveIndexConflict('skip')">Not sure</button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-a" onclick="window.resolveIndexConflict('a')"></button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-b" onclick="window.resolveIndexConflict('b')"></button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="window.resolveIndexConflict('skip')">Not sure</button>
   </div>
 </div>
 
@@ -1624,6 +1624,10 @@ async function resolveIndexConflict(choice) {
   // Show next conflict if any
   maybeShowIndexConflictPrompt();
 }
+
+// Expose to plain script and inline onclick handlers
+window.maybeShowIndexConflictPrompt = maybeShowIndexConflictPrompt;
+window.resolveIndexConflict = resolveIndexConflict;
 
 window.contributeToLibrary = async function(store) {
   const locId = store.library_location_id;
@@ -5473,7 +5477,7 @@ async function saveStore(){
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
   // Show index conflict prompt if any were flagged during contribution
-  setTimeout(maybeShowIndexConflictPrompt, 800);
+  setTimeout(window.maybeShowIndexConflictPrompt, 800);
 }
 
 function rematch(itemName,store){
