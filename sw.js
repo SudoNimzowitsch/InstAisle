@@ -1,11 +1,11 @@
 // InstAisle Service Worker
 // Caches the app shell for offline use and fast loading
 
-const CACHE_NAME = 'instaisle-v3';
+const CACHE_NAME = 'instaisle-v1';
 
 // Core files to cache on install
 const PRECACHE_URLS = [
-  '/',
+  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -68,7 +68,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         // If offline and no cache — return a minimal offline page
         if (event.request.mode === 'navigate') {
-          return caches.match('/');
+          return caches.match('/index.html');
         }
         return new Response('', { status: 503 });
       });
