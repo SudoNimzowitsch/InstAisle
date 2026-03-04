@@ -1638,7 +1638,7 @@ window.contributeToLibrary = async function(store) {
   const { db, doc, getDoc, setDoc, updateDoc, collection,
           getDocs, addDoc, serverTimestamp, query, where } = window._fb;
 
-  const locRef  = doc(db, 'store_locations', String(locId));
+  const locRef  = doc(db, 'store_locations', sanitizeLocId(locId));
   const locSnap = await getDoc(locRef);
   console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + locId);
   if (!locSnap.exists()) { console.warn('[library] aborting: location doc not found in Firestore'); return; }
@@ -4851,13 +4851,18 @@ function formatDistance(meters) {
   return (meters / 1609.34).toFixed(1) + ' mi';
 }
 
+// Sanitize OSM ID for use as Firestore document ID (slashes not allowed)
+function sanitizeLocId(id) {
+  return String(id).replace(/\//g, '_');
+}
+
 // Fetch contributed aisle data for a specific location from Firestore
 // Returns contributed aisles array if found, null otherwise
 async function fetchLocationContribution(placeId) {
   if (!placeId || !window._fb || !window._currentUser) return null;
   try {
     const { db, doc, getDoc } = window._fb;
-    const locRef  = doc(db, 'store_locations', String(placeId));
+    const locRef  = doc(db, 'store_locations', sanitizeLocId(placeId));
     const locSnap = await getDoc(locRef);
     if (!locSnap.exists()) return null;
     const data = locSnap.data();
