@@ -910,6 +910,18 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Index Conflict Modal -->
+<div class="modal-overlay" id="modal-index-conflict" onclick="event.stopPropagation()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Help Us Improve the Map</div>
+    <p class="text-muted" style="margin-bottom:16px;font-size:.85rem" id="index-conflict-msg"></p>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-a" onclick="resolveIndexConflict('a')"></button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-b" onclick="resolveIndexConflict('b')"></button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="resolveIndexConflict('skip')">Not sure</button>
+  </div>
+</div>
+
 <!-- Edit List Modal -->
 <div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
@@ -1112,7 +1124,8 @@ async function loadUserData(uid) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [] };
+          aisles: data.aisles || [],
+          library_location_id: data.library_location_id || null };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -1470,11 +1483,345 @@ window.persistStore = async function(storeId) {
     if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
     await updateDoc(doc(db, 'stores', storeId), updatePayload);
     setSyncDot('ok');
+    // Contribute changes to library (non-blocking, best-effort)
+    if (window.contributeToLibrary) {
+      window.contributeToLibrary(store).catch(e => console.warn('[library] contribution error:', e.message));
+    }
   } catch(e) {
     console.error('Sync error', e);
     setSyncDot('error');
   } finally {
     setTimeout(() => { window._isSaving = false; }, 1500);
+  }
+};
+
+// ── Library Contribution Pipeline ────────────────────────────────────────
+
+// Normalise a string for matching: lowercase, strip punctuation, collapse spaces
+function normaliseForMatch(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Check if two aisle names "agree" (one contains all significant words of the other)
+function aisleNamesMatch(a, b) {
+  const na = normaliseForMatch(a);
+  const nb = normaliseForMatch(b);
+  if (na === nb) return true;
+  const wordsA = na.split(' ').filter(w => w.length > 2);
+  const wordsB = nb.split(' ').filter(w => w.length > 2);
+  if (!wordsA.length || !wordsB.length) return false;
+  // One must contain all significant words of the other
+  return wordsA.every(w => nb.includes(w)) || wordsB.every(w => na.includes(w));
+}
+
+// Pick the more descriptive of two aisle names
+function betterAisleName(a, b) {
+  return a.split(' ').length >= b.split(' ').length ? a : b;
+}
+
+// Generate a normalised key for a pending change for deduplication matching
+function pendingKey(type, payload) {
+  if (type === 'rename_aisle') {
+    return 'rename:' + normaliseForMatch(payload.old_name) + ':' + normaliseForMatch(payload.new_name);
+  }
+  if (type === 'delete_aisle') {
+    return 'delete:' + normaliseForMatch(payload.aisle_name);
+  }
+  if (type === 'remove_keyword') {
+    return 'removekw:' + normaliseForMatch(payload.aisle_name) + ':' + normaliseForMatch(payload.keyword);
+  }
+  return type + ':' + JSON.stringify(payload);
+}
+
+// ── Index conflict prompt ─────────────────────────────────────────────────
+
+let _activeConflict = null; // { locId, aisle_name, index_a, index_b, conflictId }
+
+async function maybeShowIndexConflictPrompt() {
+  if (!state._pendingIndexConflicts || !state._pendingIndexConflicts.length) return;
+  // Get the conflict doc IDs we just wrote so we can update them
+  const { db, collection, query, where, getDocs } = window._fb;
+  const conflict = state._pendingIndexConflicts.shift();
+  // Find the conflict doc
+  try {
+    const locRef = window._fb.doc(db, 'store_locations', String(conflict.locId));
+    const q      = query(
+      collection(locRef, 'index_conflicts'),
+      where('aisle_name_normalized', '==', normaliseForMatch(conflict.aisle_name)),
+      where('status', '==', 'awaiting_confirmation')
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+    conflict.conflictId = snap.docs[0].id;
+    _activeConflict = conflict;
+    // Populate modal
+    document.getElementById('index-conflict-msg').textContent =
+      'Another shopper placed the "' + conflict.aisle_name + '" aisle at position ' +
+      (conflict.index_a + 1) + '. You placed it at position ' + (conflict.index_b + 1) +
+      '. Which position is correct?';
+    document.getElementById('index-conflict-btn-a').textContent =
+      'Position ' + (conflict.index_a + 1) + ' (other shopper)';
+    document.getElementById('index-conflict-btn-b').textContent =
+      'Position ' + (conflict.index_b + 1) + ' (mine)';
+    openModal('modal-index-conflict');
+  } catch(e) { console.warn('[library] conflict prompt error:', e.message); }
+}
+
+async function resolveIndexConflict(choice) {
+  closeModal('modal-index-conflict');
+  if (!_activeConflict || choice === 'skip') { _activeConflict = null; return; }
+  const { db, doc, updateDoc, serverTimestamp } = window._fb;
+  const { locId, conflictId, index_a, index_b, aisle_name } = _activeConflict;
+  _activeConflict = null;
+  const resolvedIndex = choice === 'a' ? index_a : index_b;
+  try {
+    const locRef      = doc(db, 'store_locations', String(locId));
+    const conflictRef = doc(window._fb.collection(locRef, 'index_conflicts'), conflictId);
+    await updateDoc(conflictRef, {
+      status:         'resolved',
+      resolved_index: resolvedIndex,
+      resolved_by:    window._currentUser?.uid,
+    });
+    // If user confirmed index_a (other shopper's), no change needed to library
+    // If user confirmed index_b (their own), update library aisle order
+    if (choice === 'b') {
+      const locSnap = await window._fb.getDoc(locRef);
+      if (locSnap.exists()) {
+        const aisles  = [...(locSnap.data().aisles || [])];
+        const fromIdx = aisles.findIndex(a => aisleNamesMatch(a.name, aisle_name));
+        if (fromIdx !== -1 && fromIdx !== index_b) {
+          const [moved] = aisles.splice(fromIdx, 1);
+          aisles.splice(index_b, 0, moved);
+          await updateDoc(locRef, { aisles });
+        }
+      }
+    }
+    console.log('[library] resolved index conflict:', aisle_name, '→ position', resolvedIndex + 1);
+  } catch(e) { console.warn('[library] resolve conflict error:', e.message); }
+  // Show next conflict if any
+  maybeShowIndexConflictPrompt();
+}
+
+window.contributeToLibrary = async function(store) {
+  const locId = store.library_location_id;
+  if (!locId || !window._currentUser) return;
+  const uid = window._currentUser.uid;
+  const { db, doc, getDoc, setDoc, updateDoc, collection,
+          getDocs, addDoc, serverTimestamp, query, where } = window._fb;
+
+  const locRef  = doc(db, 'store_locations', String(locId));
+  const locSnap = await getDoc(locRef);
+  if (!locSnap.exists()) return;
+
+  const locData    = locSnap.data();
+  const dataStatus = locData.data_status || 'none';
+  const libAisles  = locData.aisles || null; // null = no real data yet
+
+  // ── CASE 1: No real data — donate full aisle set immediately ─────────
+  if (dataStatus === 'none' || !libAisles) {
+    await setDoc(locRef, {
+      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      data_status:           'live',
+      first_contributor_uid: uid,
+      first_contribution_ts: serverTimestamp(),
+    }, { merge: true });
+    console.log('[library] donated full aisle set for', locId);
+    return;
+  }
+
+  // ── Determine if this user is within the 24hr grace period ───────────
+  const firstContribUid = locData.first_contributor_uid;
+  const firstContribTs  = locData.first_contribution_ts?.toMillis?.() || 0;
+  const withinGrace = (uid === firstContribUid) &&
+                      (Date.now() - firstContribTs < 24 * 60 * 60 * 1000);
+
+  // ── Compute diff between user's aisles and current library aisles ─────
+  const libNames  = libAisles.map(a => a.name);
+  const userNames = store.aisles.map(a => a.name);
+
+  // Immediate changes (additive, always promote)
+  const immediateUpdates = {}; // will be merged into locData.aisles
+
+  // Pending changes (destructive, need 2nd user unless in grace period)
+  const pendingChanges = [];
+
+  // ── Added aisles ───────────────────────────────────────────────────────
+  for (const userAisle of store.aisles) {
+    const match = libAisles.find(la => aisleNamesMatch(la.name, userAisle.name));
+    if (!match) {
+      // Genuinely new aisle — add immediately
+      immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
+        action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
+      };
+    } else {
+      // Aisle exists — check for keyword additions (immediate) and removals (pending)
+      const libKws  = new Set(match.keywords.map(k => k.toLowerCase()));
+      const userKws = new Set(userAisle.keywords.map(k => k.toLowerCase()));
+
+      // Added keywords — immediate
+      for (const kw of userKws) {
+        if (!libKws.has(kw)) {
+          const key = 'add_kw_' + normaliseForMatch(match.name) + '_' + normaliseForMatch(kw);
+          immediateUpdates[key] = { action: 'add_keyword', aisle_name: match.name, keyword: kw };
+        }
+      }
+
+      // Removed keywords — pending (unless grace period)
+      for (const kw of libKws) {
+        if (!userKws.has(kw)) {
+          if (withinGrace) {
+            const key = 'remove_kw_' + normaliseForMatch(match.name) + '_' + normaliseForMatch(kw);
+            immediateUpdates[key] = { action: 'remove_keyword', aisle_name: match.name, keyword: kw };
+          } else {
+            pendingChanges.push({
+              type: 'remove_keyword',
+              payload: { aisle_name: match.name, keyword: kw },
+            });
+          }
+        }
+      }
+
+      // Check for aisle index conflict
+      const libIdx  = libAisles.indexOf(match);
+      const userIdx = store.aisles.indexOf(userAisle);
+      if (libIdx !== userIdx) {
+        // Check if a conflict already exists for this aisle
+        const conflictsRef = collection(locRef, 'index_conflicts');
+        const conflictQ    = query(conflictsRef,
+          where('aisle_name_normalized', '==', normaliseForMatch(match.name)),
+          where('status', '==', 'awaiting_confirmation'));
+        const conflictSnap = await getDocs(conflictQ);
+        if (conflictSnap.empty) {
+          // Record new conflict
+          await addDoc(conflictsRef, {
+            aisle_name_normalized: normaliseForMatch(match.name),
+            aisle_name_display:    match.name,
+            index_a:               libIdx,
+            index_b:               userIdx,
+            proposed_by_a:         firstContribUid,
+            proposed_by_b:         uid,
+            status:                'awaiting_confirmation',
+            created_at:            serverTimestamp(),
+          });
+          // Flag on state so UI can prompt user after save
+          if (!state._pendingIndexConflicts) state._pendingIndexConflicts = [];
+          state._pendingIndexConflicts.push({
+            locId, aisle_name: match.name, index_a: libIdx, index_b: userIdx,
+            conflictId: null // will be set after addDoc resolves in prompt flow
+          });
+        }
+      }
+    }
+  }
+
+  // ── Deleted aisles ─────────────────────────────────────────────────────
+  for (const libAisle of libAisles) {
+    const match = store.aisles.find(ua => aisleNamesMatch(ua.name, libAisle.name));
+    if (!match) {
+      if (withinGrace) {
+        immediateUpdates['delete_aisle_' + normaliseForMatch(libAisle.name)] = {
+          action: 'delete', aisle_name: libAisle.name
+        };
+      } else {
+        pendingChanges.push({
+          type: 'delete_aisle',
+          payload: { aisle_name: libAisle.name },
+        });
+      }
+    }
+  }
+
+  // ── Renamed aisles ─────────────────────────────────────────────────────
+  // A rename = same index, different name, no match found above
+  const minLen = Math.min(libAisles.length, store.aisles.length);
+  for (let i = 0; i < minLen; i++) {
+    const libA  = libAisles[i];
+    const userA = store.aisles[i];
+    if (!aisleNamesMatch(libA.name, userA.name) &&
+        !libAisles.find(la => aisleNamesMatch(la.name, userA.name))) {
+      // This looks like a rename
+      if (withinGrace) {
+        immediateUpdates['rename_' + i] = {
+          action: 'rename', index: i, old_name: libA.name, new_name: userA.name
+        };
+      } else {
+        pendingChanges.push({
+          type: 'rename_aisle',
+          payload: { index: i, old_name: libA.name, new_name: userA.name },
+        });
+      }
+    }
+  }
+
+  // ── Apply immediate updates to library ────────────────────────────────
+  if (Object.keys(immediateUpdates).length) {
+    let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+    for (const upd of Object.values(immediateUpdates)) {
+      if (upd.action === 'add') {
+        updatedAisles.push(upd.aisle);
+      } else if (upd.action === 'add_keyword') {
+        const a = updatedAisles.find(a => a.name === upd.aisle_name);
+        if (a && !a.keywords.includes(upd.keyword)) a.keywords.push(upd.keyword);
+      } else if (upd.action === 'remove_keyword') {
+        const a = updatedAisles.find(a => a.name === upd.aisle_name);
+        if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== upd.keyword.toLowerCase());
+      } else if (upd.action === 'delete') {
+        updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, upd.aisle_name));
+      } else if (upd.action === 'rename') {
+        if (updatedAisles[upd.index]) updatedAisles[upd.index].name = upd.new_name;
+      }
+    }
+    await updateDoc(locRef, { aisles: updatedAisles });
+    console.log('[library] applied', Object.keys(immediateUpdates).length, 'immediate updates to', locId);
+  }
+
+  // ── Write pending changes ─────────────────────────────────────────────
+  for (const change of pendingChanges) {
+    const nKey = pendingKey(change.type, change.payload);
+    const pendingRef = collection(locRef, 'pending');
+
+    // Check if this change is already pending (from another user)
+    const existingQ  = query(pendingRef,
+      where('normalized_key', '==', nKey),
+      where('status', '==', 'pending'));
+    const existingSnap = await getDocs(existingQ);
+
+    if (!existingSnap.empty) {
+      // Second user confirms — promote the change
+      const pendingDoc = existingSnap.docs[0];
+      if (pendingDoc.data().proposed_by !== uid) {
+        // Confirm and apply
+        await updateDoc(pendingDoc.ref, {
+          confirmed_by: uid, confirmed_at: serverTimestamp(), status: 'confirmed'
+        });
+        // Apply to library
+        let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+        const p = change.payload;
+        if (change.type === 'rename_aisle') {
+          if (updatedAisles[p.index]) updatedAisles[p.index].name = p.new_name;
+        } else if (change.type === 'delete_aisle') {
+          updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, p.aisle_name));
+        } else if (change.type === 'remove_keyword') {
+          const a = updatedAisles.find(a => a.name === p.aisle_name);
+          if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== p.keyword.toLowerCase());
+        }
+        await updateDoc(locRef, { aisles: updatedAisles });
+        console.log('[library] confirmed pending change:', nKey);
+      }
+    } else {
+      // First time this change is proposed — write to pending
+      await addDoc(pendingRef, {
+        type:           change.type,
+        payload:        change.payload,
+        normalized_key: nKey,
+        proposed_by:    uid,
+        proposed_at:    serverTimestamp(),
+        confirmed_by:   null,
+        confirmed_at:   null,
+        status:         'pending',
+      });
+      console.log('[library] wrote pending change:', nKey);
+    }
   }
 };
 
@@ -1487,7 +1834,8 @@ window.createStoreInFirestore = async function(storeData) {
     ownerUid: uid,
     name: storeData.name, color: storeData.color, aisles: storeData.aisles,
     list: [], corrections: {}, createdAt: serverTimestamp(),
-    library_chain_id: storeData.library_chain_id || null,
+    library_chain_id:    storeData.library_chain_id    || null,
+    library_location_id: storeData.library_location_id || null,
     library_aisles_snapshot: storeData.library_aisles_snapshot || null
   });
   setSyncDot('ok');
@@ -4555,7 +4903,9 @@ async function addStoreFromLibrary() {
   pendingScannedKws = {}; aisleImgTargetIdx = null;
   // Record library provenance so it's saved with the store
   pendingLibraryMeta = chain.id
-    ? { chain_id: chain.id, aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
+    ? { chain_id: chain.id,
+        location_id: chain._placeId || null,
+        aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
     : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
   document.getElementById('store-name-input').value = storeName;
@@ -5064,7 +5414,8 @@ async function saveStore(){
   } else {
     const id='store-'+Date.now();
     const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,
-      library_chain_id: pendingLibraryMeta?.chain_id || null,
+      library_chain_id:    pendingLibraryMeta?.chain_id    || null,
+      library_location_id: pendingLibraryMeta?.location_id || null,
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
     };
     state.stores.push(newStore);
@@ -5074,6 +5425,8 @@ async function saveStore(){
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
+  // Show index conflict prompt if any were flagged during contribution
+  setTimeout(maybeShowIndexConflictPrompt, 800);
 }
 
 function rematch(itemName,store){
