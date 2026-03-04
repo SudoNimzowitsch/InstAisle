@@ -4820,19 +4820,47 @@ function formatDistance(meters) {
   return (meters / 1609.34).toFixed(1) + ' mi';
 }
 
-function selectNearbyStore(placeId) {
+// Fetch contributed aisle data for a specific location from Firestore
+// Returns contributed aisles array if found, null otherwise
+async function fetchLocationContribution(placeId) {
+  if (!placeId || !window._fb || !window._currentUser) return null;
+  try {
+    const { db, doc, getDoc } = window._fb;
+    const locRef  = doc(db, 'store_locations', String(placeId));
+    const locSnap = await getDoc(locRef);
+    if (!locSnap.exists()) return null;
+    const data = locSnap.data();
+    if (data.data_status === 'live' && data.aisles?.length) {
+      return data.aisles;
+    }
+  } catch(e) {
+    console.warn('[library] fetchLocationContribution error:', e.message);
+  }
+  return null;
+}
+
+async function selectNearbyStore(placeId) {
   const store = _libNearbyResult.find(s => s.place_id === placeId);
   if (!store) return;
   // Use chain_id directly if available, otherwise fall back to name matching
   const chain = store.chain_id
     ? getAllLibraryStores().find(c => c.id === store.chain_id)
     : matchStoreToLibrary(store.name);
+  // Check Firestore for user-contributed aisle data for this specific location
+  const contributed = await fetchLocationContribution(placeId);
+  const aisles = contributed || chain?.aisles || [];
+  const hasContribution = !!contributed;
   _libSelectedChain = chain
-    ? { ...chain, _placeId: placeId, _placeName: store.name, _placeAddress: store.address }
+    ? { ...chain, aisles, _placeId: placeId, _placeName: store.name,
+        _placeAddress: store.address, _hasContribution: hasContribution }
     : { _placeId: placeId, _placeName: store.name, _placeAddress: store.address,
-        id: null, name: store.name, color: STORE_COLORS[0], aisles: [] };
+        id: null, name: store.name, color: STORE_COLORS[0], aisles,
+        _hasContribution: hasContribution };
   renderNearbyList();
-  showLibraryPreview(store.name, store.address, chain);
+  const metaText = hasContribution
+    ? store.address + ' · ✓ community data'
+    : store.address;
+  showLibraryPreview(store.name, metaText, { ...chain, aisles });
 }
 
 function selectLibChain(chainId, source) {
@@ -4902,8 +4930,9 @@ async function addStoreFromLibrary() {
   state.editingStoreId = null;
   pendingScannedKws = {}; aisleImgTargetIdx = null;
   // Record library provenance so it's saved with the store
-  pendingLibraryMeta = chain.id
-    ? { chain_id: chain.id,
+  // Snapshot reflects contributed data (if any) so diffs are computed correctly
+  pendingLibraryMeta = chain.id || chain._placeId
+    ? { chain_id: chain.id || null,
         location_id: chain._placeId || null,
         aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
     : null;
