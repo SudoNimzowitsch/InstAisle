@@ -1640,8 +1640,18 @@ window.contributeToLibrary = async function(store) {
 
   const locRef  = doc(db, 'store_locations', sanitizeLocId(locId));
   const locSnap = await getDoc(locRef);
-  console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + locId);
-  if (!locSnap.exists()) { console.warn('[library] aborting: location doc not found in Firestore'); return; }
+  console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + sanitizeLocId(locId));
+  if (!locSnap.exists()) {
+    // Document doesn't exist yet — create it with contributed aisle data
+    await setDoc(locRef, {
+      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      data_status:           'live',
+      first_contributor_uid: uid,
+      first_contribution_ts: serverTimestamp(),
+    });
+    console.log('[library] created new location doc and donated aisle set for', sanitizeLocId(locId));
+    return;
+  }
 
   const locData    = locSnap.data();
   const dataStatus = locData.data_status || 'none';
@@ -4969,7 +4979,7 @@ async function addStoreFromLibrary() {
   // Snapshot reflects contributed data (if any) so diffs are computed correctly
   pendingLibraryMeta = chain.id || chain._placeId
     ? { chain_id: chain.id || null,
-        location_id: chain._placeId || null,
+        location_id: chain._placeId ? sanitizeLocId(chain._placeId) : null,
         aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
     : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
