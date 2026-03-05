@@ -5335,6 +5335,7 @@ async function addStoreFromLibrary() {
   pendingScannedKws = {}; aisleImgTargetIdx = null;
   // Record library provenance so it's saved with the store
   // Snapshot reflects contributed data (if any) so diffs are computed correctly
+  window._storeIsGenericDefault = false;
   pendingLibraryMeta = chain.id || chain._placeId
     ? { chain_id: chain.id || null,
         location_id: chain._placeId ? sanitizeLocId(chain._placeId) : null,
@@ -5859,6 +5860,10 @@ async function saveStore(){
     if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
   }
   closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
+  if (window._storeIsGenericDefault) {
+    window._storeIsGenericDefault = false;
+    setTimeout(() => openModal('modal-generic-warning'), 300);
+  }
   // Show index conflict prompt if any were flagged during contribution
   setTimeout(window.maybeShowNameConflictPrompt, 800);
 }
