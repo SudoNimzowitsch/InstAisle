@@ -5418,7 +5418,7 @@ function renderAisleRows(){
       <div class="kw-section">
         <div class="kw-tabs">
           <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add</button>
-          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo or panorama</button>
+          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
         </div>
         <div class="kw-panel active" id="panel-bulk-${i}">
           <textarea class="kw-bulk" id="kw-bulk-${i}"
@@ -5428,7 +5428,7 @@ function renderAisleRows(){
         <div class="kw-panel" id="panel-scan-${i}">
           <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
             <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
-            <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
+            <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take an aisle photo</div>
             <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
           </div>
           ${pending ? renderScanResult(i, pending) : ''}
@@ -6655,7 +6655,7 @@ if ('serviceWorker' in navigator) {
               <span class="ob-scan-number" style="font-family:'Outfit',sans-serif">Aisle 7</span>
               <span class="ob-scan-text" style="font-family:'Outfit',sans-serif">Cereal · Granola · Oats · Breakfast Bars · Hot Cereal</span>
             </div>
-            <div style="font-size:.6rem;color:#555;margin-top:6px;font-style:italic">or panorama sweep of the whole shelf</div>
+            <div style="font-size:.6rem;color:#555;margin-top:6px;font-style:italic"></div>
             <div class="ob-scan-line"></div>
           </div>
           <div class="ob-scan-result">
