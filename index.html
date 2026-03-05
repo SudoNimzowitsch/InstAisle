@@ -1062,7 +1062,7 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <input type="file" id="file-input" accept="*/*" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
-    <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
+    <input type="file" id="aisle-img-input" accept="image/*" style="display:none" onchange="handleAisleImageUpload(event)">
     <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
   </div>
 </div>
@@ -5418,7 +5418,7 @@ function renderAisleRows(){
       <div class="kw-section">
         <div class="kw-tabs">
           <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add</button>
-          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
+          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo or panorama</button>
         </div>
         <div class="kw-panel active" id="panel-bulk-${i}">
           <textarea class="kw-bulk" id="kw-bulk-${i}"
@@ -5535,10 +5535,11 @@ async function handleAisleImageUpload(e){
   const mime=f.type||'image/jpeg';
 
   zone.classList.add('scanning');
+  const _isPano = (()=>{ try { const _i=new Image(); _i.src=dataUrl; return _i.naturalWidth > _i.naturalHeight*2; } catch(e){ return false; } })();
   zone.innerHTML=`
     <img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
     <div class="aisle-img-spinner"></div>
-    <div style="font-size:.7rem;color:var(--blue)">Scanning shelves…</div>`;
+    <div style="font-size:.7rem;color:var(--blue)">Scanning ${f.type&&f.name&&f.name.toLowerCase().includes('pano')?'panorama':'shelves'}…</div>`;
 
   try {
     const keywords=await scanAisleImage(b64, mime);
@@ -5628,16 +5629,24 @@ async function scanAisleImage(b64, mime){
   if(!user){ showToast('Please sign in first'); return []; }
   const token=await user.getIdToken();
 
-  // Resize before sending
-  const MAX=1024;
+  // Resize before sending — panoramas get a wider cap to preserve their detail
   const resizedB64=await new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
-      let w=img.width,h=img.height;
-      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      let w=img.width, h=img.height;
+      const isPanorama = w > h * 2; // aspect ratio > 2:1 = panoramic
+      const MAX_W = isPanorama ? 3072 : 1024; // preserve panorama width
+      const MAX_H = isPanorama ? 1024 : 1024;
+      if (w > MAX_W || h > MAX_H) {
+        const scaleW = MAX_W / w;
+        const scaleH = MAX_H / h;
+        const scale  = Math.min(scaleW, scaleH);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
       const c=document.createElement('canvas'); c.width=w; c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(c.toDataURL('image/jpeg',0.85).split(',')[1]);
+      resolve(c.toDataURL('image/jpeg',0.88).split(',')[1]);
     };
     img.src=`data:${mime};base64,${b64}`;
   });
@@ -6530,25 +6539,33 @@ if ('serviceWorker' in navigator) {
         </div>
         <h2 class="ob-title">Welcome to InstAisle</h2>
         <p class="ob-body">InstAisle organizes your grocery list <strong>by aisle</strong> — so you move through the store once, in order, without backtracking.</p>
-        <div class="ob-demo ob-demo-list">
-          <div class="ob-demo-aisle">
-            <span class="ob-aisle-label">🥛 Dairy</span>
-            <div class="ob-demo-items">
-              <div class="ob-demo-item ob-item-check">✓ Milk</div>
-              <div class="ob-demo-item ob-item-check">✓ Yogurt</div>
+        <div class="ob-demo" style="padding:10px 12px">
+          <div class="aisle-group" style="margin-bottom:12px">
+            <div class="aisle-group-header" style="background:rgba(74,222,128,.12);color:#4ade80">
+              🛒 Dairy &amp; Eggs <span class="aisle-count">1 left</span>
+            </div>
+            <div class="list-item checked">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check done"><span style="font-size:.7rem;color:#0a1a12">✓</span></div>
+              <div class="item-name">Milk</div>
+              <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
+            </div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Butter</div>
+              <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
             </div>
           </div>
-          <div class="ob-demo-aisle">
-            <span class="ob-aisle-label">🍞 Bakery</span>
-            <div class="ob-demo-items">
-              <div class="ob-demo-item">Sourdough</div>
+          <div class="aisle-group" style="margin-bottom:0">
+            <div class="aisle-group-header" style="background:rgba(96,165,250,.12);color:#60a5fa">
+              🛒 Bakery <span class="aisle-count">2 left</span>
             </div>
-          </div>
-          <div class="ob-demo-aisle">
-            <span class="ob-aisle-label">🧃 Beverages</span>
-            <div class="ob-demo-items">
-              <div class="ob-demo-item">OJ</div>
-              <div class="ob-demo-item">Sparkling water</div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Sourdough</div>
+              <div class="item-aisle-badge" style="background:rgba(96,165,250,.18);color:#60a5fa">A2</div>
             </div>
           </div>
         </div>
@@ -6561,27 +6578,37 @@ if ('serviceWorker' in navigator) {
         </div>
         <h2 class="ob-title">Start from a Template</h2>
         <p class="ob-body">The <strong>Store Library</strong> has aisle layouts for hundreds of grocery chains near you. Add a store in seconds — no setup required.</p>
-        <div class="ob-demo ob-demo-library">
-          <div class="ob-lib-row ob-lib-active">
-            <span class="ob-lib-icon">🛒</span>
-            <div class="ob-lib-info">
-              <div class="ob-lib-name">Market Basket</div>
-              <div class="ob-lib-sub">0.4 mi · 18 aisles</div>
-            </div>
-            <span class="ob-lib-badge">Nearby</span>
-          </div>
-          <div class="ob-lib-row">
-            <span class="ob-lib-icon">🛒</span>
-            <div class="ob-lib-info">
-              <div class="ob-lib-name">Whole Foods</div>
-              <div class="ob-lib-sub">1.2 mi · 22 aisles</div>
+        <div class="ob-demo" style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+          <div class="nearby-card selected">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Market Basket</div>
+              <div class="nearby-address">880 Walnut St, Newtonville</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">0.4 mi</span>
+                <span class="nearby-open open">Open</span>
+                <span class="nearby-match-pill">✓ community data · 18 aisles</span>
+              </div>
             </div>
           </div>
-          <div class="ob-lib-row">
-            <span class="ob-lib-icon">🛒</span>
-            <div class="ob-lib-info">
-              <div class="ob-lib-name">Trader Joe's</div>
-              <div class="ob-lib-sub">2.1 mi · 14 aisles</div>
+          <div class="nearby-card">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Whole Foods Market</div>
+              <div class="nearby-address">15 Washington St, Newton</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">1.2 mi</span>
+                <span class="nearby-open open">Open</span>
+                <span class="nearby-match-pill">22 aisles</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Trader Joe's</div>
+              <div class="nearby-address">905 Walnut St, Newton</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">2.1 mi</span>
+                <span class="nearby-match-pill">14 aisles</span>
+              </div>
             </div>
           </div>
         </div>
@@ -6625,9 +6652,10 @@ if ('serviceWorker' in navigator) {
         <div class="ob-demo ob-demo-scan">
           <div class="ob-scan-frame">
             <div class="ob-scan-sign">
-              <span class="ob-scan-number">Aisle 7</span>
-              <span class="ob-scan-text">Cereal · Granola · Oats · Breakfast Bars</span>
+              <span class="ob-scan-number" style="font-family:'Outfit',sans-serif">Aisle 7</span>
+              <span class="ob-scan-text" style="font-family:'Outfit',sans-serif">Cereal · Granola · Oats · Breakfast Bars · Hot Cereal</span>
             </div>
+            <div style="font-size:.6rem;color:#555;margin-top:6px;font-style:italic">or panorama sweep of the whole shelf</div>
             <div class="ob-scan-line"></div>
           </div>
           <div class="ob-scan-result">
@@ -6646,19 +6674,29 @@ if ('serviceWorker' in navigator) {
         </div>
         <h2 class="ob-title">Smart Suggestions</h2>
         <p class="ob-body">After a few shopping trips, InstAisle remembers what you buy where and suggests items as you check aisles. Your habits, surfaced at the right moment.</p>
-        <div class="ob-demo ob-demo-suggest">
-          <div class="ob-suggest-aisle">🧴 Personal Care</div>
-          <div class="ob-suggest-item ob-suggest-highlighted">
-            <span class="ob-suggest-label">SUGGESTED</span>
-            <span class="ob-suggest-name">Shampoo</span>
-            <span class="ob-suggest-x">✕</span>
+        <div class="ob-demo" style="padding:10px 12px">
+          <div class="aisle-group" style="margin-bottom:0">
+            <div class="aisle-group-header" style="background:rgba(251,191,36,.12);color:#fbbf24">
+              🛒 Personal Care <span class="aisle-count">2 left</span>
+            </div>
+            <div class="list-item suggested">
+              <span class="suggested-label">Suggested</span>
+              <div class="item-name">Shampoo</div>
+              <button class="dismiss-suggestion">✕</button>
+            </div>
+            <div class="list-item suggested">
+              <span class="suggested-label">Suggested</span>
+              <div class="item-name">Toothpaste</div>
+              <button class="dismiss-suggestion">✕</button>
+            </div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Deodorant</div>
+              <div class="item-aisle-badge" style="background:rgba(251,191,36,.18);color:#fbbf24">A5</div>
+            </div>
           </div>
-          <div class="ob-suggest-item ob-suggest-highlighted">
-            <span class="ob-suggest-label">SUGGESTED</span>
-            <span class="ob-suggest-name">Toothpaste</span>
-            <span class="ob-suggest-x">✕</span>
-          </div>
-          <p class="ob-suggest-caption">Based on your past 3 visits here.</p>
+          <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:8px">Based on your past 3 visits here. Tap to add, ✕ to dismiss.</p>
         </div>
         <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
       </div>
