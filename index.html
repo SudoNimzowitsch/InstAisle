@@ -543,6 +543,209 @@ textarea.input{resize:vertical;min-height:90px;}
   font-size:1.6rem;font-weight:700;color:#0a1a12;margin:0 auto 12px;overflow:hidden;
 }
 .profile-avatar-lg img{width:100%;height:100%;object-fit:cover;}
+
+/* ══════════════════════════════
+   ONBOARDING OVERLAY
+   ══════════════════════════════ */
+#onboarding-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.ob-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+}
+.ob-card {
+  position: relative; z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 430px;
+  padding: 28px 24px 36px;
+  max-height: 88vh; overflow-y: auto;
+  animation: obSlideUp .35s cubic-bezier(.22,1,.36,1);
+}
+@keyframes obSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Dots */
+.ob-dots {
+  display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
+}
+.ob-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); transition: all .25s;
+}
+.ob-dot.active {
+  width: 20px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--blue));
+}
+
+/* Slides */
+.ob-slides { position: relative; }
+.ob-slide { display: none; animation: obFadeIn .3s ease; }
+.ob-slide.active { display: block; }
+@keyframes obFadeIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+/* Icon */
+.ob-icon-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+.ob-icon {
+  font-size: 2.8rem; width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border-radius: 20px;
+  border: 1px solid var(--border);
+}
+.ob-title {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
+  text-align: center; margin-bottom: 10px; color: var(--text);
+}
+.ob-body {
+  font-size: .88rem; line-height: 1.65; color: var(--muted);
+  text-align: center; margin-bottom: 20px;
+}
+.ob-body strong { color: var(--text); }
+
+/* ── Demo: list ── */
+.ob-demo {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px; margin-bottom: 8px;
+}
+.ob-demo-aisle { margin-bottom: 10px; }
+.ob-demo-aisle:last-child { margin-bottom: 0; }
+.ob-aisle-label { font-size: .75rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 4px; }
+.ob-demo-items { display: flex; flex-wrap: wrap; gap: 4px; }
+.ob-demo-item {
+  font-size: .72rem; padding: 3px 8px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+}
+.ob-item-check { color: var(--green); border-color: var(--green); opacity: .6; text-decoration: line-through; }
+
+/* ── Demo: library ── */
+.ob-lib-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.ob-lib-row:last-child { border-bottom: none; }
+.ob-lib-icon { font-size: 1.2rem; }
+.ob-lib-info { flex: 1; }
+.ob-lib-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+.ob-lib-sub  { font-size: .7rem; color: var(--muted); }
+.ob-lib-badge {
+  font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+  background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3);
+}
+.ob-lib-active .ob-lib-name { color: var(--green); }
+
+/* ── Demo: community ── */
+.ob-contrib-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.ob-contrib-row:last-of-type { border-bottom: none; }
+.ob-contrib-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; color: #000;
+}
+.ob-av2 { background: linear-gradient(135deg, var(--blue), #a78bfa); }
+.ob-contrib-text { flex: 1; font-size: .72rem; color: var(--muted); line-height: 1.4; }
+.ob-contrib-name { color: var(--text); font-weight: 600; }
+.ob-contrib-highlight { color: var(--green); font-weight: 600; }
+.ob-contrib-tag {
+  font-size: .62rem; font-weight: 700; padding: 2px 6px; border-radius: 20px; flex-shrink: 0;
+}
+.ob-tag-live { background: rgba(251,191,36,.15); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+.ob-tag-conf { background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+.ob-contrib-caption { font-size: .68rem; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* ── Demo: scan ── */
+.ob-scan-frame {
+  background: #111; border-radius: 10px; padding: 14px;
+  margin-bottom: 10px; position: relative; overflow: hidden;
+}
+.ob-scan-sign {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ob-scan-number { font-size: .8rem; font-weight: 700; color: #fff; }
+.ob-scan-text   { font-size: .72rem; color: #aaa; }
+.ob-scan-line {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 2px; background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: scanMove 1.8s ease-in-out infinite;
+}
+@keyframes scanMove {
+  0%,100% { top: 20%; opacity: .5; }
+  50%      { top: 80%; opacity: 1;  }
+}
+.ob-scan-result { display: flex; flex-wrap: wrap; gap: 5px; }
+.ob-scan-kw {
+  font-size: .72rem; padding: 3px 9px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+}
+.ob-kw-new {
+  background: rgba(74,222,128,.1); border-color: rgba(74,222,128,.4); color: var(--green);
+  animation: obPop .4s .6s both cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes obPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── Demo: suggestions ── */
+.ob-suggest-aisle {
+  font-size: .75rem; font-weight: 600; color: var(--text);
+  margin-bottom: 7px;
+}
+.ob-suggest-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; border-radius: 8px; margin-bottom: 5px;
+}
+.ob-suggest-highlighted {
+  background: rgba(96,165,250,.07);
+  border: 1px solid rgba(96,165,250,.25);
+}
+.ob-suggest-label {
+  font-size: .58rem; font-weight: 700; letter-spacing: .05em;
+  color: var(--blue); background: rgba(96,165,250,.1);
+  padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+}
+.ob-suggest-name { flex: 1; font-size: .82rem; font-style: italic; color: var(--text); }
+.ob-suggest-x { font-size: .7rem; color: var(--red); cursor: pointer; }
+.ob-suggest-caption { font-size: .68rem; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* Nav */
+.ob-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 20px;
+}
+.ob-btn-skip {
+  font-size: .82rem; color: var(--muted); background: none; border: none;
+  cursor: pointer; padding: 8px 4px; font-family: 'Outfit', sans-serif;
+}
+.ob-btn-skip:hover { color: var(--text); }
+.ob-btn-next {
+  font-size: .88rem; font-weight: 600; font-family: 'Outfit', sans-serif;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #000; border: none; border-radius: 10px;
+  padding: 10px 22px; cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.ob-btn-next:hover { opacity: .9; transform: translateY(-1px); }
+.ob-btn-start {
+  display: block; width: 100%; margin-top: 20px;
+  font-size: .95rem; font-weight: 700; font-family: 'Outfit', sans-serif;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #000; border: none; border-radius: 12px;
+  padding: 14px; cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.ob-btn-start:hover { opacity: .9; transform: translateY(-1px); }
+
+
+@keyframes obSlideDown {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -1070,6 +1273,10 @@ onAuthStateChanged(auth, async (user) => {
     updateUserUI(user);
     document.getElementById('auth-screen').style.display = 'none';
     await loadUserData(user.uid);
+    if (window._isNewSignup) {
+      window._isNewSignup = false;
+      setTimeout(() => window.maybeShowOnboarding(true), 600);
+    }
   } else {
     window._currentUser = null;
     document.getElementById('auth-screen').style.display = 'flex';
@@ -2086,6 +2293,8 @@ window.signUpEmail = async function() {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
+    // Mark as new user so onboarding shows after auth state resolves
+    window._isNewSignup = true;
   } catch(e) {
     showAuthError('signup', friendlyAuthError(e.code));
   }
@@ -6240,6 +6449,229 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/InstAisle/sw.js').catch(()=>{});
   });
 }
+
+// ══════════════════════════════
+// ONBOARDING FLOW
+// ══════════════════════════════
+(function() {
+  const TOTAL = 5;
+  let _current = 0;
+
+  function buildDots() {
+    const container = document.getElementById('ob-dots');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'ob-dot' + (i === 0 ? ' active' : '');
+      container.appendChild(d);
+    }
+  }
+
+  function showSlide(idx) {
+    document.querySelectorAll('.ob-slide').forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.ob-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+    const nextBtn = document.getElementById('ob-btn-next');
+    const skipBtn = document.getElementById('ob-btn-skip');
+    if (nextBtn) nextBtn.style.display = idx === TOTAL - 1 ? 'none' : 'block';
+    if (skipBtn) skipBtn.style.display = idx === TOTAL - 1 ? 'none' : 'block';
+    _current = idx;
+  }
+
+  window.obNext = function() {
+    if (_current < TOTAL - 1) showSlide(_current + 1);
+  };
+
+  window.closeOnboarding = function() {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+      overlay.style.animation = 'none';
+      overlay.querySelector('.ob-card').style.animation = 'obSlideDown .3s ease forwards';
+      setTimeout(() => { overlay.style.display = 'none'; }, 280);
+    }
+    // Mark as seen in localStorage so it never shows again
+    try { localStorage.setItem('instaisle_onboarded', '1'); } catch(e) {}
+  };
+
+  window.maybeShowOnboarding = function(isNewUser) {
+    try {
+      if (localStorage.getItem('instaisle_onboarded')) return;
+    } catch(e) {}
+    if (!isNewUser) return;
+    buildDots();
+    showSlide(0);
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  };
+})();
+
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY — shown once after new account creation
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="onboarding-overlay" style="display:none">
+  <div class="ob-backdrop"></div>
+  <div class="ob-card">
+    <!-- Progress dots -->
+    <div class="ob-dots" id="ob-dots"></div>
+
+    <!-- Slides -->
+    <div class="ob-slides" id="ob-slides">
+
+      <!-- Slide 1: Welcome / Core concept -->
+      <div class="ob-slide" data-index="0">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🛒</div>
+        </div>
+        <h2 class="ob-title">Welcome to InstAisle</h2>
+        <p class="ob-body">InstAisle organizes your grocery list <strong>by aisle</strong> — so you move through the store once, in order, without backtracking.</p>
+        <div class="ob-demo ob-demo-list">
+          <div class="ob-demo-aisle">
+            <span class="ob-aisle-label">🥛 Dairy</span>
+            <div class="ob-demo-items">
+              <div class="ob-demo-item ob-item-check">✓ Milk</div>
+              <div class="ob-demo-item ob-item-check">✓ Yogurt</div>
+            </div>
+          </div>
+          <div class="ob-demo-aisle">
+            <span class="ob-aisle-label">🍞 Bakery</span>
+            <div class="ob-demo-items">
+              <div class="ob-demo-item">Sourdough</div>
+            </div>
+          </div>
+          <div class="ob-demo-aisle">
+            <span class="ob-aisle-label">🧃 Beverages</span>
+            <div class="ob-demo-items">
+              <div class="ob-demo-item">OJ</div>
+              <div class="ob-demo-item">Sparkling water</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2: Store library -->
+      <div class="ob-slide" data-index="1">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🏪</div>
+        </div>
+        <h2 class="ob-title">Start from a Template</h2>
+        <p class="ob-body">The <strong>Store Library</strong> has aisle layouts for hundreds of grocery chains near you. Add a store in seconds — no setup required.</p>
+        <div class="ob-demo ob-demo-library">
+          <div class="ob-lib-row ob-lib-active">
+            <span class="ob-lib-icon">🛒</span>
+            <div class="ob-lib-info">
+              <div class="ob-lib-name">Market Basket</div>
+              <div class="ob-lib-sub">0.4 mi · 18 aisles</div>
+            </div>
+            <span class="ob-lib-badge">Nearby</span>
+          </div>
+          <div class="ob-lib-row">
+            <span class="ob-lib-icon">🛒</span>
+            <div class="ob-lib-info">
+              <div class="ob-lib-name">Whole Foods</div>
+              <div class="ob-lib-sub">1.2 mi · 22 aisles</div>
+            </div>
+          </div>
+          <div class="ob-lib-row">
+            <span class="ob-lib-icon">🛒</span>
+            <div class="ob-lib-info">
+              <div class="ob-lib-name">Trader Joe's</div>
+              <div class="ob-lib-sub">2.1 mi · 14 aisles</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3: Community contributions -->
+      <div class="ob-slide" data-index="2">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🤝</div>
+        </div>
+        <h2 class="ob-title">You Help Everyone</h2>
+        <p class="ob-body">When you edit a store's aisles — renaming, reordering, or adding items — your changes are shared with the community. Every correction makes the map better for everyone.</p>
+        <div class="ob-demo ob-demo-community">
+          <div class="ob-contrib-row">
+            <div class="ob-contrib-avatar">A</div>
+            <div class="ob-contrib-text">
+              <span class="ob-contrib-name">You</span> renamed "Aisle 4" →
+              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+            </div>
+            <span class="ob-contrib-tag ob-tag-live">Live</span>
+          </div>
+          <div class="ob-contrib-row">
+            <div class="ob-contrib-avatar ob-av2">B</div>
+            <div class="ob-contrib-text">
+              <span class="ob-contrib-name">Another shopper</span> confirmed
+              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+            </div>
+            <span class="ob-contrib-tag ob-tag-conf">✓ Confirmed</span>
+          </div>
+          <p class="ob-contrib-caption">2 shoppers agree — the map is updated for everyone at this store.</p>
+        </div>
+      </div>
+
+      <!-- Slide 4: Photo scan -->
+      <div class="ob-slide" data-index="3">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">📷</div>
+        </div>
+        <h2 class="ob-title">Scan an Aisle Sign</h2>
+        <p class="ob-body">Tap the camera icon on any aisle to photograph the shelf label. InstAisle reads it and fills in the keywords automatically — no typing needed.</p>
+        <div class="ob-demo ob-demo-scan">
+          <div class="ob-scan-frame">
+            <div class="ob-scan-sign">
+              <span class="ob-scan-number">Aisle 7</span>
+              <span class="ob-scan-text">Cereal · Granola · Oats · Breakfast Bars</span>
+            </div>
+            <div class="ob-scan-line"></div>
+          </div>
+          <div class="ob-scan-result">
+            <div class="ob-scan-kw">cereal</div>
+            <div class="ob-scan-kw">granola</div>
+            <div class="ob-scan-kw">oats</div>
+            <div class="ob-scan-kw ob-kw-new">+ breakfast bars</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5: Suggestions -->
+      <div class="ob-slide" data-index="4">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">✨</div>
+        </div>
+        <h2 class="ob-title">Smart Suggestions</h2>
+        <p class="ob-body">After a few shopping trips, InstAisle remembers what you buy where and suggests items as you check aisles. Your habits, surfaced at the right moment.</p>
+        <div class="ob-demo ob-demo-suggest">
+          <div class="ob-suggest-aisle">🧴 Personal Care</div>
+          <div class="ob-suggest-item ob-suggest-highlighted">
+            <span class="ob-suggest-label">SUGGESTED</span>
+            <span class="ob-suggest-name">Shampoo</span>
+            <span class="ob-suggest-x">✕</span>
+          </div>
+          <div class="ob-suggest-item ob-suggest-highlighted">
+            <span class="ob-suggest-label">SUGGESTED</span>
+            <span class="ob-suggest-name">Toothpaste</span>
+            <span class="ob-suggest-x">✕</span>
+          </div>
+          <p class="ob-suggest-caption">Based on your past 3 visits here.</p>
+        </div>
+        <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
+      </div>
+
+    </div><!-- /ob-slides -->
+
+    <!-- Navigation -->
+    <div class="ob-nav">
+      <button class="ob-btn-skip" id="ob-btn-skip" onclick="window.closeOnboarding()">Skip</button>
+      <button class="ob-btn-next" id="ob-btn-next" onclick="window.obNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
