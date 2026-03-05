@@ -1062,7 +1062,7 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <input type="file" id="file-input" accept="*/*" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
-    <input type="file" id="aisle-img-input" accept="image/*" style="display:none" onchange="handleAisleImageUpload(event)">
+    <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
     <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
   </div>
 </div>
@@ -5426,13 +5426,10 @@ function renderAisleRows(){
           <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
         </div>
         <div class="kw-panel" id="panel-scan-${i}">
-          <div class="aisle-img-zone" id="scan-zone-${i}" style="cursor:default;padding:10px 12px">
-            <div style="font-size:.72rem;font-weight:600;margin-bottom:8px;color:var(--text)">AI aisle scanning</div>
-            <div style="display:flex;gap:7px;width:100%">
-              <button class="btn btn-ghost btn-sm" style="flex:1;font-size:.72rem;padding:7px 4px" onclick="triggerAisleScan(${i})">📷 Camera</button>
-              <button class="btn btn-ghost btn-sm" style="flex:1;font-size:.72rem;padding:7px 4px" onclick="triggerAisleGallery(${i})">🖼 Gallery / Panorama</button>
-            </div>
-            <div style="font-size:.62rem;color:var(--muted);margin-top:6px">AI reads the shelf and adds keywords automatically</div>
+          <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
+            <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
+            <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
+            <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
           </div>
           ${pending ? renderScanResult(i, pending) : ''}
         </div>
