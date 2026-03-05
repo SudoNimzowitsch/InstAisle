@@ -1925,6 +1925,13 @@ window.contributeToLibrary = async function(store) {
     }
   }
 
+  // ── Persist updated contributor list ──────────────────────────────────
+  if (isNewContributor) {
+    try {
+      await updateDoc(locRef, { distinct_contributor_uids: updatedContributors });
+    } catch(e) { console.warn('[library] failed to update contributor list:', e.message); }
+  }
+
   // ── Apply immediate updates to library ────────────────────────────────
   if (Object.keys(immediateUpdates).length) {
     let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
