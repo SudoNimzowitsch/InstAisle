@@ -5323,9 +5323,19 @@ async function addStoreFromLibrary() {
   const aisles = chain.aisles?.length
     ? chain.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }))
     : [
-        { name: 'Produce', keywords: ['apple','banana','vegetable','fruit'] },
-        { name: 'Dairy',   keywords: ['milk','cheese','yogurt','eggs'] }
+        {name:'Produce',           keywords:['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','fruit','vegetable']},
+        {name:'Dairy & Eggs',      keywords:['milk','cheese','yogurt','butter','cream','sour cream','cream cheese','eggs','egg','cheddar','mozzarella','parmesan','half and half','oat milk','almond milk']},
+        {name:'Meat & Seafood',    keywords:['chicken','beef','pork','turkey','bacon','sausage','steak','ground beef','lamb','salmon','shrimp','tuna','tilapia','cod','crab','lobster','deli','ham','hot dog','bratwurst']},
+        {name:'Bakery & Bread',    keywords:['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','wheat bread','white bread','pita','tortilla','naan','cake','pastry','donut','baguette']},
+        {name:'Frozen',            keywords:['frozen','ice cream','pizza','frozen vegetable','frozen fruit','frozen meal','frozen dinner','frozen breakfast','waffles','tater tots','edamame','peas','corn frozen']},
+        {name:'Beverages',         keywords:['water','juice','soda','sparkling water','coffee','tea','energy drink','sports drink','lemonade','milk alternative','coconut water','beer','wine','kombucha','drink']},
+        {name:'Snacks & Cereal',   keywords:['chips','crackers','popcorn','pretzels','nuts','trail mix','granola bar','protein bar','cookies','candy','chocolate','cereal','oatmeal','granola','rice cakes','jerky','snack']},
+        {name:'Canned & Dry Goods',keywords:['canned','soup','beans','lentils','chickpeas','tomato sauce','pasta sauce','diced tomatoes','broth','stock','tuna can','sardines','rice','pasta','noodles','quinoa','flour','sugar','oats','breadcrumbs','dried']},
+        {name:'Cleaning & Paper',  keywords:['paper towel','toilet paper','tissue','napkin','trash bag','garbage bag','dish soap','laundry detergent','fabric softener','bleach','sponge','cleaning spray','windex','lysol','mop','broom','foil','plastic wrap','ziploc','zip lock']},
+        {name:'Personal Care',     keywords:['shampoo','conditioner','body wash','soap','toothpaste','toothbrush','deodorant','lotion','sunscreen','razor','shaving','feminine','vitamins','medicine','pain reliever','bandage','floss','mouthwash']},
       ];
+  const _noContributed = !chain.aisles?.length;
+  if (_noContributed) window._storeIsGenericDefault = true;
 
   // Close library overlay directly (bypass history.back() to avoid popstate race)
   document.getElementById('modal-library').classList.remove('open');
@@ -5358,9 +5368,18 @@ function openNewStore(){
   document.getElementById('store-name-input').value='';
   tempColor=STORE_COLORS[state.stores.length%STORE_COLORS.length];
   tempAisles=[
-    {name:'Aisle 1 – Produce', keywords:['apple','banana','vegetable','fruit']},
-    {name:'Aisle 2 – Dairy',   keywords:['milk','cheese','yogurt','eggs']},
+    {name:'Produce',           keywords:['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','fruit','vegetable']},
+    {name:'Dairy & Eggs',      keywords:['milk','cheese','yogurt','butter','cream','sour cream','cream cheese','eggs','egg','cheddar','mozzarella','parmesan','half and half','oat milk','almond milk']},
+    {name:'Meat & Seafood',    keywords:['chicken','beef','pork','turkey','bacon','sausage','steak','ground beef','lamb','salmon','shrimp','tuna','tilapia','cod','crab','lobster','deli','ham','hot dog','bratwurst']},
+    {name:'Bakery & Bread',    keywords:['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','wheat bread','white bread','pita','tortilla','naan','cake','pastry','donut','baguette']},
+    {name:'Frozen',            keywords:['frozen','ice cream','pizza','frozen vegetable','frozen fruit','frozen meal','frozen dinner','frozen breakfast','waffles','tater tots','edamame','peas','corn frozen']},
+    {name:'Beverages',         keywords:['water','juice','soda','sparkling water','coffee','tea','energy drink','sports drink','lemonade','milk alternative','coconut water','beer','wine','kombucha','drink']},
+    {name:'Snacks & Cereal',   keywords:['chips','crackers','popcorn','pretzels','nuts','trail mix','granola bar','protein bar','cookies','candy','chocolate','cereal','oatmeal','granola','rice cakes','jerky','snack']},
+    {name:'Canned & Dry Goods',keywords:['canned','soup','beans','lentils','chickpeas','tomato sauce','pasta sauce','diced tomatoes','broth','stock','tuna can','sardines','rice','pasta','noodles','quinoa','flour','sugar','oats','breadcrumbs','dried']},
+    {name:'Cleaning & Paper',  keywords:['paper towel','toilet paper','tissue','napkin','trash bag','garbage bag','dish soap','laundry detergent','fabric softener','bleach','sponge','cleaning spray','windex','lysol','mop','broom','foil','plastic wrap','ziploc','zip lock']},
+    {name:'Personal Care',     keywords:['shampoo','conditioner','body wash','soap','toothpaste','toothbrush','deodorant','lotion','sunscreen','razor','shaving','feminine','vitamins','medicine','pain reliever','bandage','floss','mouthwash']},
   ];
+  window._storeIsGenericDefault = true;
   renderStoreModal();
   openModal('modal-store');
 }
