@@ -6033,7 +6033,7 @@ async function processListInput(){
   const raw=document.getElementById('list-text-input').value.trim();
   resetUploadZone();
   if(!raw){ showToast('Enter at least one item'); return; }
-  const names=raw.split('\n').map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
+  const names=raw.split(/[\n,]/).map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
   const results=classifyItems(names,store);
