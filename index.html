@@ -69,11 +69,13 @@ body{
 /* LIST TOOLBAR */
 #list-toolbar{
   display:none;flex-shrink:0;
-  padding:8px 20px;background:var(--bg);
+  padding:8px 12px;background:var(--bg);
   border-bottom:1px solid var(--border);
-  gap:6px;flex-wrap:wrap;z-index:9;
+  flex-direction:column;gap:6px;z-index:9;
 }
 #list-toolbar.visible{display:flex;}
+#list-toolbar-row1{display:flex;align-items:center;gap:6px;}
+#list-toolbar-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
 
 /* BOTTOM NAV */
 .bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px);}
@@ -867,12 +869,16 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
-  <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto" id="list-toolbar-count"></div>
-  <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move list →</button>
-  <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
-  <button class="btn btn-sm btn-ghost" onclick="uncheckAll()">Uncheck all</button>
-  <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
-  <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
+  <div id="list-toolbar-row1">
+    <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto" id="list-toolbar-count"></div>
+    <button class="btn btn-sm btn-ghost" onclick="openMoveList()">Move →</button>
+    <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
+  </div>
+  <div id="list-toolbar-row2">
+    <button class="btn btn-sm btn-ghost" onclick="uncheckAll()">Uncheck all</button>
+    <button class="btn btn-sm btn-ghost" onclick="clearChecked()">Clear checked</button>
+    <button class="btn btn-sm btn-danger" onclick="clearList()">Clear all</button>
+  </div>
 </div>
 
 <!-- SCREENS -->
