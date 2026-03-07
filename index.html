@@ -6595,7 +6595,6 @@ function moveToAisle(aisleIndex){
 // ══════════════════════════════
 // DRAG — MOUSE (long-press to initiate)
 // ══════════════════════════════
-let _mouseLongPressTimer = null;
 let _mouseDragReady = false;
 
 function dStart(e,idx,aisleKey){
@@ -6649,21 +6648,14 @@ function initItemMouseLongPress(){
       if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
       if(e.pointerType==='touch') return; // handled by tStart/tMove/tEnd
       if(e.button!==0) return;
-      clearTimeout(_mouseLongPressTimer);
-      _mouseDragReady=false;
-      _mouseLongPressTimer=setTimeout(()=>{
-        _mouseDragReady=true;
-        const idx=+el.dataset.itemIdx;
-        const key=el.dataset.aisleKey;
-        dragSrcIdx=idx; dragSrcAisle=key;
-        el.classList.add('dragging');
-        // Attach move/up listeners
-        document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
-        document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
-      }, 400);
+      // Mouse: start drag immediately on mousedown, no delay
+      _mouseDragReady=true;
+      const idx=+el.dataset.itemIdx;
+      const key=el.dataset.aisleKey;
+      dragSrcIdx=idx; dragSrcAisle=key;
+      document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
+      document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
     },{passive:true});
-    el.addEventListener('pointerup', ()=>{ clearTimeout(_mouseLongPressTimer); },{passive:true});
-    el.addEventListener('pointerleave', ()=>{ clearTimeout(_mouseLongPressTimer); },{passive:true});
   });
 }
 
