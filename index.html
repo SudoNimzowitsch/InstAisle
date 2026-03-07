@@ -6406,7 +6406,7 @@ function toggleCheck(idx){
     // Trigger suggestion if this is first check in this aisle
     var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
     var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
-    var aisleItems = _mta.filter(function(i){
+    var aisleItems = _al2.filter(function(i){
       if (i.isSuggested) return false; // don't count suggested items
       if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
       return i.aisleIndex !== null && i.aisleIndex !== undefined && String(i.aisleIndex) === aisleKey;
