@@ -1,77 +1,7195 @@
-// InstAisle Service Worker
-// Caches the app shell for offline use and fast loading
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>InstAisle</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="InstAisle">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0f1117">
+<!-- Firebase SDK -->
+<script type="module">
+// Firebase is loaded as a module — see bottom of body
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3347;
+  --text:#eef0f8;--muted:#6b7196;--green:#4ade80;--amber:#fbbf24;
+  --red:#f87171;--blue:#60a5fa;
+}
+html,body{height:100%;min-height:100dvh;overflow:hidden;}
+body{
+  font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;height:100vh;height:100dvh;
+  max-width:430px;margin:0 auto;position:relative;overflow:hidden;
+}
 
-const CACHE_NAME = 'instaisle-v27';
+/* TOPBAR */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 12px;background:var(--bg);
+  border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;
+}
+.logo{
+  font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:900;
+  letter-spacing:-0.03em;
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.store-pill{
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:5px 12px 5px 8px;font-size:0.72rem;font-weight:500;cursor:pointer;
+  display:flex;align-items:center;gap:6px;color:var(--text);transition:border-color .15s;
+}
+.store-pill:hover{border-color:var(--green);}
+.store-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.icon-btn{
+  background:var(--surface);border:1px solid var(--border);border-radius:50%;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem;transition:border-color .15s;color:var(--text);
+}
+.icon-btn:hover{border-color:var(--green);}
 
-// Core files to cache on install
-const PRECACHE_URLS = [
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap'
-];
+/* SCREENS */
+.screens{flex:1;overflow:hidden;position:relative;}
+.screen{
+  position:absolute;inset:0;overflow-y:auto;
+  padding:16px 20px 100px;display:none;animation:slideIn .25s ease;
+}
+.screen.active{display:block;}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 
-// ── Install: pre-cache app shell ──
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // Cache what we can — don't fail install if some external resources are unavailable
-      return Promise.allSettled(
-        PRECACHE_URLS.map(url => cache.add(url).catch(() => {}))
-      );
-    }).then(() => self.skipWaiting())
-  );
+/* LIST TOOLBAR */
+#list-toolbar{
+  display:none;flex-shrink:0;
+  padding:6px 10px;background:var(--bg);
+  border-bottom:1px solid var(--border);
+  gap:5px;align-items:center;z-index:9;
+}
+#list-toolbar.visible{display:flex;}
+#list-toolbar .btn-sm{padding:6px 10px;font-size:0.75rem;}
+.tb-short{display:none;}
+@media(max-width:480px){
+  #list-toolbar .btn-sm{padding:6px 8px;font-size:0.72rem;}
+  .tb-long{display:none;}
+  .tb-short{display:inline;}
+}
+
+/* BOTTOM NAV */
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:14px 0;cursor:pointer;border:none;background:none;color:var(--muted);
+  font-family:'Outfit',sans-serif;font-size:0.62rem;font-weight:500;
+  letter-spacing:.04em;text-transform:uppercase;transition:color .15s;
+}
+.nav-btn .nav-icon{font-size:1.875rem;display:flex;align-items:center;justify-content:center;} .nav-btn .nav-icon svg{width:1.875rem;height:1.875rem;}
+.nav-btn.active{color:var(--green);}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 18px;border-radius:10px;border:none;
+  font-family:'Outfit',sans-serif;font-size:0.85rem;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.btn-primary{background:var(--green);color:#0a1a12;}
+.btn-primary:hover{background:#6ee79a;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--muted);color:var(--text);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid #3d1a1a;}
+.btn-danger:hover{background:#2a1212;}
+.btn-sm{padding:6px 12px;font-size:0.75rem;border-radius:8px;}
+.btn-full{width:100%;}
+
+/* SECTION HEADERS */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-title{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+
+/* CARDS */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px;margin-bottom:10px;transition:border-color .15s;
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;}
+
+/* INPUTS */
+.input-wrap{margin-bottom:14px;}
+.input-label{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
+.input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px;font-family:'Outfit',sans-serif;
+  font-size:.9rem;color:var(--text);outline:none;transition:border-color .15s;
+}
+.input:focus{border-color:var(--green);}
+.input::placeholder{color:var(--muted);}
+textarea.input{resize:vertical;min-height:90px;}
+
+/* KEYWORD CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:10px;}
+.chip{
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:3px 8px 3px 10px;font-size:.7rem;display:flex;align-items:center;gap:4px;color:var(--text);
+}
+.chip-x{
+  cursor:pointer;color:var(--muted);font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  transition:background .1s,color .1s;
+}
+.chip-x:hover{background:var(--red);color:#fff;}
+
+/* KEYWORD INPUT SECTION */
+.kw-section{margin-top:4px;}
+.kw-tabs{display:flex;gap:0;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.kw-tab{
+  flex:1;padding:6px 10px;font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:600;
+  background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .15s;
+  letter-spacing:.04em;
+}
+.kw-tab.active{background:var(--surface2);color:var(--text);}
+.kw-panel{display:none;}
+.kw-panel.active{display:block;}
+.kw-add-row{display:flex;gap:6px;align-items:center;}
+.kw-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--text);
+  outline:none;transition:border-color .15s;min-width:0;
+}
+.kw-input:focus{border-color:var(--green);}
+.kw-input::placeholder{color:var(--muted);}
+.kw-add-btn{
+  background:var(--green);color:#0a1a12;border:none;border-radius:8px;
+  padding:7px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:700;
+  cursor:pointer;flex-shrink:0;transition:background .15s;
+}
+.kw-add-btn:hover{background:#6ee79a;}
+.kw-bulk{
+  width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:8px 10px;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--text);
+  outline:none;transition:border-color .15s;resize:vertical;min-height:72px;
+}
+.kw-bulk:focus{border-color:var(--green);}
+.kw-bulk::placeholder{color:var(--muted);}
+.kw-bulk-btn{
+  margin-top:6px;width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:7px;font-family:'Outfit',sans-serif;font-size:.75rem;
+  font-weight:600;color:var(--text);cursor:pointer;transition:border-color .15s;
+}
+.kw-bulk-btn:hover{border-color:var(--green);color:var(--green);}
+
+/* AISLE DRAG HANDLE */
+.aisle-drag-handle{
+  cursor:grab;color:var(--muted);font-size:1.1rem;line-height:1;
+  padding:2px 4px;border-radius:4px;touch-action:none;
+  transition:color .15s,background .15s;flex-shrink:0;letter-spacing:-1px;
+  user-select:none;-webkit-user-select:none;
+}
+.aisle-drag-handle:hover{color:var(--text);background:var(--surface2);}
+.aisle-drag-handle:active,.aisle-drag-handle.grabbing{cursor:grabbing;color:var(--green);}
+.aisle-card-dragging{
+  opacity:.4;outline:2px dashed var(--green);outline-offset:2px;border-radius:14px;
+}
+.aisle-card-dragover{
+  outline:2px solid var(--green);outline-offset:2px;border-radius:14px;
+  background:rgba(74,222,128,.04);
+}
+.aisle-img-zone{
+  border:2px dashed var(--border);border-radius:10px;padding:18px 14px;
+  text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);
+  position:relative;overflow:hidden;
+}
+.aisle-img-zone:hover{border-color:var(--blue);color:var(--blue);background:rgba(96,165,250,.04);}
+.aisle-img-zone.scanning{border-color:var(--blue);border-style:solid;cursor:default;}
+.aisle-img-zone.has-preview{border-color:var(--green);border-style:solid;padding:8px;}
+.aisle-img-thumb{
+  width:100%;border-radius:6px;max-height:110px;object-fit:cover;display:block;margin-bottom:8px;
+}
+.aisle-img-spinner{
+  width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--blue);
+  border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px;
+}
+.scan-result-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:10px;padding:8px 10px;background:rgba(96,165,250,.08);
+  border:1px solid rgba(96,165,250,.2);border-radius:8px;
+}
+.scan-result-label{font-size:.7rem;color:var(--blue);}
+.scan-accept-btn{
+  background:var(--green);color:#0a1a12;border:none;border-radius:6px;
+  padding:5px 12px;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:700;
+  cursor:pointer;transition:background .15s;
+}
+.scan-accept-btn:hover{background:#6ee79a;}
+.scan-discard-btn{
+  background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:6px;
+  padding:5px 10px;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;
+  cursor:pointer;margin-left:6px;
+}
+
+/* LIST ITEMS */
+.edit-list-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;
+  margin-bottom:6px;
+}
+.edit-item-name{flex:1;font-size:.9rem;color:var(--text);}
+.edit-item-aisle{font-size:.72rem;padding:2px 8px;border-radius:20px;font-weight:600;flex-shrink:0;}
+.edit-item-delete{
+  background:none;border:none;color:var(--muted);font-size:1.1rem;
+  cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;
+  border-radius:6px;transition:color .15s,background .15s;
+}
+.edit-item-delete:hover{color:#f87171;background:rgba(239,68,68,.1);}
+.list-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:10px;background:var(--surface2);margin-bottom:6px;
+  transition:all .15s;position:relative;user-select:none;
+}
+.list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
+.list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
+.list-item.drop-after{box-shadow:0 2px 0 0 var(--green);}
+
+.list-item.checked{opacity:.45;}
+.list-item.checked .item-name{text-decoration:line-through;}
+.list-item.suggested{background:#2a2f42;border-color:#3a4060;}
+.list-item.suggested .item-name{color:var(--muted);font-style:italic;}
+.suggested-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;font-weight:600;opacity:.6;flex-shrink:0;margin-right:4px;}
+.dismiss-suggestion{background:none;border:none;cursor:pointer;
+  font-size:.8rem;color:#e05555;padding:0 2px;line-height:1;flex-shrink:0;}
+.item-check{
+  width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.item-check.done{background:var(--green);border-color:var(--green);}
+.item-name{flex:1;font-size:.88rem;font-weight:400;}
+.item-aisle-badge{
+  font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:20px;
+  cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.item-aisle-badge:hover{filter:brightness(1.3);}
+.ai-dot{font-size:.55rem;color:#7dd3fc;vertical-align:middle;}
+
+/* AISLE GROUPS */
+.aisle-group{margin-bottom:20px;}
+.aisle-group-header{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  border-radius:10px;margin-bottom:8px;font-size:.72rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.aisle-count{margin-left:auto;opacity:.6;font-weight:400;font-size:.65rem;}
+.drop-zone{
+  min-height:8px;border-radius:8px;transition:all .2s;margin-top:4px;
+}
+.drop-zone.active{
+  min-height:44px;border:2px dashed var(--green);
+  background:rgba(74,222,128,.06);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;color:var(--green);
+}
+.drop-zone.active::after{content:'Drop here';}
+
+/* AI BADGE */
+.ai-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:linear-gradient(135deg,#1a2d4a,#1a3d29);
+  border:1px solid #2a4a6a;border-radius:20px;
+  padding:3px 9px;font-size:.62rem;font-weight:600;
+  color:#7dd3fc;letter-spacing:.04em;
+}
+
+/* PROCESSING OVERLAY */
+.processing-overlay{
+  position:fixed;inset:0;background:rgba(15,17,23,.88);
+  z-index:200;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+}
+.processing-overlay.show{display:flex;}
+.spinner{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--green);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing-text{font-size:.85rem;color:var(--muted);text-align:center;padding:0 32px;}
+.processing-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--text);}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;
+  display:none;align-items:flex-end;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px 20px 0 0;padding:24px 20px 36px;
+  width:100%;max-width:430px;margin:0 auto;
+  animation:slideUp .25s ease;max-height:85vh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;margin-bottom:16px;}
+
+/* STORE MODAL — sticky header + scrollable aisles */
+.modal-store-shell{
+  display:flex;flex-direction:column;
+  max-height:85vh;overflow:hidden;padding:24px 20px 0;
+}
+.store-modal-sticky{
+  flex-shrink:0;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding-bottom:0;margin:0 -20px;padding:0 20px 0;
+}
+.store-modal-scroll{
+  flex:1;overflow-y:auto;padding:12px 0 36px;
+}
+#store-color-picker.color-picker{margin-top:0;}
+
+/* UPLOAD ZONE */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:14px;padding:22px;
+  text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);margin-bottom:14px;
+}
+.upload-zone:hover{border-color:var(--green);background:#0d2018;color:var(--green);}
+.upload-zone.has-image{border-color:var(--green);border-style:solid;padding:10px;}
+.upload-icon{font-size:1.5rem;margin-bottom:6px;}
+.img-preview{width:100%;border-radius:8px;max-height:160px;object-fit:cover;display:block;}
+#file-input{display:none;}
+
+/* COLOR PICKER */
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.color-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
+.color-opt.selected{border-color:white;}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:2.5rem;margin-bottom:12px;}
+.empty-title{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px;}
+.empty-sub{font-size:.8rem;line-height:1.6;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 18px;font-size:.82rem;font-weight:500;z-index:300;
+  opacity:0;transition:all .25s ease;white-space:nowrap;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* MISC */
+.divider{height:1px;background:var(--border);margin:16px 0;}
+/* ── STORE LIBRARY & NEARBY ── */
+.lib-chain-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.lib-chain-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 10px;cursor:pointer;transition:all .15s;text-align:left;
+  display:flex;flex-direction:column;gap:4px;
+}
+.lib-chain-card:hover{border-color:var(--green);background:rgba(74,222,128,.06);}
+.lib-chain-card.selected{border-color:var(--green);background:rgba(74,222,128,.10);}
+.lib-chain-name{font-size:.78rem;font-weight:600;color:var(--text);}
+.lib-chain-meta{font-size:.62rem;color:var(--muted);}
+.lib-chain-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.lib-chain-row{display:flex;align-items:flex-start;gap:7px;}
+.nearby-list{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
+.nearby-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:12px;
+}
+.nearby-card:hover{border-color:var(--green);}
+.nearby-card.selected{border-color:var(--green);background:rgba(74,222,128,.10);}
+.nearby-card-info{flex:1;min-width:0;}
+.nearby-name{font-size:.82rem;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nearby-address{font-size:.65rem;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nearby-meta{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap;}
+.nearby-dist{font-size:.65rem;color:var(--muted);}
+.nearby-open{font-size:.62rem;font-weight:600;padding:1px 6px;border-radius:6px;}
+.nearby-open.open{background:rgba(74,222,128,.15);color:var(--green);}
+.nearby-open.closed{background:rgba(248,113,113,.12);color:var(--red);}
+.nearby-match-pill{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:8px;
+  background:rgba(74,222,128,.15);color:var(--green);flex-shrink:0;white-space:nowrap;}
+.nearby-no-match-pill{font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:8px;
+  background:var(--surface);color:var(--muted);flex-shrink:0;white-space:nowrap;}
+.lib-tabs{display:flex;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.lib-tab{flex:1;padding:8px 4px;font-family:'Outfit',sans-serif;font-size:.75rem;
+  font-weight:600;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .15s;}
+.lib-tab.active{background:var(--surface);color:var(--text);}
+.lib-panel{display:none;}
+.lib-panel.active{display:block;}
+.source-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:6px;
+  background:rgba(96,165,250,.12);color:var(--blue);display:inline-block;margin-left:4px;}
+.source-badge.real{background:rgba(74,222,128,.12);color:var(--green);}
+.loc-status{font-size:.72rem;color:var(--muted);text-align:center;padding:20px;}
+
+.spacer{flex:1;}
+.text-muted{color:var(--muted);font-size:.78rem;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:500;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 28px;max-width:430px;margin:0 auto;
+}
+.auth-logo{
+  font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.auth-tagline{font-size:.82rem;color:var(--muted);margin-bottom:40px;text-align:center;}
+.auth-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;overflow:hidden;width:100%;}
+.auth-tab{
+  flex:1;padding:10px;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;
+  background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.auth-tab.active{background:var(--surface2);color:var(--text);}
+.auth-panel{display:none;width:100%;}
+.auth-panel.active{display:block;}
+.auth-success{
+  display:none;background:rgba(34,197,94,.12);color:#4ade80;
+  border:1px solid rgba(34,197,94,.25);border-radius:8px;
+  padding:10px 14px;font-size:.82rem;margin-bottom:12px;
+}
+.auth-success.show{display:block;}
+.pw-wrap{position:relative;display:flex;align-items:center;}
+.pw-wrap .input{flex:1;padding-right:42px;}
+.pw-eye{
+  position:absolute;right:10px;background:none;border:none;
+  color:var(--muted);cursor:pointer;padding:6px;line-height:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .15s;border-radius:4px;
+}
+.pw-eye:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.btn-link-subtle{
+  background:none;border:none;color:var(--muted);font-size:.8rem;
+  cursor:pointer;padding:2px 4px;text-decoration:underline;
+  text-underline-offset:2px;
+}
+.btn-link-subtle:hover{color:var(--text);}
+.auth-error{
+  font-size:.75rem;color:var(--red);background:rgba(248,113,113,.08);
+  border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px 12px;
+  margin-bottom:12px;display:none;
+}
+.auth-error.show{display:block;}
+.auth-divider{
+  display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:.7rem;
+}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.btn-google{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:11px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;
+  color:var(--text);cursor:pointer;transition:all .15s;
+}
+.btn-google:hover{border-color:var(--blue);background:rgba(96,165,250,.06);}
+.google-icon{width:18px;height:18px;}
+
+/* ── USER AVATAR / PROFILE PILL ── */
+.user-pill{
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:4px 10px 4px 4px;font-size:.72rem;font-weight:500;cursor:pointer;
+  display:flex;align-items:center;gap:6px;color:var(--text);transition:border-color .15s;
+}
+.user-pill:hover{border-color:var(--blue);}
+.user-avatar{
+  width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));
+  display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;
+  color:#0a1a12;flex-shrink:0;overflow:hidden;
+}
+.user-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* ── SYNC INDICATOR ── */
+.sync-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;
+  transition:background .3s;
+}
+.sync-dot.syncing{background:var(--amber);animation:pulse .8s infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── SHARE STORE CARD UI ── */
+.share-code-box{
+  background:var(--surface2);border:1px solid var(--green);border-radius:12px;
+  padding:16px;text-align:center;margin:12px 0;
+}
+.share-code{
+  font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;
+  letter-spacing:.2em;color:var(--green);margin:8px 0 4px;
+}
+.share-code-hint{font-size:.7rem;color:var(--muted);}
+
+
+/* ── PROFILE MODAL ── */
+.profile-avatar-lg{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;font-weight:700;color:#0a1a12;margin:0 auto 12px;overflow:hidden;
+}
+.profile-avatar-lg img{width:100%;height:100%;object-fit:cover;}
+
+/* ══════════════════════════════
+   ONBOARDING OVERLAY
+   ══════════════════════════════ */
+#onboarding-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.ob-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+}
+.ob-card {
+  position: relative; z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 430px;
+  padding: 28px 24px 36px;
+  max-height: 88vh; overflow-y: auto;
+  animation: obSlideUp .35s cubic-bezier(.22,1,.36,1);
+}
+@keyframes obSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Dots */
+.ob-dots {
+  display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
+}
+.ob-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); transition: all .25s;
+}
+.ob-dot.active {
+  width: 20px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--blue));
+}
+
+/* Slides */
+.ob-slides { position: relative; }
+.ob-slide { display: none; animation: obFadeIn .3s ease; }
+.ob-slide.active { display: block; }
+@keyframes obFadeIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+/* Icon */
+.ob-icon-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+.ob-icon {
+  font-size: 2.8rem; width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border-radius: 20px;
+  border: 1px solid var(--border);
+}
+.ob-title {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
+  text-align: center; margin-bottom: 10px; color: var(--text);
+}
+.ob-body {
+  font-size: .88rem; line-height: 1.65; color: var(--muted);
+  text-align: center; margin-bottom: 20px;
+}
+.ob-body strong { color: var(--text); }
+
+/* ── Demo: list ── */
+.ob-demo {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px; margin-bottom: 8px;
+}
+.ob-demo-aisle { margin-bottom: 10px; }
+.ob-demo-aisle:last-child { margin-bottom: 0; }
+.ob-aisle-label { font-size: .75rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 4px; }
+.ob-demo-items { display: flex; flex-wrap: wrap; gap: 4px; }
+.ob-demo-item {
+  font-size: .72rem; padding: 3px 8px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+}
+.ob-item-check { color: var(--green); border-color: var(--green); opacity: .6; text-decoration: line-through; }
+
+/* ── Demo: library ── */
+.ob-lib-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.ob-lib-row:last-child { border-bottom: none; }
+.ob-lib-icon { font-size: 1.2rem; }
+.ob-lib-info { flex: 1; }
+.ob-lib-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+.ob-lib-sub  { font-size: .7rem; color: var(--muted); }
+.ob-lib-badge {
+  font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+  background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3);
+}
+.ob-lib-active .ob-lib-name { color: var(--green); }
+
+/* ── Demo: community ── */
+.ob-contrib-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.ob-contrib-row:last-of-type { border-bottom: none; }
+.ob-contrib-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; color: #000;
+}
+.ob-av2 { background: linear-gradient(135deg, var(--blue), #a78bfa); }
+.ob-contrib-text { flex: 1; font-size: .72rem; color: var(--muted); line-height: 1.4; }
+.ob-contrib-name { color: var(--text); font-weight: 600; }
+.ob-contrib-highlight { color: var(--green); font-weight: 600; }
+.ob-contrib-tag {
+  font-size: .62rem; font-weight: 700; padding: 2px 6px; border-radius: 20px; flex-shrink: 0;
+}
+.ob-tag-live { background: rgba(251,191,36,.15); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+.ob-tag-conf { background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+.ob-contrib-caption { font-size: .68rem; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* ── Demo: scan ── */
+.ob-scan-frame {
+  background: #111; border-radius: 10px; padding: 14px;
+  margin-bottom: 10px; position: relative; overflow: hidden;
+}
+.ob-scan-sign {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.ob-scan-number { font-size: .8rem; font-weight: 700; color: #fff; }
+.ob-scan-text   { font-size: .72rem; color: #aaa; }
+.ob-scan-line {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 2px; background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: scanMove 1.8s ease-in-out infinite;
+}
+@keyframes scanMove {
+  0%,100% { top: 20%; opacity: .5; }
+  50%      { top: 80%; opacity: 1;  }
+}
+.ob-scan-result { display: flex; flex-wrap: wrap; gap: 5px; }
+.ob-scan-kw {
+  font-size: .72rem; padding: 3px 9px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+}
+.ob-kw-new {
+  background: rgba(74,222,128,.1); border-color: rgba(74,222,128,.4); color: var(--green);
+  animation: obPop .4s .6s both cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes obPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── Demo: suggestions ── */
+.ob-suggest-aisle {
+  font-size: .75rem; font-weight: 600; color: var(--text);
+  margin-bottom: 7px;
+}
+.ob-suggest-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; border-radius: 8px; margin-bottom: 5px;
+}
+.ob-suggest-highlighted {
+  background: rgba(96,165,250,.07);
+  border: 1px solid rgba(96,165,250,.25);
+}
+.ob-suggest-label {
+  font-size: .58rem; font-weight: 700; letter-spacing: .05em;
+  color: var(--blue); background: rgba(96,165,250,.1);
+  padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+}
+.ob-suggest-name { flex: 1; font-size: .82rem; font-style: italic; color: var(--text); }
+.ob-suggest-x { font-size: .7rem; color: var(--red); cursor: pointer; }
+.ob-suggest-caption { font-size: .68rem; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* Nav */
+.ob-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 20px;
+}
+.ob-btn-skip {
+  font-size: .82rem; color: var(--muted); background: none; border: none;
+  cursor: pointer; padding: 8px 4px; font-family: 'Outfit', sans-serif;
+}
+.ob-btn-skip:hover { color: var(--text); }
+.ob-btn-next {
+  font-size: .88rem; font-weight: 600; font-family: 'Outfit', sans-serif;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #000; border: none; border-radius: 10px;
+  padding: 10px 22px; cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.ob-btn-next:hover { opacity: .9; transform: translateY(-1px); }
+.ob-btn-start {
+  display: block; width: 100%; margin-top: 20px;
+  font-size: .95rem; font-weight: 700; font-family: 'Outfit', sans-serif;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  color: #000; border: none; border-radius: 12px;
+  padding: 14px; cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.ob-btn-start:hover { opacity: .9; transform: translateY(-1px); }
+
+
+@keyframes obSlideDown {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-logo">InstAisle</div>
+  <div class="auth-tagline">Shop in style.</div>
+
+  <div class="auth-tabs">
+    <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</button>
+    <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+  </div>
+
+  <!-- Sign In Panel -->
+  <div class="auth-panel active" id="auth-panel-signin">
+    <div class="auth-error" id="auth-error-signin"></div>
+    <div class="input-wrap">
+      <label class="input-label">Email</label>
+      <input class="input" id="signin-email" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Password</label>
+      <input class="input" id="signin-password" type="password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') signInEmail()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="signInEmail()" id="btn-signin">Sign In</button>
+    <div style="text-align:center;margin:10px 0 4px">
+      <button class="btn-link-subtle" onclick="showForgotPassword()">Forgot password?</button>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+
+  <!-- Forgot Password Panel -->
+  <div class="auth-panel" id="auth-panel-forgot">
+    <div class="auth-error" id="auth-error-forgot"></div>
+    <div class="auth-success" id="auth-success-forgot"></div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;text-align:center">
+      Enter your email and we'll send you a link to reset your password.
+    </p>
+    <div class="input-wrap">
+      <label class="input-label">Email</label>
+      <input class="input" id="forgot-email" type="email" placeholder="you@example.com" autocomplete="email"
+        onkeydown="if(event.key==='Enter') sendResetEmail()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="sendResetEmail()" id="btn-forgot">Send Reset Link</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="switchAuthTab('signin')">← Back to Sign In</button>
+  </div>
+
+  <!-- Sign Up Panel -->
+  <div class="auth-panel" id="auth-panel-signup">
+    <div class="auth-error" id="auth-error-signup"></div>
+    <div class="input-wrap">
+      <label class="input-label">Display Name</label>
+      <input class="input" id="signup-name" type="text" placeholder="Your name" autocomplete="name">
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Email</label>
+      <input class="input" id="signup-email" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Password</label>
+      <div class="pw-wrap">
+        <input class="input" id="signup-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+        <button class="pw-eye" type="button" onclick="togglePw('signup-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Confirm Password</label>
+      <div class="pw-wrap">
+        <input class="input" id="signup-password-confirm" type="password" placeholder="Re-enter password" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter') signUpEmail()">
+        <button class="pw-eye" type="button" onclick="togglePw('signup-password-confirm',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="signUpEmail()" id="btn-signup">Create Account</button>
+    <div class="auth-divider">or</div>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()" style="z-index:150">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center">Delete Store?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem">
+      This will permanently delete <strong id="delete-confirm-name"></strong> and its list. This cannot be undone.
+    </p>
+    <button class="btn btn-danger btn-full" onclick="confirmDelete()" style="margin-bottom:8px">Delete</button>
+    <button class="btn btn-ghost btn-full" onclick="cancelDelete()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">InstAisle</div>
+  <div class="topbar-right">
+    <div class="sync-dot" id="sync-dot" title="Sync status"></div>
+    <div class="store-pill" onclick="openStoreSwitch()">
+      <div class="store-dot" id="active-store-dot"></div>
+      <span id="active-store-name">No store</span>
+      <span style="color:var(--muted)">▾</span>
+    </div>
+    <div class="user-pill" onclick="openProfileModal()" id="user-pill">
+      <div class="user-avatar" id="user-avatar-sm">?</div>
+      <span id="user-name-sm">Account</span>
+    </div>
+    <div class="icon-btn" onclick="openAddList()" title="New list">＋</div>
+  </div>
+</div>
+
+<!-- LIST TOOLBAR (sticky, shown only on list screen) -->
+<div id="list-toolbar">
+  <button class="btn btn-sm btn-ghost" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem">☰</button>
+  <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto;white-space:nowrap;margin-left:4px" id="list-toolbar-count"></div>
+  <button class="btn btn-sm btn-ghost" onclick="openEditList()"><span class="tb-long">Edit</span><span class="tb-short">Edit</span></button>
+  <button class="btn btn-sm btn-ghost" onclick="uncheckAll()"><span class="tb-long">Uncheck all</span><span class="tb-short">Uncheck</span></button>
+  <button class="btn btn-sm btn-ghost" onclick="clearChecked()"><span class="tb-long">Clear checked</span><span class="tb-short">× checked</span></button>
+</div>
+
+<!-- SCREENS -->
+<div class="screens">
+  <div class="screen active" id="screen-list"><div id="list-content"></div></div>
+
+</div>
+
+
+<!-- PROCESSING OVERLAY -->
+<div class="processing-overlay" id="processing-overlay">
+  <div class="spinner"></div>
+  <div class="processing-title">Reading your list…</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════ MODALS ═══════ -->
+
+<!-- Store Switch -->
+<div class="modal-overlay" id="modal-store-switch" onclick="closeModal('modal-store-switch')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Choose Store</div>
+    <div id="store-switch-list"></div>
+    <div class="divider"></div>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="document.getElementById('modal-store-switch').classList.remove('open');openLibraryModal()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg>Add from Store Library</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-store-switch').classList.remove('open');openNewStore()">+ Build My Own Store</button>
+  </div>
+</div>
+
+<!-- Store Library Modal -->
+<div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-handle" style="flex-shrink:0"></div>
+    <div class="modal-title" style="flex-shrink:0">Store Library</div>
+    <div class="lib-tabs" style="flex-shrink:0">
+      <button class="lib-tab active" id="libtab-nearby" onclick="switchLibTab('nearby')">📍 Nearby</button>
+      <button class="lib-tab" id="libtab-browse" onclick="switchLibTab('browse')">Browse All</button>
+    </div>
+    <!-- Scrollable panel area -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
+      <!-- Nearby panel -->
+      <div class="lib-panel active" id="libpanel-nearby">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input class="input" id="nearby-location-input" type="text"
+            placeholder="Search a location, or use GPS below…"
+            style="flex:1;font-size:.82rem"
+            onkeydown="if(event.key==='Enter') searchNearbyLocation()"
+            autocomplete="off">
+          <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+        </div>
+        <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
+        <div id="nearby-status" class="loc-status" style="display:none"></div>
+        <div id="nearby-list-container"></div>
+        <div id="nearby-load-more-trigger" style="height:1px"></div>
+      </div>
+      <!-- Browse panel -->
+      <div class="lib-panel" id="libpanel-browse">
+        <input class="input" id="lib-search-input" placeholder="Search chains (Market Basket, Trader Joe's…)"
+          oninput="renderLibraryBrowse()" style="margin-bottom:12px">
+        <div id="lib-browse-grid" class="lib-chain-grid"></div>
+      </div>
+    </div>
+    <!-- Fixed bottom section -->
+    <div style="flex-shrink:0">
+      <div class="divider"></div>
+      <div id="lib-selected-preview" style="display:none">
+        <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Selected</div>
+        <div id="lib-selected-name" style="font-size:.92rem;font-weight:600;margin-bottom:4px"></div>
+        <div id="lib-selected-meta" style="font-size:.7rem;color:var(--muted);margin-bottom:10px"></div>
+        <div id="lib-aisle-preview" style="margin-bottom:12px;max-height:180px;overflow-y:auto"></div>
+        <button class="btn btn-primary btn-full" onclick="addStoreFromLibrary()">Add This Store →</button>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-library')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move List to Another Store -->
+<div class="modal-overlay" id="modal-move-list" onclick="closeModal('modal-move-list')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Move List to Another Store</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">
+      All items will be re-sorted into the aisles of the destination store.
+    </div>
+    <div id="move-list-options"></div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-move-list')">Cancel</button>
+  </div>
+</div>
+
+<!-- New / Edit Store -->
+<div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
+  <div class="modal modal-store-shell" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <!-- Sticky header: title + color + name + aisles toolbar -->
+    <div class="store-modal-sticky">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="modal-title" id="store-modal-title" style="margin-bottom:0">New Store</div>
+        <div class="color-picker" id="store-color-picker" style="margin-top:0;justify-content:flex-end"></div>
+      </div>
+      <div class="input-wrap" style="margin-bottom:12px">
+        <label class="input-label">Store Name</label>
+        <input class="input" id="store-name-input" placeholder="e.g. Trader Joe's">
+      </div>
+      <div class="divider" style="margin:0 0 10px"></div>
+      <div class="section-header" style="margin-bottom:0;padding-bottom:10px">
+        <span class="section-title">Aisles</span>
+        <button class="btn btn-sm btn-ghost" onclick="addAisleRow()">+ Aisle</button>
+      </div>
+    </div>
+    <!-- Scrollable aisle list -->
+    <div class="store-modal-scroll">
+      <div id="aisle-rows"></div>
+<button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
+      <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add List -->
+<div class="modal-overlay" id="modal-add-list" onclick="closeModal('modal-add-list')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Shopping List</div>
+    <div class="input-wrap">
+      <label class="input-label">Items</label>
+      <textarea class="input" id="list-text-input" placeholder="Bananas&#10;Chicken breast&#10;Greek yogurt&#10;Olive oil&#10;Shampoo"></textarea>
+    </div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon" id="upload-icon">📎</div>
+      <p style="font-size:.78rem" id="upload-label">Tap to upload a file or photo of your list</p>
+    </div>
+    <input type="file" id="file-input" accept="*/*" onchange="handleFileUpload(event)">
+    <!-- Hidden input for aisle photo scans; id set dynamically before click -->
+    <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
+    <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
+  </div>
+</div>
+
+<!-- Move Item -->
+<div class="modal-overlay" id="modal-move-item" onclick="closeModal('modal-move-item')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Move Item</div>
+    <p class="text-muted" style="margin-bottom:16px">Where is <strong id="move-item-name" style="color:var(--text)"></strong> located?</p>
+    <div id="move-aisle-options"></div>
+    <div class="divider"></div>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="closeModal('modal-move-item')">Cancel</button>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="modal-profile" onclick="closeModal('modal-profile')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="profile-avatar-lg" id="profile-avatar-lg">?</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div id="profile-display-name" style="font-size:1.1rem;font-weight:600;margin-bottom:4px">User</div>
+      <div id="profile-email" class="text-muted"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div id="change-pass-msg" style="display:none;font-size:.8rem;padding:8px 12px;border-radius:8px;margin-bottom:10px"></div>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:16px" id="btn-show-change-pass" onclick="toggleChangePassword()">🔑 Change Password</button>
+    <div id="change-pass-fields" style="display:none">
+      <div class="input-wrap">
+        <label class="input-label">Current Password</label>
+        <div class="pw-wrap">
+          <input class="input" id="current-password" type="password" placeholder="••••••••" autocomplete="current-password">
+          <button class="pw-eye" type="button" onclick="window.togglePw('current-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <label class="input-label" style="margin-top:10px">New Password</label>
+        <div class="pw-wrap">
+          <input class="input" id="new-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+          <button class="pw-eye" type="button" onclick="window.togglePw('new-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <label class="input-label" style="margin-top:10px">Confirm New Password</label>
+        <div class="pw-wrap">
+          <input class="input" id="confirm-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password">
+          <button class="pw-eye" type="button" onclick="window.togglePw('confirm-password',this)" tabindex="-1" aria-label="Show password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="changePassword()" id="btn-change-pass">Update Password</button>
+    </div>
+    <div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:.88rem;font-weight:600;margin-bottom:2px">Shopping Suggestions</div>
+        <div style="font-size:.72rem;color:var(--muted)">Suggest forgotten items as you shop</div>
+      </div>
+      <button id="suggestions-toggle-btn"
+        onclick="toggleSuggestionsEnabled()"
+        style="width:44px;height:26px;border-radius:13px;border:none;cursor:pointer;
+               transition:background .2s;flex-shrink:0;position:relative"
+        aria-label="Toggle shopping suggestions">
+        <span style="position:absolute;top:3px;width:20px;height:20px;border-radius:50%;
+                     background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"
+              id="suggestions-toggle-knob"></span>
+      </button>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
+  </div>
+</div>
+
+<!-- Aisle Name Conflict Modal -->
+<div class="modal-overlay" id="modal-name-conflict" onclick="event.stopPropagation()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Help Us Improve the Map</div>
+    <p class="text-muted" style="font-size:.85rem;margin-bottom:16px" id="name-conflict-msg"></p>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;font-size:.8rem">
+        <div style="font-weight:600;margin-bottom:4px;color:var(--text)" id="name-conflict-lib-name"></div>
+        <div style="color:var(--muted)" id="name-conflict-lib-kws"></div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;font-size:.8rem">
+        <div style="font-weight:600;margin-bottom:4px;color:var(--text)" id="name-conflict-user-name"></div>
+        <div style="color:var(--muted)" id="name-conflict-user-kws"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="window.resolveNameConflict('same')">Yes, same aisle — use the existing name</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="window.resolveNameConflict('different')">No, these are different aisles</button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="window.resolveNameConflict('skip')">Not sure</button>
+  </div>
+</div>
+
+<!-- Index Conflict Modal -->
+<div class="modal-overlay" id="modal-index-conflict" onclick="event.stopPropagation()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Help Us Improve the Map</div>
+    <p class="text-muted" style="margin-bottom:16px;font-size:.85rem" id="index-conflict-msg"></p>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-a" onclick="window.resolveIndexConflict('a')"></button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" id="index-conflict-btn-b" onclick="window.resolveIndexConflict('b')"></button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="window.resolveIndexConflict('skip')">Not sure</button>
+  </div>
+</div>
+
+<!-- Edit List Modal -->
+<div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit List</div>
+
+    <!-- Add item row -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;align-items:flex-end">
+      <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
+        rows="2"
+        style="flex:1;resize:none;line-height:1.4"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
+        autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+      <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
+    </div>
+
+    <!-- Item list -->
+    <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
+  </div>
+</div>
+
+
+</div>
+
+<!-- Edit List Modal -->
+<div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit List</div>
+
+    <!-- Add item row -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;align-items:flex-end">
+      <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
+        rows="2"
+        style="flex:1;resize:none;line-height:1.4"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
+        autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+      <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
+    </div>
+
+    <!-- Item list -->
+    <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
+  </div>
+</div>
+
+<!-- List Picker Modal -->
+<div class="modal-overlay" id="modal-list-picker" onclick="closeModal('modal-list-picker')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-picker-title">My Lists</div>
+    <div id="list-picker-items" style="overflow-y:auto;flex:1;margin-bottom:12px"></div>
+    <button class="btn btn-primary btn-full" onclick="promptNewList()">＋ New list</button>
+  </div>
+</div>
+
+<!-- List Context Menu -->
+<div class="modal-overlay" id="modal-list-context" onclick="dismissListContext()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-context-name" style="font-size:1rem;margin-bottom:16px"></div>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="renameListPrompt()">✏️ Rename</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('move')">→ Move to store</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('copy')">⧉ Copy to store</button>
+    <button class="btn btn-danger btn-full" onclick="deleteActiveContextList()">🗑 Delete list</button>
+  </div>
+</div>
+
+<!-- List Transfer Store Picker -->
+<div class="modal-overlay" id="modal-list-transfer" onclick="closeModal('modal-list-transfer')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-transfer-title">Move to store</div>
+    <div id="list-transfer-stores" style="margin-bottom:8px"></div>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="closeModal('modal-list-transfer')">Cancel</button>
+  </div>
+</div>
+
+<!-- Share Store Modal -->
+<script type="module">
+// ── Firebase imports (must be first in a module) ──
+import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut as fbSignOut,
+         createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         updateProfile, GoogleAuthProvider, signInWithPopup,
+         sendPasswordResetEmail, updatePassword,
+         reauthenticateWithCredential, EmailAuthProvider }
+                                                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, collection, setDoc, getDoc, onSnapshot,
+         updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
+         addDoc, orderBy, limit }
+                                                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ══════════════════════════════════════════════════════════════
+//  FIREBASE CONFIGURATION
+//  Get it from: Firebase Console → Project Settings → Your Apps
+// ══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC_QHkzWMXgx-p3tRANKO_1ioRXuj91RcA",
+  authDomain:        "instaisle-e8d6b.firebaseapp.com",
+  projectId:         "instaisle-e8d6b",
+  storageBucket:     "instaisle-e8d6b.firebasestorage.app",
+  messagingSenderId: "674691002191",
+  appId:             "1:674691002191:web:a326ba46c09e1d90435f3a",
+  measurementId:     "G-TT3FQXVYQV"
+};
+
+// ── Init ──
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ══════════════════════════════
+// EXPOSE to global scope (bridge to non-module JS below)
+// ══════════════════════════════
+window._fb = { auth, db, fbSignOut, createUserWithEmailAndPassword,
+               signInWithEmailAndPassword, updateProfile,
+               GoogleAuthProvider, signInWithPopup,
+               sendPasswordResetEmail, updatePassword,
+               reauthenticateWithCredential, EmailAuthProvider,
+               doc, collection, setDoc, getDoc, onSnapshot,
+               updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
+               addDoc, orderBy, limit };
+
+// ── Auth state listener ──
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    window._currentUser = user;
+    updateUserUI(user);
+    document.getElementById('auth-screen').style.display = 'none';
+    await loadUserData(user.uid);
+    if (window._isNewSignup) {
+      window._isNewSignup = false;
+      setTimeout(() => window.maybeShowOnboarding(true), 600);
+    }
+  } else {
+    window._currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    // Clear any live listeners
+    if (window._storeUnsubs) window._storeUnsubs.forEach(fn => fn());
+    window._storeUnsubs = [];
+  }
 });
 
-// ── Activate: clean up old caches ──
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
+// ── Update top-bar user UI ──
+function updateUserUI(user) {
+  const initials = (user.displayName || user.email || '?')
+    .split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+  const avatarSm  = document.getElementById('user-avatar-sm');
+  const nameSm    = document.getElementById('user-name-sm');
+  const avatarLg  = document.getElementById('profile-avatar-lg');
+  const nameEl    = document.getElementById('profile-display-name');
+  const emailEl   = document.getElementById('profile-email');
 
-// ── Fetch: network-first for Firebase/API, cache-first for app shell ──
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+  if (user.photoURL) {
+    avatarSm.innerHTML  = `<img src="${user.photoURL}" alt="">`;
+    avatarLg.innerHTML  = `<img src="${user.photoURL}" alt="">`;
+  } else {
+    avatarSm.textContent  = initials;
+    avatarLg.textContent  = initials;
+  }
+  nameSm.textContent  = user.displayName || user.email.split('@')[0];
+  nameEl.textContent  = user.displayName || 'User';
+  emailEl.textContent = user.email;
+}
 
-  // Always go network-first for Firebase, Anthropic API, and Google Fonts loading
-  const isExternal =
-    url.hostname.includes('firebase') ||
-    url.hostname.includes('google') ||
-    url.hostname.includes('anthropic') ||
-    url.hostname.includes('gstatic');
+// ══════════════════════════════
+// FIRESTORE LOAD & SYNC
+// ══════════════════════════════
+window._storeUnsubs = [];
 
-  if (isExternal) {
-    // Network only — don't cache Firebase auth/Firestore calls
-    event.respondWith(fetch(event.request).catch(() => new Response('', { status: 503 })));
+async function loadUserData(uid) {
+  const { db, doc, collection, onSnapshot, query, where, getDocs } = window._fb;
+  setSyncDot('syncing');
+
+  // Load stores the user owns or is a member of
+  const storesRef = collection(db, 'stores');
+
+  // owned stores
+  const ownedQ   = query(storesRef, where('ownerUid', '==', uid));
+  // shared stores
+
+
+  const ownedSnap = await getDocs(ownedQ);
+
+  const storeDocs = [...ownedSnap.docs];
+
+  // Rebuild local state from Firestore
+  state.stores = [];
+  state.lists  = {};
+  state.corrections = {};
+
+  if (storeDocs.length === 0) {
+    // First time — seed demo store to Firestore
+    await seedDemoStore(uid);
     return;
   }
 
-  // For local app files: cache-first, fall back to network
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // Cache successful GET responses for app files
-        if (response.ok && event.request.method === 'GET') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        // If offline and no cache — return a minimal offline page
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-        return new Response('', { status: 503 });
-      });
+  storeDocs.forEach(snap => {
+    const d = snap.data();
+    state.stores.push({
+      id: snap.id, name: d.name, color: d.color, aisles: d.aisles || [],
+      ownerUid: d.ownerUid,
+      
+    });
+    // Prefer new multi-list format; fall back to legacy flat array
+    state.lists[snap.id] = d.lists_v2 || d.list || [];
+    state.corrections[snap.id] = d.corrections || {};
+  });
+
+  if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
+    state.activeStoreId = state.stores[0]?.id || null;
+  }
+
+  renderAll();
+  setSyncDot('ok');
+
+  // Preload store locations + user GPS in background so nearby tab opens instantly
+  loadStoreLocations().catch(() => {}); // silent — stores.json may not exist yet
+  if (window.loadUserDoc) window.loadUserDoc(); // load prefs (suggestions toggle etc.)
+  preloadUserLocation();                // silent — fires GPS early, result cached
+
+  // Set up real-time listeners for each store
+  window._storeUnsubs.forEach(fn => fn());
+  window._storeUnsubs = storeDocs.map(snap =>
+    onSnapshot(doc(db, 'stores', snap.id), (d) => {
+      if (!d.exists()) return;
+      if (window._isSaving) return;
+      const data = d.data();
+      const idx = state.stores.findIndex(s => s.id === d.id);
+      if (idx !== -1) {
+        state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
+          aisles: data.aisles || [],
+          library_location_id: data.library_location_id || null,
+          library_chain_id: data.library_chain_id || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null };
+        if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
+        state.corrections[d.id] = data.corrections || {};
+        renderAll();
+        setSyncDot('ok');
+      }
     })
   );
+}
+
+async function seedDemoStore(uid) {
+  const { db, doc, setDoc, serverTimestamp } = window._fb;
+  const id = 'store-' + uid.substring(0,8);
+  const demo = {
+    ownerUid: uid,
+    name: 'General Store', color: '#4ade80',
+    createdAt: serverTimestamp(),
+    aisles: [
+      {name:'Aisle 1 – Produce',       keywords:['apple','banana','orange','grape','berries','lettuce','spinach','kale','broccoli','carrot','tomato','cucumber','pepper','onion','garlic','lemon','lime','avocado','mushroom','fruit','vegetable','herbs','cilantro','ginger','zucchini','celery','arugula']},
+      {name:'Aisle 2 – Dairy & Eggs',  keywords:['milk','cheese','yogurt','butter','cream','eggs','egg','sour cream','kefir','mozzarella','cheddar','parmesan','brie','cottage cheese','feta','ricotta','cream cheese']},
+      {name:'Aisle 3 – Meat & Seafood',keywords:['chicken','beef','pork','salmon','tuna','shrimp','turkey','lamb','steak','ground beef','bacon','sausage','ham','cod','tilapia','fish','meat','prosciutto','deli']},
+      {name:'Aisle 4 – Bread & Bakery',keywords:['bread','bagel','muffin','croissant','bun','roll','tortilla','pita','sourdough','baguette','wrap','english muffin','loaf','brioche']},
+      {name:'Aisle 5 – Pantry',        keywords:['pasta','rice','flour','sugar','salt','olive oil','oil','vinegar','sauce','soup','beans','lentil','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','almonds','cashews','broth','stock','baking soda','baking powder','vanilla','cocoa','chocolate','canned']},
+      {name:'Aisle 6 – Beverages',     keywords:['water','juice','soda','coffee','tea','wine','beer','sparkling','kombucha','almond milk','oat milk','soy milk','lemonade','cider','espresso','matcha']},
+      {name:'Aisle 7 – Frozen',        keywords:['frozen','ice cream','pizza','edamame','peas','corn','veggie burger','french fries','waffles','sorbet','gelato','burritos']},
+      {name:'Aisle 8 – Personal Care', keywords:['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','sunscreen','vitamins','supplements','medicine','floss','mouthwash','moisturizer']},
+    ],
+    list: [], corrections: {}
+  };
+  await setDoc(doc(db, 'stores', id), demo);
+  state.stores = [{...demo, id}];
+  state.lists[id] = []; migrateListsIfNeeded(id);
+  state.corrections[id] = {};
+  state.activeStoreId = id;
+  renderAll();
+  setSyncDot('ok');
+
+  // subscribe
+  window._storeUnsubs.push(
+    window._fb.onSnapshot(window._fb.doc(db, 'stores', id), (d) => {
+      if (!d.exists()) return;
+      if (window._isSaving) return;
+      const data = d.data();
+      const idx = state.stores.findIndex(s => s.id === d.id);
+      if (idx !== -1) {
+        state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
+          aisles: data.aisles || [] };
+        state.lists[d.id] = data.lists_v2 || data.list || [];
+        state.corrections[d.id] = data.corrections || {};
+        renderAll();
+      }
+    })
+  );
+}
+
+// ══════════════════════════════
+// SAVE TO FIRESTORE
+// ══════════════════════════════
+// Compute structural diff between library template aisles and user's current aisles.
+// Returns an object describing renames, reorders, additions, and deletions.
+function computeAisleEdits(snapshot, current) {
+  const snapNames = snapshot.map(a => a.name);
+  const currNames = current.map(a => a.name);
+
+  const added    = currNames.filter(n => !snapNames.includes(n));
+  const deleted  = snapNames.filter(n => !currNames.includes(n));
+
+  // Renames: aisle at same index with a different name (and new name isn't a known addition)
+  const renamed = [];
+  const minLen  = Math.min(snapNames.length, currNames.length);
+  for (let i = 0; i < minLen; i++) {
+    if (snapNames[i] !== currNames[i] && !added.includes(currNames[i]) && !deleted.includes(snapNames[i])) {
+      renamed.push({ from: snapNames[i], to: currNames[i] });
+    }
+  }
+
+  // Reorder: surviving aisles appear in a different order
+  const surviving     = currNames.filter(n => snapNames.includes(n));
+  const snapSurviving = snapNames.filter(n => currNames.includes(n));
+  const reordered     = JSON.stringify(surviving) !== JSON.stringify(snapSurviving);
+
+  // Keyword edits per aisle
+  const keyword_edits = [];
+  for (const currAisle of current) {
+    const snapAisle = snapshot.find(a => a.name === currAisle.name);
+    if (!snapAisle) continue; // new aisle, not a keyword edit
+    const added_kws   = currAisle.keywords.filter(k => !snapAisle.keywords.includes(k));
+    const deleted_kws = snapAisle.keywords.filter(k => !currAisle.keywords.includes(k));
+    if (added_kws.length || deleted_kws.length) {
+      keyword_edits.push({ aisle: currAisle.name, added: added_kws, deleted: deleted_kws });
+    }
+  }
+
+  return { added, deleted, renamed, reordered, keyword_edits, recorded_at: new Date().toISOString() };
+}
+
+// ── User doc: prefs + history + dismissals ────────────────────────────────
+
+window.loadUserDoc = async function() {
+  if (!window._currentUser) return;
+  const { db, doc, getDoc, collection, query, orderBy, limit, getDocs } = window._fb;
+  const uid = window._currentUser.uid;
+  try {
+    // Load prefs + dismissed suggestions from user doc (1 read)
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (typeof d.suggestionsEnabled === 'boolean')
+        state.suggestionsEnabled = d.suggestionsEnabled;
+      // Populate dismissed cache — filter to last 60 days
+      const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+      const arr = d.dismissedSuggestions || [];
+      state._dismissedCache = new Set(
+        arr.filter(d => (d.ts || 0) >= cutoff).map(d => (d.item || '').toLowerCase())
+      );
+    } else {
+      state._dismissedCache = new Set();
+    }
+  } catch(e) {
+    console.warn('loadUserDoc prefs:', e.message);
+    state._dismissedCache = new Set();
+  }
+  try {
+    // Load purchase history into cache (up to 120 reads, done once per session)
+    const q    = query(collection(db, 'users', uid, 'history'), orderBy('ts', 'desc'), limit(120));
+    const snap = await getDocs(q);
+    state._historyCache = snap.docs.map(d => d.data());
+  } catch(e) {
+    console.warn('loadUserDoc history:', e.message);
+    state._historyCache = [];
+  }
+};
+
+window.persistUserPrefs = async function() {
+  if (!window._currentUser) return;
+  const { db, doc, setDoc } = window._fb;
+  try {
+    await setDoc(doc(db, 'users', window._currentUser.uid),
+      { suggestionsEnabled: state.suggestionsEnabled }, { merge: true });
+  } catch(e) { console.warn('persistUserPrefs:', e.message); }
+};
+
+window.recordItemChecked = async function(itemName, store, aisleIndex) {
+  if (!window._currentUser) return;
+  const { db, collection, addDoc, serverTimestamp } = window._fb;
+  const aisle = (aisleIndex !== null && aisleIndex !== undefined)
+    ? store.aisles[aisleIndex] : null;
+  const entry = {
+    item:       itemName.toLowerCase().trim(),
+    store_id:   store.id,
+    chain_id:   store.library_chain_id || null,
+    aisle_name: aisle ? aisle.name : null,
+    keywords:   aisle ? aisle.keywords : [],
+    ts:         Date.now(), // local ts for cache; Firestore gets serverTimestamp
+  };
+  // Update in-memory cache immediately (prepend, keep max 120)
+  if (state._historyCache) {
+    state._historyCache.unshift(entry);
+    if (state._historyCache.length > 120) state._historyCache.pop();
+  }
+  try {
+    await addDoc(collection(db, 'users', window._currentUser.uid, 'history'), {
+      ...entry, ts: serverTimestamp()
+    });
+  } catch(e) { console.warn('recordItemChecked:', e.message); }
+};
+
+window.fetchHistory = async function() {
+  if (!window._currentUser) return [];
+  const { db, collection, query, orderBy, limit, getDocs } = window._fb;
+  try {
+    const q    = query(
+      collection(db, 'users', window._currentUser.uid, 'history'),
+      orderBy('ts', 'desc'), limit(120)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch(e) { console.warn('fetchHistory:', e.message); return []; }
+};
+
+// Returns a Set of normalised item names dismissed within the last 60 days
+window.fetchDismissed = async function() {
+  if (!window._currentUser) return new Set();
+  const { db, doc, getDoc } = window._fb;
+  try {
+    const snap   = await getDoc(doc(db, 'users', window._currentUser.uid));
+    const arr    = snap.exists() ? (snap.data().dismissedSuggestions || []) : [];
+    const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    return new Set(
+      arr
+        .filter(function(d){ return (d.ts || 0) >= cutoff; })
+        .map(function(d){ return (d.item || '').toLowerCase(); })
+    );
+  } catch(e) { console.warn('fetchDismissed:', e.message); return new Set(); }
+};
+
+// Persist a dismissal as {item, ts}. Prunes entries older than 60 days on every write.
+window.persistDismissal = async function(itemName) {
+  // Update in-memory cache immediately so it takes effect this session
+  if (state._dismissedCache) state._dismissedCache.add(itemName.toLowerCase());
+  if (!window._currentUser) return;
+  const { db, doc, getDoc, setDoc } = window._fb;
+  const uid     = window._currentUser.uid;
+  const cutoff  = Date.now() - 60 * 24 * 60 * 60 * 1000;
+  const newEntry = { item: itemName.toLowerCase(), ts: Date.now() };
+  try {
+    const snap     = await getDoc(doc(db, 'users', uid));
+    const existing = snap.exists() ? (snap.data().dismissedSuggestions || []) : [];
+    const pruned   = existing.filter(function(d){
+      return (d.ts || 0) >= cutoff && d.item !== newEntry.item;
+    });
+    await setDoc(doc(db, 'users', uid),
+      { dismissedSuggestions: [...pruned, newEntry] }, { merge: true });
+  } catch(e) { console.warn('persistDismissal:', e.message); }
+};
+
+// ── Suggestion engine ─────────────────────────────────────────────────────
+
+function aisleMatchScore(histEntry, currentAisle) {
+  if (!currentAisle) return 0;
+  var score = 0;
+  var itemNorm = normalise(histEntry.item || '');
+
+  // Primary signal: does the item's name match the current aisle's keywords?
+  // This is the strongest signal — if "yogurt" matches dairy keywords, suggest it.
+  var cKws = (currentAisle.keywords || []);
+  var itemKwMatch = 0;
+  cKws.forEach(function(k){
+    if (itemNorm.includes(k.toLowerCase())) itemKwMatch += k.length;
+  });
+  if (itemKwMatch > 0) score += itemKwMatch * 2;
+
+  // Secondary signal: did the user buy this in a matching aisle before?
+  // Only adds to score if the primary signal is already positive.
+  if (score > 0) {
+    var hName = (histEntry.aisle_name || '').toLowerCase();
+    var cName = (currentAisle.name    || '').toLowerCase();
+    if (hName && cName) {
+      if (hName === cName) {
+        score += 20; // same store, same aisle name — very strong
+      } else {
+        // Word overlap between aisle names
+        var cWords = {};
+        cName.split(/\W+/).filter(function(w){ return w.length > 2; })
+          .forEach(function(w){ cWords[w] = 1; });
+        hName.split(/\W+/).filter(function(w){ return w.length > 2; })
+          .forEach(function(w){ if (cWords[w]) score += 5; });
+        // Keyword overlap between aisles
+        var hKws = {};
+        (histEntry.keywords || []).forEach(function(k){ hKws[k.toLowerCase()] = 1; });
+        cKws.forEach(function(k){ if (hKws[k.toLowerCase()]) score += 2; });
+      }
+    }
+  }
+
+  return score;
+}
+
+async function generateSuggestions(store, aisleKey) {
+  var aisle     = store.aisles[+aisleKey] || null;
+  var listItems = {};
+  (getActiveListItems(store.id) || []).forEach(function(i){
+    if (!i.isSuggested) listItems[normalise(i.name)] = 1;
+  });
+  var dismissed = state._dismissedCache || await window.fetchDismissed();
+  var history   = state._historyCache;
+  if (!history) history = await window.fetchHistory();
+  if (!history || !history.length) {
+    console.log('[suggestions] no history available');
+    return [];
+  }
+  console.log('[suggestions] aisle:', aisle?.name, '| history entries:', history.length, '| dismissed:', dismissed.size);
+
+  var scored = {};
+  for (var h of history) {
+    if (!h.item) continue;
+    var norm = normalise(h.item);
+    if (listItems[norm]) continue;
+    if (dismissed.has(norm)) continue;
+    var s = aisleMatchScore(h, aisle);
+    if (s <= 0) continue;
+    if (!scored[norm]) scored[norm] = { item: h.item, score: 0 };
+    scored[norm].score += s;
+  }
+
+  var results = Object.values(scored)
+    .sort(function(a,b){ return b.score - a.score; })
+    .slice(0, 2)
+    .map(function(r){ return r.item; });
+  console.log('[suggestions] scored candidates:', Object.keys(scored).length, '| returning:', results);
+  return results;
+}
+
+async function maybeSuggest(store, aisleKey) {
+  if (!state.suggestionsEnabled) return;
+  if (!state._aislesFirstCheckDone) state._aislesFirstCheckDone = {};
+  if (!state._aislesFirstCheckDone[store.id])
+    state._aislesFirstCheckDone[store.id] = new Set();
+  if (state._aislesFirstCheckDone[store.id].has(String(aisleKey))) return;
+  state._aislesFirstCheckDone[store.id].add(String(aisleKey));
+
+  var suggestions = await generateSuggestions(store, aisleKey);
+  if (!suggestions.length) return;
+
+  for (var name of suggestions) {
+    const _sl = getActiveListItems(store.id); _sl.push({
+      name: name, checked: false,
+      aisleIndex:   +aisleKey,
+      isSuggested:  true,
+      aiClassified: false,
+    });
+  }
+  renderListScreen();
+}
+
+function dismissSuggestion(idx) {
+  var store = getActiveStore();
+  var _mta = getActiveListItems(store.id); var item = _mta[idx];
+  if (!item || !item.isSuggested) return;
+  _mta.splice(idx, 1); setActiveListItems(store.id, _mta);
+  if (window.persistDismissal) window.persistDismissal(item.name);
+  renderListScreen();
+}
+
+function acceptSuggestion(idx) {
+  var store = getActiveStore();
+  if (!store) return;
+  const _as = getActiveListItems(store.id); if(_as[idx]) _as[idx].isSuggested = false; setActiveListItems(store.id,_as);
+  persistActiveStore();
+  renderListScreen();
+}
+
+// Expose to plain script scope
+window.maybeSuggest      = maybeSuggest;
+window.dismissSuggestion = dismissSuggestion;
+window.acceptSuggestion  = acceptSuggestion;
+
+window.persistStore = async function(storeId) {
+  if (!window._currentUser) return;
+  const { db, doc, updateDoc } = window._fb;
+  const store = state.stores.find(s => s.id === storeId);
+  if (!store) return;
+  setSyncDot('syncing');
+  window._isSaving = true;
+  try {
+    // Compute structural aisle edits vs. library snapshot for library-sourced stores
+    let aisle_edits = null;
+    if (store.library_chain_id && store.library_aisles_snapshot) {
+      aisle_edits = computeAisleEdits(store.library_aisles_snapshot, store.aisles);
+    }
+    const updatePayload = {
+      name: store.name, color: store.color, aisles: store.aisles,
+      // lists_v2: new multi-list structure
+      lists_v2: (() => {
+        const raw = state.lists[storeId];
+        if (!raw || Array.isArray(raw)) return null;
+        return raw;
+      })(),
+      // list: legacy flat array — kept for rollback safety
+      list: getActiveListItems(storeId),
+      corrections: state.corrections[storeId] || {}
+    };
+    if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
+    await updateDoc(doc(db, 'stores', storeId), updatePayload);
+    setSyncDot('ok');
+    // Contribute changes to library (non-blocking, best-effort)
+    if (window.contributeToLibrary) {
+      console.log('[library] triggering contribution for store:', store.name, '| library_location_id:', store.library_location_id);
+      window.contributeToLibrary(store).catch(e => console.warn('[library] contribution error:', e.message));
+    } else {
+      console.warn('[library] contributeToLibrary not available yet');
+    }
+  } catch(e) {
+    console.error('Sync error', e);
+    setSyncDot('error');
+  } finally {
+    setTimeout(() => { window._isSaving = false; }, 1500);
+  }
+};
+
+// ── Library Contribution Pipeline ────────────────────────────────────────
+
+// Normalise a string for matching: lowercase, strip punctuation, collapse spaces
+function normaliseForMatch(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Check if two aisle names "agree" (one contains all significant words of the other)
+function aisleNamesMatch(a, b) {
+  const na = normaliseForMatch(a);
+  const nb = normaliseForMatch(b);
+  if (na === nb) return true;
+  const wordsA = na.split(' ').filter(w => w.length > 2);
+  const wordsB = nb.split(' ').filter(w => w.length > 2);
+  if (!wordsA.length || !wordsB.length) return false;
+  // One must contain all significant words of the other
+  return wordsA.every(w => nb.includes(w)) || wordsB.every(w => na.includes(w));
+}
+
+// Pick the more descriptive of two aisle names
+function betterAisleName(a, b) {
+  return a.split(' ').length >= b.split(' ').length ? a : b;
+}
+
+// Compute keyword overlap ratio between two keyword arrays (Jaccard-style)
+// Returns 0.0–1.0 representing overlap relative to the smaller set
+function keywordOverlapRatio(kwsA, kwsB) {
+  const setA = new Set(kwsA.map(k => k.toLowerCase().trim()).filter(Boolean));
+  const setB = new Set(kwsB.map(k => k.toLowerCase().trim()).filter(Boolean));
+  if (!setA.size || !setB.size) return 0;
+  let shared = 0;
+  for (const k of setA) { if (setB.has(k)) shared++; }
+  return shared / Math.min(setA.size, setB.size);
+}
+
+// Generate a normalised key for a pending change for deduplication matching
+function pendingKey(type, payload) {
+  if (type === 'rename_aisle') {
+    return 'rename:' + normaliseForMatch(payload.old_name) + ':' + normaliseForMatch(payload.new_name);
+  }
+  if (type === 'delete_aisle') {
+    return 'delete:' + normaliseForMatch(payload.aisle_name);
+  }
+  if (type === 'remove_keyword') {
+    return 'removekw:' + normaliseForMatch(payload.aisle_name) + ':' + normaliseForMatch(payload.keyword);
+  }
+  return type + ':' + JSON.stringify(payload);
+}
+
+// ── Aisle name conflict prompt (keyword overlap) ─────────────────────────
+
+let _activeNameConflict = null;
+
+async function maybeShowNameConflictPrompt() {
+  if (!state._pendingNameConflicts || !state._pendingNameConflicts.length) {
+    // Fall through to index conflict prompt
+    window.maybeShowIndexConflictPrompt();
+    return;
+  }
+  const conflict = state._pendingNameConflicts.shift();
+  _activeNameConflict = conflict;
+
+  document.getElementById('name-conflict-msg').textContent =
+    'You added an aisle called "' + conflict.user_aisle_name +
+    '". Another shopper added one called "' + conflict.lib_aisle_name +
+    '" with very similar items. Are these the same aisle?';
+  document.getElementById('name-conflict-lib-name').textContent = conflict.lib_aisle_name;
+  document.getElementById('name-conflict-lib-kws').textContent =
+    conflict.lib_keywords.slice(0, 8).join(', ') + (conflict.lib_keywords.length > 8 ? '…' : '');
+  document.getElementById('name-conflict-user-name').textContent = conflict.user_aisle_name;
+  document.getElementById('name-conflict-user-kws').textContent =
+    conflict.user_keywords.slice(0, 8).join(', ') + (conflict.user_keywords.length > 8 ? '…' : '');
+
+  openModal('modal-name-conflict');
+}
+
+async function resolveNameConflict(choice) {
+  closeModal('modal-name-conflict');
+  const conflict = _activeNameConflict;
+  _activeNameConflict = null;
+  if (!conflict || choice === 'skip') {
+    maybeShowNameConflictPrompt();
+    return;
+  }
+
+  if (choice === 'same') {
+    // Merge: remove the tentatively-added user aisle, merge keywords into library aisle
+    if (window._fb && window._currentUser) {
+      const { db, doc, getDoc, updateDoc } = window._fb;
+      try {
+        const locRef  = doc(db, 'store_locations', sanitizeLocId(conflict.locId));
+        const locSnap = await getDoc(locRef);
+        if (locSnap.exists()) {
+          const aisles = locSnap.data().aisles || [];
+          const libIdx = aisles.findIndex(a => a.name === conflict.lib_aisle_name);
+          if (libIdx !== -1) {
+            // Merge keywords (union)
+            const merged = new Set([
+              ...aisles[libIdx].keywords.map(k => k.toLowerCase()),
+              ...conflict.user_keywords.map(k => k.toLowerCase())
+            ]);
+            aisles[libIdx].keywords = [...merged];
+            // Remove the tentatively-added user aisle if it snuck in
+            const updatedAisles = aisles.filter(a => a.name !== conflict.user_aisle_name);
+            updatedAisles[libIdx] = aisles[libIdx];
+            await updateDoc(locRef, { aisles: updatedAisles });
+            console.log('[library] merged', conflict.user_aisle_name, '→', conflict.lib_aisle_name);
+          }
+        }
+      } catch(e) { console.warn('[library] name conflict merge error:', e.message); }
+    }
+  }
+  // If 'different', the tentatively-added aisle stays as-is
+
+  maybeShowNameConflictPrompt();
+}
+
+window.resolveNameConflict         = resolveNameConflict;
+window.maybeShowNameConflictPrompt = maybeShowNameConflictPrompt;
+
+// ── Index conflict prompt ─────────────────────────────────────────────────
+
+let _activeConflict = null; // { locId, aisle_name, index_a, index_b, conflictId }
+
+async function maybeShowIndexConflictPrompt() {
+  if (!state._pendingIndexConflicts || !state._pendingIndexConflicts.length) return;
+  // Get the conflict doc IDs we just wrote so we can update them
+  const { db, collection, query, where, getDocs } = window._fb;
+  const conflict = state._pendingIndexConflicts.shift();
+  // Find the conflict doc
+  try {
+    const locRef = window._fb.doc(db, 'store_locations', String(conflict.locId));
+    const q      = query(
+      collection(locRef, 'index_conflicts'),
+      where('aisle_name_normalized', '==', normaliseForMatch(conflict.aisle_name)),
+      where('status', '==', 'awaiting_confirmation')
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+    conflict.conflictId = snap.docs[0].id;
+    _activeConflict = conflict;
+    // Populate modal
+    document.getElementById('index-conflict-msg').textContent =
+      'Another shopper placed the "' + conflict.aisle_name + '" aisle at position ' +
+      (conflict.index_a + 1) + '. You placed it at position ' + (conflict.index_b + 1) +
+      '. Which position is correct?';
+    document.getElementById('index-conflict-btn-a').textContent =
+      'Position ' + (conflict.index_a + 1) + ' (other shopper)';
+    document.getElementById('index-conflict-btn-b').textContent =
+      'Position ' + (conflict.index_b + 1) + ' (mine)';
+    openModal('modal-index-conflict');
+  } catch(e) { console.warn('[library] conflict prompt error:', e.message); }
+}
+
+async function resolveIndexConflict(choice) {
+  closeModal('modal-index-conflict');
+  if (!_activeConflict || choice === 'skip') { _activeConflict = null; return; }
+  const { db, doc, updateDoc, serverTimestamp } = window._fb;
+  const { locId, conflictId, index_a, index_b, aisle_name } = _activeConflict;
+  _activeConflict = null;
+  const resolvedIndex = choice === 'a' ? index_a : index_b;
+  try {
+    const locRef      = doc(db, 'store_locations', String(locId));
+    const conflictRef = doc(window._fb.collection(locRef, 'index_conflicts'), conflictId);
+    await updateDoc(conflictRef, {
+      status:         'resolved',
+      resolved_index: resolvedIndex,
+      resolved_by:    window._currentUser?.uid,
+    });
+    // If user confirmed index_a (other shopper's), no change needed to library
+    // If user confirmed index_b (their own), update library aisle order
+    if (choice === 'b') {
+      const locSnap = await window._fb.getDoc(locRef);
+      if (locSnap.exists()) {
+        const aisles  = [...(locSnap.data().aisles || [])];
+        const fromIdx = aisles.findIndex(a => aisleNamesMatch(a.name, aisle_name));
+        if (fromIdx !== -1 && fromIdx !== index_b) {
+          const [moved] = aisles.splice(fromIdx, 1);
+          aisles.splice(index_b, 0, moved);
+          await updateDoc(locRef, { aisles });
+        }
+      }
+    }
+    console.log('[library] resolved index conflict:', aisle_name, '→ position', resolvedIndex + 1);
+  } catch(e) { console.warn('[library] resolve conflict error:', e.message); }
+  // Show next conflict if any
+  maybeShowIndexConflictPrompt();
+}
+
+// Expose to plain script and inline onclick handlers
+window.maybeShowIndexConflictPrompt = maybeShowIndexConflictPrompt;
+window.resolveIndexConflict = resolveIndexConflict;
+
+window.contributeToLibrary = async function(store) {
+  const locId = store.library_location_id;
+  console.log('[library] contributeToLibrary called. locId:', locId, '| user:', window._currentUser?.uid, '| store:', store.name);
+  if (!locId) { console.warn('[library] aborting: no library_location_id on store'); return; }
+  if (!window._currentUser) { console.warn('[library] aborting: no current user'); return; }
+  const uid = window._currentUser.uid;
+  const { db, doc, getDoc, setDoc, updateDoc, collection,
+          getDocs, addDoc, serverTimestamp, query, where } = window._fb;
+
+  const locRef  = doc(db, 'store_locations', sanitizeLocId(locId));
+  const locSnap = await getDoc(locRef);
+  console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + sanitizeLocId(locId));
+  if (!locSnap.exists()) {
+    // Document doesn't exist yet — create it with contributed aisle data
+    await setDoc(locRef, {
+      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      data_status:           'live',
+      first_contributor_uid: uid,
+      first_contribution_ts: serverTimestamp(),
+    });
+    console.log('[library] created new location doc and donated aisle set for', sanitizeLocId(locId));
+    return;
+  }
+
+  const locData    = locSnap.data();
+  const dataStatus = locData.data_status || 'none';
+  const libAisles  = locData.aisles || null;
+  console.log('[library] data_status:', dataStatus, '| has aisles:', !!libAisles);
+
+  // ── CASE 1: No real data — donate full aisle set immediately ─────────
+  if (dataStatus === 'none' || !libAisles) {
+    await setDoc(locRef, {
+      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      data_status:           'live',
+      first_contributor_uid: uid,
+      first_contribution_ts: serverTimestamp(),
+    }, { merge: true });
+    console.log('[library] donated full aisle set for', locId);
+    return;
+  }
+
+  // ── Determine if this user is within the 24hr grace period ───────────
+  const firstContribUid = locData.first_contributor_uid;
+  const firstContribTs  = locData.first_contribution_ts?.toMillis?.() || 0;
+  const withinGrace = (uid === firstContribUid) &&
+                      (Date.now() - firstContribTs < 24 * 60 * 60 * 1000);
+
+  // ── Compute diff between user's aisles and current library aisles ─────
+  const libNames  = libAisles.map(a => a.name);
+  const userNames = store.aisles.map(a => a.name);
+
+  // Immediate changes (additive, always promote)
+  const immediateUpdates = {}; // will be merged into locData.aisles
+
+  // Pending changes (destructive, need 2nd user unless in grace period)
+  const pendingChanges = [];
+
+  // ── Added aisles ───────────────────────────────────────────────────────
+  for (const userAisle of store.aisles) {
+    const match = libAisles.find(la => aisleNamesMatch(la.name, userAisle.name));
+    if (!match) {
+      // No name match — check keyword overlap against unmatched library aisles
+      const OVERLAP_THRESHOLD = 0.6;
+      const overlappingLibAisle = libAisles.find(la => {
+        // Skip aisles that already matched a user aisle by name
+        const alreadyMatched = store.aisles.some(ua => aisleNamesMatch(ua.name, la.name));
+        if (alreadyMatched) return false;
+        return keywordOverlapRatio(userAisle.keywords, la.keywords) >= OVERLAP_THRESHOLD;
+      });
+
+      if (overlappingLibAisle) {
+        // Possible duplicate with different name — flag for user prompt
+        if (!state._pendingNameConflicts) state._pendingNameConflicts = [];
+        state._pendingNameConflicts.push({
+          locId,
+          user_aisle_name:  userAisle.name,
+          user_keywords:    [...userAisle.keywords],
+          lib_aisle_name:   overlappingLibAisle.name,
+          lib_keywords:     [...overlappingLibAisle.keywords],
+          overlap:          keywordOverlapRatio(userAisle.keywords, overlappingLibAisle.keywords),
+        });
+        // Tentatively add the user's aisle — if they confirm it's the same,
+        // the prompt handler will merge it instead
+        immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
+          action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
+        };
+      } else {
+        // Genuinely new aisle — add immediately
+        immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
+          action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
+        };
+      }
+    } else {
+      // Aisle exists — check for keyword additions (immediate) and removals (pending)
+      const libKws  = new Set(match.keywords.map(k => k.toLowerCase()));
+      const userKws = new Set(userAisle.keywords.map(k => k.toLowerCase()));
+
+      // Added keywords — immediate
+      for (const kw of userKws) {
+        if (!libKws.has(kw)) {
+          const key = 'add_kw_' + normaliseForMatch(match.name) + '_' + normaliseForMatch(kw);
+          immediateUpdates[key] = { action: 'add_keyword', aisle_name: match.name, keyword: kw };
+        }
+      }
+
+      // Removed keywords — pending (unless grace period)
+      for (const kw of libKws) {
+        if (!userKws.has(kw)) {
+          if (withinGrace) {
+            const key = 'remove_kw_' + normaliseForMatch(match.name) + '_' + normaliseForMatch(kw);
+            immediateUpdates[key] = { action: 'remove_keyword', aisle_name: match.name, keyword: kw };
+          } else {
+            pendingChanges.push({
+              type: 'remove_keyword',
+              payload: { aisle_name: match.name, keyword: kw },
+            });
+          }
+        }
+      }
+
+      // Check for aisle index conflict
+      const libIdx  = libAisles.indexOf(match);
+      const userIdx = store.aisles.indexOf(userAisle);
+      if (libIdx !== userIdx) {
+        // Check if a conflict already exists for this aisle
+        const conflictsRef = collection(locRef, 'index_conflicts');
+        const conflictQ    = query(conflictsRef,
+          where('aisle_name_normalized', '==', normaliseForMatch(match.name)),
+          where('status', '==', 'awaiting_confirmation'));
+        const conflictSnap = await getDocs(conflictQ);
+        if (conflictSnap.empty) {
+          // Record new conflict
+          await addDoc(conflictsRef, {
+            aisle_name_normalized: normaliseForMatch(match.name),
+            aisle_name_display:    match.name,
+            index_a:               libIdx,
+            index_b:               userIdx,
+            proposed_by_a:         firstContribUid,
+            proposed_by_b:         uid,
+            status:                'awaiting_confirmation',
+            created_at:            serverTimestamp(),
+          });
+          // Flag on state so UI can prompt user after save
+          if (!state._pendingIndexConflicts) state._pendingIndexConflicts = [];
+          state._pendingIndexConflicts.push({
+            locId, aisle_name: match.name, index_a: libIdx, index_b: userIdx,
+            conflictId: null // will be set after addDoc resolves in prompt flow
+          });
+        }
+      }
+    }
+  }
+
+  // ── Deleted aisles ─────────────────────────────────────────────────────
+  for (const libAisle of libAisles) {
+    const match = store.aisles.find(ua => aisleNamesMatch(ua.name, libAisle.name));
+    if (!match) {
+      if (withinGrace) {
+        immediateUpdates['delete_aisle_' + normaliseForMatch(libAisle.name)] = {
+          action: 'delete', aisle_name: libAisle.name
+        };
+      } else {
+        pendingChanges.push({
+          type: 'delete_aisle',
+          payload: { aisle_name: libAisle.name },
+        });
+      }
+    }
+  }
+
+  // ── Renamed aisles ─────────────────────────────────────────────────────
+  // A rename = same index, different name, no match found above
+  const minLen = Math.min(libAisles.length, store.aisles.length);
+  for (let i = 0; i < minLen; i++) {
+    const libA  = libAisles[i];
+    const userA = store.aisles[i];
+    if (!aisleNamesMatch(libA.name, userA.name) &&
+        !libAisles.find(la => aisleNamesMatch(la.name, userA.name))) {
+      // This looks like a rename
+      if (withinGrace) {
+        immediateUpdates['rename_' + i] = {
+          action: 'rename', index: i, old_name: libA.name, new_name: userA.name
+        };
+      } else {
+        pendingChanges.push({
+          type: 'rename_aisle',
+          payload: { index: i, old_name: libA.name, new_name: userA.name },
+        });
+      }
+    }
+  }
+
+  // ── Persist updated contributor list ──────────────────────────────────
+  if (isNewContributor) {
+    try {
+      await updateDoc(locRef, { distinct_contributor_uids: updatedContributors });
+    } catch(e) { console.warn('[library] failed to update contributor list:', e.message); }
+  }
+
+  // ── Apply immediate updates to library ────────────────────────────────
+  if (Object.keys(immediateUpdates).length) {
+    let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+    for (const upd of Object.values(immediateUpdates)) {
+      if (upd.action === 'add') {
+        updatedAisles.push(upd.aisle);
+      } else if (upd.action === 'add_keyword') {
+        const a = updatedAisles.find(a => a.name === upd.aisle_name);
+        if (a && !a.keywords.includes(upd.keyword)) a.keywords.push(upd.keyword);
+      } else if (upd.action === 'remove_keyword') {
+        const a = updatedAisles.find(a => a.name === upd.aisle_name);
+        if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== upd.keyword.toLowerCase());
+      } else if (upd.action === 'delete') {
+        updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, upd.aisle_name));
+      } else if (upd.action === 'rename') {
+        if (updatedAisles[upd.index]) updatedAisles[upd.index].name = upd.new_name;
+      }
+    }
+    await updateDoc(locRef, { aisles: updatedAisles });
+    console.log('[library] applied', Object.keys(immediateUpdates).length, 'immediate updates to', locId);
+  }
+
+  // ── Write pending changes ─────────────────────────────────────────────
+  for (const change of pendingChanges) {
+    const nKey = pendingKey(change.type, change.payload);
+    const pendingRef = collection(locRef, 'pending');
+
+    // Check if this change is already pending (from another user)
+    const existingQ  = query(pendingRef,
+      where('normalized_key', '==', nKey),
+      where('status', '==', 'pending'));
+    const existingSnap = await getDocs(existingQ);
+
+    if (!existingSnap.empty) {
+      // Second user confirms — promote the change
+      const pendingDoc = existingSnap.docs[0];
+      if (pendingDoc.data().proposed_by !== uid) {
+        // Confirm and apply
+        await updateDoc(pendingDoc.ref, {
+          confirmed_by: uid, confirmed_at: serverTimestamp(), status: 'confirmed'
+        });
+        // Apply to library
+        let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+        const p = change.payload;
+        if (change.type === 'rename_aisle') {
+          if (updatedAisles[p.index]) updatedAisles[p.index].name = p.new_name;
+        } else if (change.type === 'delete_aisle') {
+          updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, p.aisle_name));
+        } else if (change.type === 'remove_keyword') {
+          const a = updatedAisles.find(a => a.name === p.aisle_name);
+          if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== p.keyword.toLowerCase());
+        }
+        await updateDoc(locRef, { aisles: updatedAisles });
+        console.log('[library] confirmed pending change:', nKey);
+      }
+    } else {
+      // First time this change is proposed — write to pending
+      await addDoc(pendingRef, {
+        type:           change.type,
+        payload:        change.payload,
+        normalized_key: nKey,
+        proposed_by:    uid,
+        proposed_at:    serverTimestamp(),
+        confirmed_by:   null,
+        confirmed_at:   null,
+        status:         'pending',
+      });
+      console.log('[library] wrote pending change:', nKey);
+    }
+  }
+};
+
+window.createStoreInFirestore = async function(storeData) {
+  if (!window._currentUser) return storeData.id;
+  const { db, doc, setDoc, serverTimestamp, onSnapshot } = window._fb;
+  const uid = window._currentUser.uid;
+  setSyncDot('syncing');
+  await setDoc(doc(db, 'stores', storeData.id), {
+    ownerUid: uid,
+    name: storeData.name, color: storeData.color, aisles: storeData.aisles,
+    list: [], corrections: {}, createdAt: serverTimestamp(),
+    library_chain_id:    storeData.library_chain_id    || null,
+    library_location_id: storeData.library_location_id || null,
+    library_aisles_snapshot: storeData.library_aisles_snapshot || null
+  });
+  setSyncDot('ok');
+  // subscribe
+  window._storeUnsubs.push(
+    onSnapshot(doc(db, 'stores', storeData.id), (d) => {
+      if (!d.exists()) return;
+      if (window._isSaving) return;
+      const data = d.data();
+      const idx = state.stores.findIndex(s => s.id === d.id);
+      if (idx !== -1) {
+        state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
+          aisles: data.aisles || [] };
+        state.lists[d.id]       = data.list        || [];
+        state.corrections[d.id] = data.corrections || {};
+        renderAll();
+      }
+    })
+  );
+  return storeData.id;
+};
+
+window.deleteStoreFromFirestore = async function(storeId) {
+  if (!window._currentUser) return;
+  const { db, doc, deleteDoc } = window._fb;
+  await deleteDoc(doc(db, 'stores', storeId));
+};
+
+// ══════════════════════════════
+// SHARE STORE
+// ══════════════════════════════
+
+
+
+
+
+
+
+
+// ══════════════════════════════
+// AUTH ACTIONS (exposed globally)
+// ══════════════════════════════
+window.signInEmail = async function() {
+  const { auth, signInWithEmailAndPassword } = window._fb;
+  const email = document.getElementById('signin-email').value.trim();
+  const pass  = document.getElementById('signin-password').value;
+  const errEl = document.getElementById('auth-error-signin');
+  errEl.classList.remove('show');
+  if (!email || !pass) { showAuthError('signin','Please fill in all fields'); return; }
+  document.getElementById('btn-signin').disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    showAuthError('signin', friendlyAuthError(e.code));
+  }
+  document.getElementById('btn-signin').disabled = false;
+};
+
+window.signUpEmail = async function() {
+  const { auth, createUserWithEmailAndPassword, updateProfile } = window._fb;
+  const name    = document.getElementById('signup-name').value.trim();
+  const email   = document.getElementById('signup-email').value.trim();
+  const pass    = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-password-confirm').value;
+  if (!name || !email || !pass || !confirm) { showAuthError('signup','Please fill in all fields'); return; }
+  if (pass.length < 6)  { showAuthError('signup','Password must be at least 6 characters'); return; }
+  if (pass !== confirm) { showAuthError('signup','Passwords do not match'); return; }
+  document.getElementById('btn-signup').disabled = true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    // Mark as new user so onboarding shows after auth state resolves
+    window._isNewSignup = true;
+  } catch(e) {
+    showAuthError('signup', friendlyAuthError(e.code));
+  }
+  document.getElementById('btn-signup').disabled = false;
+};
+
+window.signInGoogle = async function() {
+  const { auth, GoogleAuthProvider, signInWithPopup } = window._fb;
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      showAuthError('signin', friendlyAuthError(e.code));
+    }
+  }
+};
+
+window.togglePw = function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  btn.innerHTML = show ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
+
+window.showForgotPassword = function() {
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('auth-panel-forgot').classList.add('active');
+  document.getElementById('auth-error-forgot').classList.remove('show');
+  document.getElementById('auth-success-forgot').classList.remove('show');
+  const emailFromSignIn = document.getElementById('signin-email').value.trim();
+  if (emailFromSignIn) document.getElementById('forgot-email').value = emailFromSignIn;
+};
+
+window.sendResetEmail = async function() {
+  const { auth, sendPasswordResetEmail } = window._fb;
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('auth-error-forgot');
+  const sucEl = document.getElementById('auth-success-forgot');
+  errEl.classList.remove('show');
+  sucEl.classList.remove('show');
+
+  if (!email) { showAuthError('forgot', 'Please enter your email address.'); return; }
+
+  const btn = document.getElementById('btn-forgot');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    sucEl.textContent = 'Reset link sent! Check your inbox (and spam folder).';
+    sucEl.classList.add('show');
+    document.getElementById('forgot-email').value = '';
+  } catch(e) {
+    showAuthError('forgot', friendlyAuthError(e.code));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Reset Link';
+  }
+};
+
+window.changePassword = async function() {
+  const { auth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } = window._fb;
+  const user        = window._currentUser;
+  const currentPass = document.getElementById('current-password').value;
+  const newPass     = document.getElementById('new-password').value;
+  const confirmPass = document.getElementById('confirm-password').value;
+  const msgEl       = document.getElementById('change-pass-msg');
+
+  const showMsg = (text, isError) => {
+    msgEl.textContent = text;
+    msgEl.style.display  = 'block';
+    msgEl.style.background = isError ? 'rgba(239,68,68,.12)' : 'rgba(34,197,94,.12)';
+    msgEl.style.color      = isError ? '#f87171' : '#4ade80';
+    msgEl.style.border     = isError ? '1px solid rgba(239,68,68,.25)' : '1px solid rgba(34,197,94,.25)';
+    msgEl.style.borderRadius = '8px';
+    msgEl.style.padding    = '8px 12px';
+  };
+
+  msgEl.style.display = 'none';
+  if (!currentPass || !newPass || !confirmPass) { showMsg('Please fill in all fields.', true); return; }
+  if (newPass.length < 6) { showMsg('New password must be at least 6 characters.', true); return; }
+  if (newPass !== confirmPass) { showMsg('New passwords do not match.', true); return; }
+  if (!user || !user.email) { showMsg('Please sign out and sign back in to change your password.', true); return; }
+
+  const btn = document.getElementById('btn-change-pass');
+  btn.disabled = true;
+  btn.textContent = 'Updating…';
+
+  try {
+    const credential = EmailAuthProvider.credential(user.email, currentPass);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPass);
+    showMsg('Password updated successfully!', false);
+    document.getElementById('current-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('change-pass-fields').style.display = 'none';
+    document.getElementById('btn-show-change-pass').textContent = '🔑 Change Password';
+    document.getElementById('confirm-password').value = '';
+  } catch(e) {
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      showMsg('Current password is incorrect.', true);
+    } else if (e.code === 'auth/requires-recent-login') {
+      showMsg('Please sign out and sign back in, then try again.', true);
+    } else {
+      showMsg(friendlyAuthError(e.code), true);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update Password';
+  }
+};
+
+window.signOut = async function() {
+  const { auth, fbSignOut } = window._fb;
+  await fbSignOut(auth);
+  // Reset state
+  state.stores=[]; state.lists={}; state.corrections={};
+  state.activeStoreId=null; state.activeListId={};
+  closeModal('modal-profile');
+  renderAll();
+};
+
+// ── helpers ──
+function showAuthError(panel, msg) {
+  const el = document.getElementById('auth-error-' + panel);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':'No account found with that email.',
+    'auth/wrong-password':'Incorrect password.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/invalid-email':'Please enter a valid email address.',
+    'auth/weak-password':'Password is too weak — use at least 6 characters.',
+    'auth/invalid-credential':'Invalid email or password.',
+    'auth/too-many-requests':'Too many attempts. Please wait and try again.',
+    'auth/network-request-failed':'Network error. Check your connection.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+// ── sync dot UI ──
+function setSyncDot(status) {
+  const dot = document.getElementById('sync-dot');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (status === 'syncing' ? ' syncing' : status === 'error' ? ' error' : '');
+  dot.title = status === 'syncing' ? 'Syncing…' : status === 'error' ? 'Sync error' : 'Synced';
+}
+window.setSyncDot = setSyncDot;
+
+// Signal that the Firebase module is fully loaded
+window._fbReady = true;
+
+// ── Browser back/forward navigation ──────────────────────────────────────
+// ── Browser back/forward navigation ──────────────────────────────────────
+// Strategy: always keep a "floor" sentinel entry at the bottom of the stack.
+// On load we push: [sentinel] [list]. When back is pressed and we reach
+// sentinel, we handle it and immediately re-push [list] so there's always
+// something below us. This prevents the browser from ever leaving the app.
+
+function pushAppState(state) {
+  history.pushState(state, '', '');
+}
+
+// Push sentinel + initial screen on page load
+history.replaceState({ type: 'sentinel' }, '', '');
+history.pushState({ type: 'screen', screen: 'list' }, '', '');
+
+window.addEventListener('popstate', function(e) {
+  const state = e.state;
+
+  // ── Close open modal first ──
+  const openOverlay = document.querySelector('.modal-overlay.open');
+  if (openOverlay) {
+    openOverlay.classList.remove('open');
+    // Re-push current screen state so forward/back remain meaningful
+    const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '') || 'list';
+    history.pushState({ type: 'screen', screen }, '', '');
+    return;
+  }
+
+  // ── Hit the sentinel — re-push so we never fall out of the app ──
+  if (!state || state.type === 'sentinel') {
+    history.pushState({ type: 'screen', screen: 'list' }, '', '');
+    document.getElementById('screen-list').classList.add('active'); const _tb=document.getElementById('list-toolbar'); if(_tb) _tb.classList.add('visible');
+    return;
+  }
+
+  // ── Screen navigation ──
+  if (state.type === 'screen') {
+    switchScreen(state.screen, false);
+  }
 });
+
+</script>
+
+<script>
+// ══════════════════════════════
+// CONSTANTS
+// ══════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// INSTAISLE STORE LIBRARY
+// ══════════════════════════════════════════════════════════════════════════
+//
+// Each chain entry has:
+//   id          – stable identifier (never changes)
+//   name        – display name
+//   type        – 'grocery' | 'pharmacy' | 'hardware' | etc. (extensible)
+//   color       – suggested app color
+//   searchNames – strings used to fuzzy-match against Google Places results
+//   dataSource  – 'real' (from official docs) | 'curated' (researched typical layout)
+//   aisles      – array of {name, keywords[]}
+//   stores      – optional per-location overrides keyed by place_id or store #
+//
+// AISLE NUMBER NOTE:
+//   Market Basket PDFs use actual numbered aisles. For other chains we use
+//   logical department sections (Produce, Dairy, etc.) which is how those
+//   stores actually sign their departments.
+// ══════════════════════════════════════════════════════════════════════════
+
+const STORE_LIBRARY = {
+
+  // ── CATEGORY: GROCERY ────────────────────────────────────────────────────
+
+  grocery: [
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MARKET BASKET
+    // Source: Official per-store Shopper's Guides (PDFs)
+    // shopmarketbasket.com/market-basket-stores-shoppers-guide-by-state/
+    //
+    // Aisle assignments derived from 3 stores: #89 Warwick RI, #90 Johnston RI,
+    // #24 Burlington MA. Aisle numbers vary by location; this uses the CATEGORY
+    // groupings that are consistent across all stores, with typical aisle names.
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'market-basket',
+      name: 'Market Basket',
+      confidence: 0.8,
+      type: 'grocery',
+      color: '#e63329',
+      searchNames: ['market basket', 'demoulas', 'demoulas market basket'],
+      dataSource: 'real',
+      aisles: [
+        {
+          name: 'Aisle 1 – Dairy & Deli',
+          keywords: [
+            'milk','butter','eggs','cottage cheese','sour cream','cream cheese',
+            'cheese','cheddar','mozzarella','parmesan','brie','feta','ricotta',
+            'grated parmesan','prepackaged cheese','swiss','american cheese',
+            'half and half','heavy cream','whipped cream','kefir'
+          ]
+        },
+        {
+          name: 'Aisle 2 – Soup, Canned Fish & Condiments',
+          keywords: [
+            'soup','chowder','clam chowder','corn chowder','potato chowder',
+            'bouillon','bouillon cubes','noodles','egg noodles','ramen noodles',
+            'canned fish','clams','canned clams','canned tuna','tuna','sardines',
+            'canned meat','canned chicken','spam','canned salmon',
+            'chinese food','asian canned','soy sauce',
+            'mexican food','taco sauce','taco shells','barbecue sauce','bbq sauce',
+            'ketchup','mustard','mayonnaise','mayo','salad dressing','ranch',
+            'vinegar','hot sauce','tabasco','tartar sauce','steak sauce',
+            'olives','pickles','capers','relish','croutons',
+            'chili sauce','worcestershire','baked beans','canned beans'
+          ]
+        },
+        {
+          name: 'Aisle 3 – Pasta, Rice & Sauce',
+          keywords: [
+            'pasta','spaghetti','penne','rigatoni','fettuccine','linguine',
+            'noodles','macaroni','mac and cheese','mac & cheese','lasagna',
+            'rice','white rice','brown rice','rice cakes','rice pilaf',
+            'spaghetti sauce','pasta sauce','marinara','tomato sauce',
+            'tomato paste','canned tomato','tomato',
+            'bread crumbs','breadcrumbs','hamburger helper',
+            'beans','kidney beans','black beans','chickpeas','lentils',
+            'dry beans'
+          ]
+        },
+        {
+          name: 'Aisle 4 – Breakfast & Cereal',
+          keywords: [
+            'cereal','granola','granola bars','oatmeal','oats',
+            'pop tarts','toaster pastries','breakfast bars',
+            'grits','cream of wheat','instant oatmeal',
+            'rice cakes','wheat germ','muesli',
+            'pancake mix','waffle mix','bisquick','baking mix',
+            'maple syrup','syrup','honey','jam','jelly','peanut butter',
+            'nutella','almond butter','nut butter'
+          ]
+        },
+        {
+          name: 'Aisle 5 – Baking',
+          keywords: [
+            'flour','sugar','brown sugar','powdered sugar','confectioners sugar',
+            'baking soda','baking powder','yeast','cornstarch',
+            'vanilla extract','vanilla','food coloring',
+            'cake mix','brownie mix','muffin mix','bread mix',
+            'pie filling','pudding mix','jello','gelatin',
+            'shortening','vegetable shortening','crisco',
+            'chocolate chips','cocoa powder','baking chocolate',
+            'spices','salt','pepper','cinnamon','nutmeg','garlic powder',
+            'onion powder','paprika','cumin','oregano','basil','thyme',
+            'coffee','ground coffee','instant coffee','tea','tea bags',
+            'nuts baking','baking nuts','walnuts','pecans',
+            'molasses','corn syrup','cooking oil','canola oil','vegetable oil',
+            'olive oil','coconut oil'
+          ]
+        },
+        {
+          name: 'Aisle 6 – Canned Vegetables & Fruit',
+          keywords: [
+            'canned vegetables','canned corn','canned green beans','canned peas',
+            'canned carrots','canned beets','canned spinach','artichoke hearts',
+            'canned fruit','canned peaches','canned pears','canned pineapple',
+            'canned cherries','fruit cocktail','applesauce','apple sauce',
+            'cranberry sauce','cranberry','pie filling cherry',
+            'dried fruit','raisins','prunes','dried cranberries','dried apricots',
+            'dates','currants','figs','dried figs',
+            'snack nuts','mixed nuts','cashews','almonds','peanuts','trail mix',
+            'popcorn','popping corn','potato chips','chips','pretzels',
+            'candy','chocolate','m&ms','gummies','crackers snack','snacks',
+            'molasses','honey','jam','jelly'
+          ]
+        },
+        {
+          name: 'Aisle 7 – Gravy, Mushrooms & Juice',
+          keywords: [
+            'gravy','gravy mix','brown gravy','turkey gravy','chicken gravy',
+            'mushrooms canned','canned mushrooms',
+            'vegetables canned','mixed vegetables',
+            'juice','apple juice','orange juice','cranberry juice','grape juice',
+            'tomato juice','v8','lemonade','fruit punch',
+            'canned potatoes','potato canned'
+          ]
+        },
+        {
+          name: 'Aisle 8 – Coffee, Tea & Household Supplies',
+          keywords: [
+            'aluminum foil','foil','plastic wrap','saran wrap','wax paper',
+            'freezer bags','sandwich bags','ziploc','storage bags','trash bags',
+            'garbage bags','paper towels','napkins','plastic cups','paper plates',
+            'straws','toothpicks','plasticware','plastic utensils',
+            'kitchen utensils','kitchen tools','bakeware','cooking tools'
+          ]
+        },
+        {
+          name: 'Aisle 9 – Soda & Water',
+          keywords: [
+            'soda','cola','pepsi','coke','sprite','ginger ale','root beer',
+            'sparkling water','seltzer','tonic water',
+            'water','spring water','distilled water','bottled water',
+            'sports drinks','gatorade','powerade','vitamin water',
+            'energy drinks','red bull','monster',
+            'kool aid','drink mix','iced tea mix','lemonade mix'
+          ]
+        },
+        {
+          name: 'Aisle 10 – Pet & Automotive',
+          keywords: [
+            'dog food','cat food','pet food','cat litter','dog treats','cat treats',
+            'pet supplies','bird food','fish food','aquarium',
+            'charcoal','lighter fluid','bug spray','insect repellent',
+            'automotive','motor oil','windshield washer','car supplies',
+            'bug killer','ant trap','mouse trap','pest control'
+          ]
+        },
+        {
+          name: 'Aisle 11 – Health & Baby',
+          keywords: [
+            'baby food','baby formula','diapers','wipes','baby powder','baby lotion',
+            'cold remedies','cough syrup','cold medicine','aspirin','ibuprofen',
+            'tylenol','vitamins','supplements','eye care','eye drops',
+            'bandages','first aid','band-aids','antiseptic','hydrogen peroxide',
+            'rubbing alcohol','laxative','antacid','tums',
+            'feminine hygiene','pads','tampons','feminine needs',
+            'shaving cream','razors','razor blades','shaving needs',
+            'shoe care','shoe polish'
+          ]
+        },
+        {
+          name: 'Aisle 12 – Personal Care',
+          keywords: [
+            'shampoo','conditioner','hair care','hair spray','hair gel',
+            'soap','body wash','hand soap','bar soap','liquid soap',
+            'deodorant','antiperspirant',
+            'toothpaste','toothbrush','floss','mouthwash','dental care',
+            'lotion','moisturizer','body lotion','hand cream','sunscreen',
+            'bath tissue','toilet paper','facial tissue','kleenex','tissues',
+            'paper towels','napkins','paper plates','paper cups',
+            'batteries','lightbulbs','electrical supplies','stationery'
+          ]
+        },
+        {
+          name: 'Aisle 13 – Cleaning & Laundry',
+          keywords: [
+            'laundry detergent','tide','laundry soap','fabric softener','dryer sheets',
+            'bleach','stain remover','oxygen cleaner',
+            'dish soap','dishwasher detergent','cascade','dawn',
+            'household cleaner','all-purpose cleaner','lysol','windex','409',
+            'disinfectant','disinfecting wipes','clorox',
+            'drain cleaner','drano','broom','mop','sponges','scrub brush',
+            'rubber gloves','steel wool','vacuum bags',
+            'air freshener','febreze','candles household',
+            'ammonia','pine sol','floor cleaner'
+          ]
+        },
+        {
+          name: 'Aisle 14 – Bread & Bakery',
+          keywords: [
+            'bread','white bread','wheat bread','sourdough','rye bread',
+            'bagels','english muffins','pita','tortillas','wraps','flatbread',
+            'rolls','dinner rolls','hamburger buns','hot dog buns',
+            'muffins','donuts','croissants','pastries','danish',
+            'cookies','crackers','graham crackers',
+            'stuffing mix','breadcrumbs','croutons'
+          ]
+        },
+        {
+          name: 'Frozen Foods',
+          keywords: [
+            'frozen','frozen vegetables','frozen peas','frozen corn','frozen broccoli',
+            'frozen fruit','frozen berries','frozen meals','tv dinner',
+            'frozen pizza','frozen burritos','frozen entrees',
+            'ice cream','ice cream bars','popsicles','sorbet','frozen yogurt',
+            'frozen waffles','frozen pancakes','frozen breakfast',
+            'frozen fish','frozen shrimp','frozen chicken','frozen meat',
+            'edamame','frozen edamame','ice cubes'
+          ]
+        },
+        {
+          name: 'Produce',
+          keywords: [
+            'apple','apples','banana','bananas','orange','oranges','lemon','limes',
+            'grapes','strawberries','blueberries','raspberries','blackberries',
+            'peach','pear','mango','pineapple','watermelon','cantaloupe','melon',
+            'avocado','tomato','tomatoes','cucumber','zucchini','squash',
+            'broccoli','cauliflower','lettuce','spinach','kale','arugula','chard',
+            'cabbage','brussels sprouts','asparagus','green beans','snap peas',
+            'carrot','carrots','celery','bell pepper','peppers','jalapeño',
+            'onion','onions','garlic','shallots','leeks','scallions',
+            'potato','potatoes','sweet potato','yam','corn on the cob',
+            'mushrooms fresh','fresh mushrooms','herbs','cilantro','parsley','basil fresh',
+            'ginger fresh','fresh ginger','lemongrass'
+          ]
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: [
+            'chicken','chicken breast','chicken thighs','whole chicken','rotisserie',
+            'ground beef','hamburger','steak','beef','chuck','sirloin','ribeye',
+            'pork','pork chops','pork loin','ribs','bacon','ham','sausage',
+            'turkey','turkey breast','ground turkey',
+            'lamb','lamb chops','veal',
+            'salmon','tuna fresh','cod','tilapia','halibut','shrimp','scallops',
+            'lobster','crab','clams fresh','oysters','mussels',
+            'deli meat','sliced turkey','sliced ham','prosciutto','salami',
+            'hot dogs','bratwurst','kielbasa'
+          ]
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WHOLE FOODS MARKET
+    // Source: Curated based on Whole Foods department structure
+    // Whole Foods uses department labels rather than aisle numbers
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'whole-foods',
+      name: 'Whole Foods Market',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#00674b',
+      searchNames: ['whole foods','whole foods market','whole foods co'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','grape','berries','strawberry','blueberry','raspberry',
+            'lettuce','spinach','kale','arugula','chard','cabbage','broccoli','cauliflower',
+            'carrot','celery','cucumber','zucchini','squash','pepper','jalapeño',
+            'tomato','avocado','lemon','lime','mango','pineapple','watermelon','melon',
+            'onion','garlic','shallot','scallion','ginger','herbs','cilantro','parsley','basil',
+            'potato','sweet potato','yam','mushroom','corn','asparagus','green beans','peas snap']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','oat milk','almond milk','soy milk','coconut milk',
+            'butter','ghee','eggs','egg','heavy cream','half and half','sour cream',
+            'yogurt','greek yogurt','kefir','cottage cheese',
+            'cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese',
+            'cream cheese','ricotta','gouda','manchego','camembert']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bison',
+            'bacon','sausage','ham','prosciutto','pancetta','deli meat',
+            'salmon','tuna','cod','halibut','tilapia','shrimp','scallops','crab','lobster',
+            'hot dogs','bratwurst','chorizo']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','baguette','multigrain','rye',
+            'bagel','english muffin','pita','tortilla','wrap','flatbread',
+            'croissant','muffin','scone','danish','pastry','cookie bakery',
+            'rolls','buns','focaccia','naan','lavash']
+        },
+        {
+          name: 'Pantry Staples',
+          keywords: ['pasta','spaghetti','penne','fettuccine','linguine','orzo','lasagna',
+            'rice','brown rice','white rice','wild rice','quinoa','farro','barley','bulgur',
+            'flour','sugar','baking soda','baking powder','yeast','cornstarch','vanilla',
+            'olive oil','avocado oil','coconut oil','canola oil','sesame oil',
+            'vinegar','apple cider vinegar','balsamic','red wine vinegar',
+            'soy sauce','tamari','fish sauce','oyster sauce','miso',
+            'pasta sauce','marinara','tomato sauce','tomato paste','crushed tomato',
+            'broth','chicken broth','vegetable broth','bone broth',
+            'beans','lentils','chickpeas','black beans','kidney beans',
+            'canned tomato','canned fish','canned salmon','canned tuna',
+            'nut butter','peanut butter','almond butter','tahini',
+            'honey','maple syrup','agave','jam','jelly','preserves']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','muesli','oatmeal','oats','overnight oats',
+            'granola bars','protein bars','energy bars','trail mix',
+            'pancake mix','waffle mix','syrup','maple syrup']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','tortilla chips','potato chips','pretzels','popcorn',
+            'crackers','rice crackers','nut mix','almonds','cashews','walnuts','pecans',
+            'dried fruit','raisins','dates','jerky','beef jerky',
+            'chocolate','dark chocolate','candy','gummies']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','sparkling water','kombucha','cold brew','juice','orange juice',
+            'coffee','espresso','tea','green tea','herbal tea','matcha',
+            'soda','sparkling juice','coconut water','sports drink',
+            'wine','beer','cider','hard seltzer']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen fruit','frozen berries','frozen meals',
+            'frozen pizza','frozen burritos','frozen fish','frozen shrimp',
+            'ice cream','sorbet','frozen yogurt','popsicles',
+            'frozen waffles','frozen breakfast','edamame']
+        },
+        {
+          name: 'Health & Body Care',
+          keywords: ['vitamins','supplements','protein powder','collagen','probiotics',
+            'shampoo','conditioner','body wash','soap','lotion','sunscreen',
+            'toothpaste','toothbrush','floss','deodorant','razor',
+            'pain reliever','ibuprofen','aspirin','cold medicine']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['dish soap','dishwasher','laundry detergent','fabric softener','dryer sheets',
+            'all-purpose cleaner','bleach','disinfectant wipes','sponge','trash bags',
+            'paper towels','toilet paper','facial tissue','aluminum foil','plastic wrap',
+            'sandwich bags','ziploc','storage bags']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // TRADER JOE'S
+    // Source: Curated — TJ's has no numbered aisles; uses open floor plan
+    // with consistent section groupings. Products organized by section/zone.
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'trader-joes',
+      name: "Trader Joe's",
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#c8102e',
+      searchNames: ["trader joe's","trader joes","tj's"],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Fresh Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','mango',
+            'lettuce','spinach','kale','arugula','bagged salad','salad kit',
+            'broccoli','cauliflower','carrot','celery','cucumber','zucchini',
+            'tomato','pepper','onion','garlic','ginger','herbs','cilantro','basil',
+            'mushroom','potato','sweet potato','berries','grapes','melon']
+        },
+        {
+          name: 'Fresh Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'salmon','cod','shrimp','scallops','tuna steak',
+            'sausage','chicken sausage','bratwurst','merguez',
+            'bacon','prosciutto','pancetta','deli']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','oat milk','almond milk','soy milk','eggs',
+            'butter','cream cheese','sour cream','yogurt','greek yogurt',
+            'cheese','cheddar','brie','goat cheese','feta','manchego',
+            'cottage cheese','ricotta','heavy cream','half and half']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','brioche','multigrain','baguette',
+            'pita','naan','tortillas','flatbread','lavash',
+            'bagel','english muffin','croissant','muffin','scone',
+            'rolls','buns','challah','raisin bread']
+        },
+        {
+          name: 'Refrigerated & Prepared',
+          keywords: ['hummus','salsa','guacamole','tzatziki','dips',
+            'pasta fresh','fresh pasta','gnocchi','pizza dough',
+            'soup refrigerated','chilled soup','tofu','tempeh',
+            'salad dressing refrigerated','pesto fresh',
+            'orange juice fresh','lemonade fresh','cold brew']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen','mandarin chicken','orange chicken','palak paneer',
+            'frozen burritos','frozen pizza','frozen meals','frozen entrees',
+            'frozen vegetables','edamame','peas','corn','broccoli frozen',
+            'frozen fish','frozen shrimp','frozen fruit','frozen berries',
+            'ice cream','sorbet','frozen yogurt','mochi','popsicles',
+            'frozen waffles','hash browns','tater tots','cauliflower gnocchi']
+        },
+        {
+          name: 'Pantry & Dry Goods',
+          keywords: ['pasta','spaghetti','penne','rice','quinoa','farro','lentils',
+            'beans','canned tomato','tomato sauce','pasta sauce','olive oil','coconut oil',
+            'soy sauce','coconut aminos','broth','chicken broth','vegetable broth',
+            'flour','sugar','honey','maple syrup','jam','jelly','nut butter',
+            'peanut butter','almond butter','sunflower butter','tahini']
+        },
+        {
+          name: 'Cereal, Snacks & Nuts',
+          keywords: ['granola','cereal','oatmeal','bars','granola bars','protein bars',
+            'chips','kettle chips','tortilla chips','pretzels','popcorn','pita chips',
+            'crackers','rice crackers','almond crackers',
+            'nuts','almonds','cashews','walnuts','trail mix','dried fruit',
+            'chocolate','dark chocolate','candy','gummies','cookies']
+        },
+        {
+          name: 'Wine, Beer & Beverages',
+          keywords: ['wine','red wine','white wine','prosecco','champagne',
+            'beer','ipa','lager','cider','hard seltzer',
+            'water','sparkling water','juice','kombucha','cold brew',
+            'tea','coffee','coconut water']
+        },
+        {
+          name: 'Health & Wellness',
+          keywords: ['vitamins','supplements','protein powder','collagen','magnesium',
+            'shampoo','conditioner','body wash','lotion','sunscreen',
+            'toothpaste','deodorant','face wash','hand soap']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // STOP & SHOP
+    // Source: Curated based on published department structure
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'stop-and-shop',
+      name: 'Stop & Shop',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#d4001a',
+      searchNames: ['stop and shop','stop & shop','stop&shop'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato','corn',
+            'grapes','berries','strawberry','blueberry','mango','pineapple','watermelon',
+            'herbs','cilantro','parsley','ginger','zucchini','squash','asparagus']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey',
+            'bacon','sausage','ham','deli meat','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss',
+            'sour cream','cream cheese','yogurt','greek yogurt','cottage cheese',
+            'heavy cream','half and half','almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Deli & Prepared Foods',
+          keywords: ['deli turkey','deli ham','sliced cheese','prosciutto','salami',
+            'rotisserie chicken','prepared meals','soup deli','prepared food',
+            'olives deli','pickles deli','hummus refrigerated']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','white bread','wheat bread','rye',
+            'bagels','english muffins','rolls','buns','tortillas','pita','wraps',
+            'croissant','muffin','danish','cake','pie bakery','cookies bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','oats','granola bars','breakfast bars',
+            'pop tarts','toaster pastries','syrup','maple syrup','pancake mix','waffle mix']
+        },
+        {
+          name: 'Canned & Jarred Goods',
+          keywords: ['soup','chicken broth','vegetable broth','beef broth',
+            'canned tomato','tomato paste','tomato sauce','marinara','pasta sauce',
+            'canned beans','black beans','kidney beans','chickpeas','baked beans',
+            'canned corn','canned peas','canned green beans','canned carrots',
+            'canned fruit','peaches','pears','pineapple','fruit cocktail',
+            'canned tuna','canned salmon','canned clams','sardines',
+            'olives','pickles','salsa','applesauce']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna',
+            'mac and cheese','mac & cheese','noodles',
+            'rice','brown rice','white rice','quinoa','couscous','barley',
+            'stuffing mix','bread mix','polenta','grits']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','brown sugar','baking soda','baking powder',
+            'vanilla extract','yeast','cornstarch','shortening',
+            'cake mix','brownie mix','muffin mix','cookie mix',
+            'chocolate chips','cocoa','spices','salt','pepper','cinnamon',
+            'honey','jam','jelly','peanut butter','almond butter','nutella']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing',
+            'olive oil','vegetable oil','canola oil','cooking spray',
+            'vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce',
+            'worcestershire','fish sauce','teriyaki']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn',
+            'crackers','cheese crackers','graham crackers','rice cakes',
+            'nuts','almonds','cashews','mixed nuts','trail mix',
+            'dried fruit','raisins','fruit snacks','granola bars',
+            'cookies','candy','chocolate','gummies']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','sparkling water','soda','pepsi','coke','ginger ale',
+            'juice','apple juice','orange juice','cranberry juice',
+            'coffee','tea','green tea','iced tea',
+            'sports drinks','gatorade','energy drinks',
+            'wine','beer','hard seltzer','cider']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen fruit','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','frozen shrimp','frozen burritos',
+            'ice cream','frozen yogurt','sorbet','popsicles',
+            'frozen waffles','frozen breakfast','edamame','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','supplements','pain reliever','cold medicine','antacid',
+            'shampoo','conditioner','body wash','soap','lotion','sunscreen',
+            'toothpaste','toothbrush','deodorant','razor','feminine hygiene',
+            'baby food','diapers','baby care']
+        },
+        {
+          name: 'Cleaning & Laundry',
+          keywords: ['laundry detergent','tide','fabric softener','dryer sheets','bleach',
+            'dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes',
+            'paper towels','toilet paper','trash bags','aluminum foil','plastic wrap',
+            'ziploc','storage bags','sponge','scrub']
+        },
+        {
+          name: 'Pet & Household',
+          keywords: ['dog food','cat food','cat litter','dog treats','pet supplies',
+            'light bulbs','batteries','candles','air freshener','laundry bags']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SHAW'S / STAR MARKET
+    // Source: Curated — Shaw's uses standard New England supermarket layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'shaws',
+      name: "Shaw's",
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#005dab',
+      searchNames: ["shaw's","shaws","star market"],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','strawberry','blueberry','mango','pineapple',
+            'herbs','cilantro','parsley','ginger','zucchini','cucumber','corn']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream','half and half',
+            'almond milk','oat milk','soy milk','kefir']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','bagels','english muffins','rolls','buns',
+            'tortillas','pita','wraps','croissant','muffin','danish','cake bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup','waffle mix']
+        },
+        {
+          name: 'Canned Goods & Soups',
+          keywords: ['soup','broth','canned tomato','tomato paste','tomato sauce',
+            'canned beans','canned corn','canned peas','canned fruit','applesauce',
+            'canned tuna','canned salmon','olives','pickles','salsa']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese','noodles',
+            'rice','brown rice','quinoa','couscous','stuffing']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','brownie mix','chocolate chips','cocoa','spices',
+            'salt','pepper','cinnamon','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','tortilla chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','dried fruit','raisins',
+            'cookies','candy','chocolate','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks',
+            'energy drinks','wine','beer','cider','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','frozen chicken',
+            'frozen fish','frozen fruit','ice cream','sorbet','frozen yogurt',
+            'frozen waffles','edamame','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','conditioner','body wash','soap','lotion',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Paper Products',
+          keywords: ['laundry detergent','dish soap','all-purpose cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil','plastic wrap',
+            'ziploc','sponge','disinfecting wipes']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // HANNAFORD
+    // Source: Curated — Hannaford typical New England layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'hannaford',
+      name: 'Hannaford',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#008542',
+      searchNames: ['hannaford','hannaford supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','strawberry','blueberry','mango','pineapple',
+            'herbs','cilantro','parsley','ginger','zucchini','cucumber']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','scallops','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream',
+            'almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','sourdough','bagels','english muffins','rolls','buns',
+            'tortillas','pita','croissant','muffin','cake bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup']
+        },
+        {
+          name: 'Canned & Jarred',
+          keywords: ['soup','broth','canned tomato','tomato paste','pasta sauce',
+            'canned beans','canned vegetables','canned fruit','applesauce',
+            'canned tuna','olives','pickles','salsa']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese',
+            'rice','brown rice','quinoa','couscous','lentils','barley']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','chocolate chips','spices','salt','pepper',
+            'honey','jam','peanut butter','nut butter']
+        },
+        {
+          name: 'Condiments & Dressings',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vinegar','soy sauce','hot sauce','bbq sauce','worcestershire']
+        },
+        {
+          name: 'Snacks & Nuts',
+          keywords: ['chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','dried fruit',
+            'cookies','candy','chocolate','granola bars','rice cakes']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea',
+            'sports drinks','energy drinks','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','frozen fruit',
+            'ice cream','sorbet','frozen yogurt','edamame']
+        },
+        {
+          name: 'Health, Beauty & Baby',
+          keywords: ['vitamins','supplements','shampoo','conditioner','body wash',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers','wipes','baby formula']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil',
+            'plastic wrap','ziploc','sponge','disinfecting wipes',
+            'dog food','cat food','cat litter','pet food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // PRICE CHOPPER / MARKET 32
+    // Source: Curated — Price Chopper typical layout (NY/NE)
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'price-chopper',
+      name: 'Price Chopper',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#f26522',
+      searchNames: ['price chopper','market 32','market32'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','mango','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage','ham',
+            'salmon','tuna','shrimp','cod','deli']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream',
+            'cream cheese','cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','rolls','buns','tortillas','muffin','croissant','cake']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','syrup','pancake mix']
+        },
+        {
+          name: 'Canned Goods',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','rice','quinoa','mac and cheese','lentils']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','vanilla','spices','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','almonds','trail mix','cookies','candy']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer','sports drinks']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','ice cream','sorbet','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','pain reliever','baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','aluminum foil','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BIG Y
+    // Source: Curated — Big Y (Western MA / CT) typical layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'big-y',
+      name: 'Big Y',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#d4001a',
+      searchNames: ['big y','big y foods','big y world class'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage',
+            'salmon','tuna','shrimp','cod']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream','cream cheese',
+            'cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','rolls','buns','tortillas','muffin','cake']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','syrup','pancake mix']
+        },
+        {
+          name: 'Canned Goods & Soups',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta, Rice & Dry Goods',
+          keywords: ['pasta','spaghetti','rice','quinoa','mac and cheese','lentils','beans dry']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','vanilla','spices','cake mix','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce']
+        },
+        {
+          name: 'Snacks & Chips',
+          keywords: ['chips','pretzels','crackers','nuts','trail mix','cookies','candy','popcorn']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza','ice cream','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','pain reliever']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // KROGER (and affiliates: Fred Meyer, Fry's, Harris Teeter, Ralphs, etc.)
+    // Source: Curated — standard Kroger department structure
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'kroger',
+      name: 'Kroger',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#0073a8',
+      searchNames: ['kroger','fred meyer','frys','fry\'s food','harris teeter',
+        'ralphs','ralph\'s','king soopers','smiths','smith\'s','mariano\'s','marianos',
+        'city market','dillons'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber',
+            'lettuce','spinach','kale','broccoli','cauliflower','carrot','celery',
+            'pepper','onion','garlic','mushroom','potato','sweet potato',
+            'grapes','berries','mango','pineapple','herbs','ginger','zucchini']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','lamb','turkey',
+            'bacon','sausage','ham','deli','hot dogs',
+            'salmon','tuna','cod','shrimp','tilapia','crab']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','sour cream','cream cheese',
+            'yogurt','greek yogurt','cottage cheese','heavy cream',
+            'almond milk','oat milk','soy milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','english muffins','rolls','buns',
+            'tortillas','pita','croissant','muffin','cake','cookies bakery']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','granola bars','pop tarts',
+            'pancake mix','syrup','maple syrup','waffles mix']
+        },
+        {
+          name: 'Canned & Packaged',
+          keywords: ['soup','broth','canned tomato','tomato paste','pasta sauce',
+            'canned beans','canned vegetables','canned fruit','tuna canned',
+            'olives','pickles','salsa','applesauce']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','spaghetti','penne','mac and cheese','noodles',
+            'rice','quinoa','couscous','stuffing']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','baking powder','vanilla',
+            'cake mix','brownie mix','chocolate chips','cocoa','spices',
+            'honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','salad dressing','olive oil',
+            'vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','tortilla chips','pretzels','popcorn','crackers',
+            'nuts','almonds','cashews','trail mix','cookies','candy','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks',
+            'energy drinks','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen vegetables','frozen meals','frozen pizza',
+            'frozen chicken','frozen fish','ice cream','sorbet','edamame']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','conditioner','body wash','lotion',
+            'toothpaste','deodorant','razor','pain reliever','cold medicine',
+            'baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','all-purpose cleaner','bleach',
+            'paper towels','toilet paper','trash bags','aluminum foil',
+            'dog food','cat food','cat litter']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WALMART SUPERCENTER / NEIGHBORHOOD MARKET
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'walmart',
+      name: 'Walmart',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#0071ce',
+      searchNames: ['walmart','walmart supercenter','walmart neighborhood market','walmart grocery'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','lemon','avocado','tomato',
+            'lettuce','spinach','broccoli','carrot','pepper','onion','garlic',
+            'mushroom','potato','sweet potato','grapes','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','pork','turkey','bacon','sausage',
+            'salmon','shrimp','tilapia','cod']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','american cheese','sour cream',
+            'cream cheese','yogurt','cottage cheese','heavy cream','almond milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','white bread','wheat bread','bagels','rolls','buns','tortillas']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','oatmeal','granola','syrup','pancake mix','pop tarts']
+        },
+        {
+          name: 'Canned Goods',
+          keywords: ['soup','broth','canned tomato','pasta sauce','canned beans',
+            'canned vegetables','canned fruit','tuna','olives','pickles']
+        },
+        {
+          name: 'Pasta & Rice',
+          keywords: ['pasta','spaghetti','mac and cheese','rice','ramen','noodles']
+        },
+        {
+          name: 'Baking',
+          keywords: ['flour','sugar','baking soda','spices','cake mix','salt','pepper','vanilla']
+        },
+        {
+          name: 'Condiments & Sauces',
+          keywords: ['ketchup','mustard','mayo','salad dressing','oil','vinegar','hot sauce','bbq sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','cookies','candy','popcorn','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','sports drinks','energy drinks']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','frozen chicken',
+            'ice cream','frozen fish','frozen fries']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','soap','lotion',
+            'pain reliever','cold medicine','baby food','diapers']
+        },
+        {
+          name: 'Cleaning',
+          keywords: ['laundry detergent','dish soap','cleaner','bleach','paper towels',
+            'toilet paper','trash bags','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // TARGET
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'target',
+      name: 'Target',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#cc0000',
+      searchNames: ['target','super target'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','avocado','tomato','lettuce','spinach',
+            'broccoli','carrot','pepper','onion','garlic','potato','berries','herbs']
+        },
+        {
+          name: 'Meat & Seafood',
+          keywords: ['chicken','ground beef','steak','bacon','sausage','salmon','shrimp']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','yogurt','sour cream','cream cheese',
+            'cottage cheese','heavy cream','almond milk','oat milk']
+        },
+        {
+          name: 'Bakery & Bread',
+          keywords: ['bread','bagels','tortillas','rolls','muffin']
+        },
+        {
+          name: 'Cereal & Breakfast',
+          keywords: ['cereal','granola','oatmeal','syrup','pancake mix','granola bars']
+        },
+        {
+          name: 'Canned & Packaged',
+          keywords: ['soup','canned tomato','pasta sauce','canned beans','tuna',
+            'olives','pickles','broth']
+        },
+        {
+          name: 'Pasta, Rice & Grains',
+          keywords: ['pasta','rice','mac and cheese','quinoa','lentils']
+        },
+        {
+          name: 'Baking & Spices',
+          keywords: ['flour','sugar','baking soda','spices','vanilla','honey','jam','peanut butter']
+        },
+        {
+          name: 'Condiments & Oils',
+          keywords: ['ketchup','mustard','mayo','olive oil','salad dressing','vinegar','hot sauce']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','crackers','nuts','cookies','candy','popcorn','trail mix']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','soda','juice','coffee','tea','wine','beer','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','ice cream','frozen chicken']
+        },
+        {
+          name: 'Health & Beauty',
+          keywords: ['vitamins','shampoo','toothpaste','deodorant','lotion','sunscreen',
+            'pain reliever','baby food','diapers']
+        },
+        {
+          name: 'Cleaning & Household',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','cleaning spray','dog food','cat food']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ALDI
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'aldi',
+      name: 'ALDI',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#00529b',
+      searchNames: ['aldi','aldi market','aldi grocery'],
+      dataSource: 'curated',
+      aisles: [
+        {
+          name: 'Produce',
+          keywords: ['apple','banana','orange','avocado','tomato','lettuce','spinach',
+            'broccoli','carrot','pepper','onion','garlic','potato','berries']
+        },
+        {
+          name: 'Meat & Deli',
+          keywords: ['chicken','ground beef','steak','pork','bacon','sausage','ham',
+            'deli meat','salmon','shrimp']
+        },
+        {
+          name: 'Dairy & Eggs',
+          keywords: ['milk','butter','eggs','cheese','cheddar','yogurt','sour cream',
+            'cream cheese','cottage cheese','heavy cream']
+        },
+        {
+          name: 'Bread & Bakery',
+          keywords: ['bread','rolls','tortillas','bagels','muffin','cake']
+        },
+        {
+          name: 'Dry Goods & Pasta',
+          keywords: ['pasta','rice','oatmeal','cereal','flour','sugar','mac and cheese',
+            'quinoa','lentils','beans']
+        },
+        {
+          name: 'Canned & Jarred',
+          keywords: ['soup','canned tomato','pasta sauce','canned beans','tuna',
+            'olives','pickles','broth']
+        },
+        {
+          name: 'Baking & Condiments',
+          keywords: ['baking soda','vanilla','spices','ketchup','mustard','mayo',
+            'olive oil','vinegar','hot sauce','jam','peanut butter','honey']
+        },
+        {
+          name: 'Snacks',
+          keywords: ['chips','pretzels','crackers','nuts','almonds','cookies','candy','granola bars']
+        },
+        {
+          name: 'Beverages',
+          keywords: ['water','juice','coffee','tea','soda','sparkling water']
+        },
+        {
+          name: 'Frozen',
+          keywords: ['frozen meals','frozen pizza','frozen vegetables','ice cream','frozen fish']
+        },
+        {
+          name: 'Household & Health',
+          keywords: ['laundry detergent','dish soap','paper towels','toilet paper',
+            'trash bags','vitamins','shampoo','toothpaste']
+        }
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // PUBLIX
+    // Source: Curated based on typical Publix department layout
+    // Southeast US chain; departments consistent across locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'publix',
+      name: 'Publix',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#009f4d',
+      searchNames: ['publix','publix super market','publix supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower'] },
+        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','pepperoni','prosciutto','pastrami','sliced cheese','american cheese','swiss','provolone','deli meat','sandwich','sub','wrap','prepared food','rotisserie','fried chicken','hot bar','olive','pickle','hummus'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pita','naan','tortilla','english muffin','brioche','cake','pie','cookie','donut','pastry','danish','brownie'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','sausage','bacon','lamb','veal','crab','lobster','scallop','clam','fish','turkey breast','pork chop','ribs'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','peas','corn','french fries','tater tots','waffle','pancake','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','soy milk','creamer','espresso','matcha','hot chocolate','punch'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','pepper','olive oil','vegetable oil','vinegar','sauce','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','ranch','soup','broth','stock','beans','lentils','quinoa','oats','cereal','granola','honey','jam','jelly','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','popcorn','pretzels','baking soda','baking powder','vanilla','cocoa','canned tomato','canned tuna','canned beans','breadcrumbs'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','licorice','cookies','snack','fruit snacks','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','moisturizer','sunscreen','toothpaste','toothbrush','floss','mouthwash','deodorant','razors','shaving cream','vitamins','supplements','medicine','pain reliever','allergy','bandage','first aid','feminine care','diapers','baby','makeup','skincare','hair care'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','candle','batteries','light bulbs','aluminum foil','plastic wrap','zip bags'] },
+        { name: 'Beer, Wine & Spirits', keywords: ['wine','beer','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','liquor','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','mead'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // H-E-B
+    // Source: Curated based on typical HEB department layout
+    // Texas-focused chain with strong fresh department presence
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'heb',
+      name: 'H-E-B',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#e31837',
+      searchNames: ['h-e-b','heb','h e b','central market','heb plus'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','jalapeño','tomatillo','cilantro','lime','mango','papaya','pineapple','guava','mushroom','zucchini','corn','potato','sweet potato','cabbage','cauliflower','beet','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','carne asada','fajita meat','chorizo','carnitas','barbacoa','brisket','ribs','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','lamb','turkey','pork chop','ham','deli meat'] },
+        { name: 'Bakery & Tortilleria', keywords: ['bread','bagel','muffin','roll','bun','sourdough','baguette','tortilla','flour tortilla','corn tortilla','pita','pan dulce','bolillo','conchas','cookies','cake','pie','donut','pastry','brownie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','queso fresco','cotija','oaxaca cheese','jack cheese','whipped cream','almond milk','oat milk'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','sliced cheese','sandwich','prepared food','rotisserie','fried chicken','hot bar','guacamole','pico de gallo','salsa','hummus','olive','pickle'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','edamame','french fries','tamales','frozen burrito','enchiladas','frozen shrimp','ice','frozen fruit','frozen waffle'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','sports drink','energy drink','lemonade','horchata','agua fresca','coconut water','almond milk','oat milk','creamer','beer','wine'] },
+        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','masa','cornmeal','sugar','salt','olive oil','vegetable oil','lard','vinegar','sauce','pasta sauce','salsa','enchilada sauce','mole','soy sauce','hot sauce','sriracha','tamarind','adobo','soup','broth','beans','pinto beans','black beans','lentils','quinoa','oats','cereal','honey','jam','peanut butter','crackers','chips','tortilla chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned chile','canned beans','spices','cumin','chili powder'] },
+        { name: 'International & Hispanic Foods', keywords: ['tortilla','tamales','mole','adobo','chipotle','chile','ancho','pasilla','guajillo','jamaica','piloncillo','mexican chocolate','tomatillo','nopales','chayote','jicama','plantain','yuca','masa harina','menudo','pozole','sofrito'] },
+        { name: 'Snacks', keywords: ['chips','tortilla chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','cookies','jerky','fruit snacks','rice cake','sunflower seeds'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MEIJER
+    // Source: Curated based on typical Meijer supercenter layout
+    // Midwest supercenter with full grocery + general merchandise
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'meijer',
+      name: 'Meijer',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#e31837',
+      searchNames: ['meijer','meijer superstore','meijer supercenter'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','cabbage','cauliflower','beet','arugula'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','ribs','fish','deli meat','hot dogs','brats','bratwurst'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','tortilla','english muffin','pita','cookies','cake','pie','donut','pastry','brownie'] },
+        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','provolone','sandwich','prepared food','rotisserie','fried chicken','hot bar','olive','pickle','hummus'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','corn','french fries','tater tots','waffle','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+        { name: 'General Merchandise', keywords: ['electronics','clothing','shoes','toys','bedding','towels','kitchen','tools','auto','seasonal','garden','sporting goods','books','office','school supplies','storage','luggage'] },
+        { name: 'Pharmacy', keywords: ['prescription','pharmacy','vitamins','supplements','first aid','bandage','cold','flu','allergy medicine','pain reliever','antacid','eye drops','ear drops','cough syrup'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WEGMANS
+    // Source: Curated based on typical Wegmans department layout
+    // Northeast/Mid-Atlantic upscale chain with large prepared foods section
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'wegmans',
+      name: 'Wegmans',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#004b87',
+      searchNames: ['wegmans','wegmans food markets','wegman\'s'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower','leek','fennel'] },
+        { name: 'Organic & Natural', keywords: ['organic','natural','gluten free','vegan','plant based','non-gmo','whole grain','sprouted','raw','superfood','chia','flaxseed','hemp','nutritional yeast','kombucha','kefir'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','oyster','sausage','bacon','lamb','veal','turkey','pork chop','ribs','duck','bison'] },
+        { name: 'Prepared Foods & Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','sandwich','sushi','prepared food','rotisserie','fried chicken','hot bar','pizza','soup','salad bar','olive','pickle','hummus','charcuterie','pâté'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pita','ciabatta','focaccia','english muffin','brioche','cake','pie','cookie','donut','pastry','danish','brownie','eclair','macaron','tart'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','camembert','feta','gouda','gruyère','manchego','aged cheddar','whipped cream','almond milk','oat milk','soy milk'] },
+        { name: 'Cheese Shop', keywords: ['cheese','brie','camembert','manchego','gruyère','gouda','aged cheddar','blue cheese','gorgonzola','stilton','fontina','havarti','goat cheese','chevre','wensleydale','pecorino'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp','frozen appetizer'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer','espresso','matcha'] },
+        { name: 'Pantry & World Foods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vinegar','pasta sauce','salsa','soy sauce','fish sauce','sriracha','miso','tahini','soup','broth','beans','lentils','quinoa','farro','oats','cereal','honey','jam','peanut butter','almond butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','spices','curry paste','coconut milk'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
+        { name: 'Floral', keywords: ['flowers','bouquet','plant','succulent','potted plant','floral','roses','tulips','orchid','lily','arrangement','vase'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SAFEWAY / ALBERTSONS
+    // Source: Curated based on typical Safeway/Albertsons layout
+    // Covers both banners as they share near-identical layouts
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'safeway',
+      name: 'Safeway',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#e31837',
+      searchNames: ['safeway','albertsons','vons','pavilions','randalls','tom thumb','acme','jewel','jewel-osco','star market','united supermarkets','market street'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','cabbage','cauliflower'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','fish','deli meat','hot dogs'] },
+        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','sandwich','prepared food','rotisserie','fried chicken','olive','pickle','hummus'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','tortilla','english muffin','cookies','cake','pie','donut','pastry','brownie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
+        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','mead','spirits','vodka','whiskey','bourbon','rum','tequila'] },
+        { name: 'Pharmacy', keywords: ['prescription','pharmacy','vitamins','supplements','first aid','bandage','cold','flu','allergy medicine','pain reliever','antacid','eye drops','cough syrup'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // FOOD LION
+    // Source: Curated based on typical Food Lion layout
+    // Southeast/Mid-Atlantic value-focused chain
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'food-lion',
+      name: 'Food Lion',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#0066cc',
+      searchNames: ['food lion','food lion llc'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','catfish','sausage','bacon','ham','turkey','hot dogs','deli meat','fish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','bread','bagel','roll','bun','loaf','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','cider','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // GIANT / MARTIN'S
+    // Source: Curated based on typical Giant Food layout
+    // Mid-Atlantic chain (covers Giant Food and Giant Food Stores banners)
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'giant',
+      name: 'Giant Food',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#e31837',
+      searchNames: ['giant','giant food','giant food stores','martins','martin\'s food','martin\'s'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','cabbage','cauliflower'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','fish','deli meat','hot dogs','crab','lobster'] },
+        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','provolone','sandwich','prepared food','rotisserie','fried chicken','olive','pickle','hummus'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','tortilla','english muffin','cookies','cake','pie','donut','pastry','brownie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','whipped cream','almond milk','oat milk','soy milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
+        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','spirits','vodka','whiskey','bourbon','rum','tequila'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // COSTCO
+    // Source: Curated based on typical Costco warehouse layout
+    // Warehouse club — departments rather than numbered aisles
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'costco',
+      name: 'Costco',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#005daa',
+      searchNames: ['costco','costco wholesale','costco warehouse'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','coleslaw','fruit'] },
+        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','bison','turkey','pork chop','ribs','prime rib','tenderloin','rotisserie chicken','hot dogs','sausage','bacon','ham'] },
+        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass','calamari'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','spanakopita','charcuterie','cheese board','guacamole','hummus','salsa'] },
+        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','madeleine','cheesecake','tart'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','manchego','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','spring rolls','wontons','ice','frozen fruit','frozen shrimp','frozen fish'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
+        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried mango','dried cranberry'] },
+        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
+        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
+        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','camera','printer','computer','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','furniture','bedding','towels','kitchen'] },
+        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
+      ]
+    },
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SPROUTS FARMERS MARKET
+    // Source: Curated based on typical Sprouts layout
+    // Health/natural-focused chain, Sun Belt, ~400 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'sprouts',
+      name: 'Sprouts Farmers Market',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#5a9e3a',
+      searchNames: ['sprouts','sprouts farmers market','sprouts market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower','leek','fennel','chard','collard greens','microgreens','sprouts'] },
+        { name: 'Bulk Foods', keywords: ['bulk','granola','oats','nuts','almonds','cashews','walnuts','pecans','dried fruit','raisins','dried mango','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','coffee','tea','spices','nutritional yeast','protein powder'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic chicken','wild caught','bison','venison'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','sliced cheese','sandwich','prepared food','rotisserie','soup','salad','hummus','olive','pickle','guacamole','charcuterie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','tortilla','english muffin','gluten free bread','pita','cookies','cake','pie','donut','brownie'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen shrimp','frozen acai','frozen smoothie'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','energy drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake','smoothie'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium'] },
+        { name: 'Natural & Organic Grocery', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','baking powder','canned tomato','canned beans','spices','curry','miso'] },
+        { name: 'Body Care & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm','hair care'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','natural cleaner','dryer sheets','aluminum foil','plastic wrap','beeswax wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WINN-DIXIE
+    // Source: Curated based on typical Winn-Dixie layout
+    // Southeast US chain (Southeastern Grocers), ~490 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'winn-dixie',
+      name: 'Winn-Dixie',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['winn-dixie','winn dixie','winndixie'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs','cilantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish','crab','oyster'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','bread','bagel','roll','bun','loaf','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','cider','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','spirits','vodka','whiskey','bourbon','rum','tequila'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BI-LO / HARVEYS (Southeastern Grocers)
+    // Source: Curated — same parent as Winn-Dixie, similar layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'bilo',
+      name: 'BI-LO',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#004b8d',
+      searchNames: ['bi-lo','bilo','harveys','harveys supermarket','fresco y mas'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WINCO FOODS
+    // Source: Curated based on typical WinCo layout
+    // Employee-owned discount warehouse, ~130 locations, West/Northwest
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'winco',
+      name: 'WinCo Foods',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#003087',
+      searchNames: ['winco','winco foods','win-co'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cabbage','cauliflower','corn'] },
+        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','quinoa','lentils','rice','flour','sugar','cocoa','spices','candy','chocolate covered','gummy'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','sparkling water','almond milk','oat milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','rice cake'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // LIDL
+    // Source: Curated based on typical Lidl US layout
+    // German discount chain, ~170 US locations, Southeast/Mid-Atlantic
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'lidl',
+      name: 'Lidl',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#0050aa',
+      searchNames: ['lidl','lidl us'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','herbs','corn'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
+        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','pepperoni','prosciutto','sliced cheese','american cheese','swiss','provolone','brie','gouda','cheddar','feta','goat cheese','charcuterie'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pretzel','cookies','cake','pie','donut','pastry','danish','brownie'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','schnitzel','frozen fish','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','muesli'] },
+        { name: 'Snacks & Sweets', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','candy','chocolate','gummies','cookies','wafers','marzipan','stollen','biscuits'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','sunscreen'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','dryer sheets','aluminum foil','plastic wrap'] },
+        { name: 'Middle Aisle (Weekly Specials)', keywords: ['tools','clothing','electronics','garden','sports','seasonal','kitchen gadgets','bedding','luggage','toys','outdoor','camping','fitness'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SAVE-A-LOT
+    // Source: Curated based on typical Save-A-Lot layout
+    // Deep-discount chain, ~900 locations, nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'save-a-lot',
+      name: 'Save-A-Lot',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e8171f',
+      searchNames: ['save-a-lot','save a lot','savealot'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','potato','sweet potato','cabbage','corn'] },
+        { name: 'Meat & Poultry', keywords: ['chicken','beef','pork','ground beef','ground turkey','sausage','bacon','ham','turkey','hot dogs','fish','tilapia'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','american cheese'] },
+        { name: 'Bread & Bakery', keywords: ['bread','bagel','roll','bun','tortilla','english muffin','cookies','cake','donut'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Household', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // GROCERY OUTLET
+    // Source: Curated based on typical Grocery Outlet layout
+    // Deep-discount opportunistic buyer, ~450 locations, West Coast/expanding
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'grocery-outlet',
+      name: 'Grocery Outlet',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e8171f',
+      searchNames: ['grocery outlet','grocery outlet bargain market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
+        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','prepared food','rotisserie','pickle','hummus'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','brie','whipped cream','almond milk','oat milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','tortilla','cookies','cake','donut','pastry','brownie'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','almond milk','oat milk'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','sunscreen'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // STATER BROS
+    // Source: Curated based on typical Stater Bros layout
+    // Southern California regional chain, ~170 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'stater-bros',
+      name: 'Stater Bros.',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['stater bros','stater brothers','stater bros markets'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','carne asada','chorizo','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish','ribs'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','queso fresco','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','tamales','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','horchata','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','masa','sugar','salt','oil','lard','vinegar','pasta sauce','salsa','enchilada sauce','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','pinto beans','black beans','oats','cereal','honey','jam','peanut butter','crackers','tortilla chips','nuts','popcorn','baking soda','canned tomato','canned chile','canned beans','spices','cumin','chili powder'] },
+        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // THE FRESH MARKET
+    // Source: Curated based on typical Fresh Market layout
+    // Upscale specialty grocer, ~160 locations, Southeast focus
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'fresh-market',
+      name: 'The Fresh Market',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#2e7d32',
+      searchNames: ['fresh market','the fresh market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','fennel','leek','beet','radish','exotic fruit','dragon fruit','passion fruit'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','oyster','sausage','bacon','lamb','veal','duck','bison','wild boar','venison'] },
+        { name: 'Prepared Foods & Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','sandwich','sushi','prepared food','rotisserie','hot bar','soup','salad','hummus','olive','pickle','charcuterie','pâté','terrine'] },
+        { name: 'Cheese & Charcuterie', keywords: ['cheese','brie','camembert','manchego','gruyère','gouda','aged cheddar','blue cheese','gorgonzola','stilton','fontina','havarti','goat cheese','chevre','pecorino','prosciutto','salami','mortadella','soppressata'] },
+        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','ciabatta','focaccia','brioche','cake','pie','cookie','donut','pastry','eclair','macaron','tart','scone'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','french fries','ice','frozen fruit','frozen appetizer','frozen dessert'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','cold brew','matcha','lemonade','cider','coconut water'] },
+        { name: 'Pantry & Specialty', keywords: ['pasta','rice','flour','sugar','salt','olive oil','truffle oil','vinegar','balsamic','pasta sauce','salsa','soy sauce','fish sauce','sriracha','miso','tahini','soup','broth','beans','lentils','quinoa','farro','oats','cereal','honey','maple syrup','jam','peanut butter','almond butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','spices','curry paste','coconut milk'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','vitamins','supplements','essential oil','natural beauty'] },
+        { name: 'Household & Floral', keywords: ['flowers','bouquet','plant','candle','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','aluminum foil'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // NATURAL GROCERS (Vitamin Cottage)
+    // Source: Curated based on typical Natural Grocers layout
+    // Organic/natural chain, ~160 locations, Mountain West
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'natural-grocers',
+      name: 'Natural Grocers',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#6aaa3a',
+      searchNames: ['natural grocers','vitamin cottage','natural grocers vitamin cottage'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','potato','sweet potato','ginger','herbs','arugula','beet','radish','chard','collard greens','microgreens'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic','wild caught','bison','venison'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
+        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','sourdough','tortilla','gluten free bread','pita','cookies','cake','brownie','sprouted bread'] },
+        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','spices','nutritional yeast'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen acai'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium','adaptogen','CBD','herbal','homeopathic'] },
+        { name: 'Grocery & Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','canned tomato','canned beans','spices','miso','curry'] },
+        { name: 'Body Care', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','natural cleaner','beeswax wrap','dryer balls'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // LUCKY SUPERMARKETS
+    // Source: Curated based on typical Lucky's layout
+    // California regional chain
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'lucky',
+      name: 'Lucky Supermarkets',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['lucky','lucky supermarkets','lucky stores','lucky supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','turkey','hot dogs','fish','crab'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sparkling water','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // FIESTA MART
+    // Source: Curated based on typical Fiesta Mart layout
+    // Texas Hispanic-focused chain, ~70 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'fiesta-mart',
+      name: 'Fiesta Mart',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['fiesta mart','fiesta','fiesta supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','jalapeño','tomatillo','cilantro','mango','papaya','pineapple','guava','mushroom','potato','sweet potato','cabbage','chayote','jicama','nopales','plantain','yuca','corn','herbs'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','carne asada','fajita','chorizo','carnitas','barbacoa','chicharron','tripe','menudo','beef tongue','salmon','tilapia','shrimp','catfish','crab','whole fish','sausage','bacon','ham','turkey'] },
+        { name: 'Tortilleria & Bakery', keywords: ['tortilla','flour tortilla','corn tortilla','pan dulce','bolillo','conchas','telera','bread','roll','bun','tres leches','cake','cookies','donut','pastry','empanada'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','chicharron','prepared food','rotisserie','fried chicken','carnitas','tamales','pozole','menudo','soup','hot bar','guacamole','pico de gallo','salsa','hummus'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso fresco','cotija','oaxaca cheese','panela','manchego','asadero','whipped cream','evaporated milk','condensed milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','burritos','enchiladas','taquitos','edamame','french fries','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','horchata','agua fresca','Jamaica','tamarind','coconut water','almond milk','Jarritos','Mexican soda','cider'] },
+        { name: 'Hispanic Foods & Pantry', keywords: ['tortilla','masa','masa harina','cornmeal','rice','beans','pinto beans','black beans','refried beans','chile','ancho','pasilla','guajillo','chipotle','adobo','mole','enchilada sauce','salsa','tomatillo','tamarind','piloncillo','cajeta','dulce de leche','hot sauce','Valentina','Tapatio','flour','sugar','salt','oil','lard','manteca','vinegar','soy sauce','spices','cumin','chili powder','oregano','cinnamon','vanilla'] },
+        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','chicharron','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Mexican candy','tamarind candy','churros','pepino','chamoy'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SEDANO'S
+    // Source: Curated based on typical Sedano's layout
+    // Florida Hispanic-focused chain, ~30 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'sedanos',
+      name: "Sedano's",
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ["sedano's","sedanos","sedano's supermarkets"],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','cilantro','mango','papaya','pineapple','guava','plantain','yuca','boniato','malanga','chayote','corn','herbs','ají','culantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','ground beef','carne asada','palomilla','vaca frita','pernil','lechon','chorizo','morcilla','salmon','tilapia','shrimp','snapper','crab','whole fish','sausage','bacon','ham','turkey','masitas'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','Cuban sandwich','medianoche','croqueta','prepared food','rotisserie','fried chicken','ropa vieja','picadillo','congri','hot bar','tamales','guacamole','salsa'] },
+        { name: 'Bakery', keywords: ['Cuban bread','pan cubano','bread','roll','bun','medianoche','mallorca','pan dulce','cookies','cake','donut','pastry','tres leches','flan'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso blanco','queso fresco','gouda','whipped cream','evaporated milk','condensed milk','café con leche'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','tostones','yuca frita','plantains','pastelitos','croquetas','french fries','ice','frozen fruit','frozen shrimp'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','café','Bustelo','Pilon','horchata','coconut water','almond milk','Materva','Ironbeer','Jupina','Goya soda','malta','cider'] },
+        { name: 'Cuban & Latin Foods & Pantry', keywords: ['rice','black beans','red beans','sofrito','Goya','Sazon','Adobo','Bijol','olive oil','vinegar','mojo','naranja agria','hot sauce','guava paste','guava jelly','dulce de leche','coconut cream','plantain chips','tostones','yuca','malanga','boniato','corn flour','masa','spices','cumin','oregano','bay leaf','cinnamon','vanilla'] },
+        { name: 'Snacks & Candy', keywords: ['chips','plantain chips','mariquitas','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Cuban crackers','galletas'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BROOKSHIRE'S / SUPER 1 FOODS
+    // Source: Curated based on typical Brookshire's layout
+    // Texas/Louisiana/Arkansas regional chain, ~150 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'brookshires',
+      name: "Brookshire's",
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ["brookshire's",'brookshires','brookshire grocery','super 1 foods','super one foods','spring market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','corn','cabbage','herbs','cilantro'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','catfish','tilapia','shrimp','salmon','tuna','sausage','andouille','bacon','ham','turkey','hot dogs','fish','crab','crawfish'] },
+        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food','kolache'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sweet tea','almond milk','creamer'] },
+        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','red beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','Cajun seasoning','Tony Chachere'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','pork rinds'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
+        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DOLLAR GENERAL (grocery items)
+    // Source: Curated based on typical Dollar General grocery layout
+    // Discount/convenience, ~19,000 locations nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'dollar-general',
+      name: 'Dollar General',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#ffcb05',
+      searchNames: ['dollar general','dgx','dollar general market'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','rice cake'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','creamer','kool-aid','powdered drink'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','cold','flu','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags','sponge','mop','broom','light bulbs','batteries','candles','air freshener'] },
+        { name: 'Seasonal & General', keywords: ['seasonal','holiday','clothing','socks','underwear','school supplies','office','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','automotive','tools'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // FAMILY DOLLAR (grocery items)
+    // Source: Curated based on typical Family Dollar grocery layout
+    // Discount/convenience, ~8,000 locations nationwide
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'family-dollar',
+      name: 'Family Dollar',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#8b0000',
+      searchNames: ['family dollar'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','kool-aid','powdered drink'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','sponge','light bulbs','batteries','candles','air freshener'] },
+        { name: 'Clothing & General', keywords: ['clothing','socks','underwear','school supplies','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','seasonal','holiday'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DOLLAR TREE (grocery items)
+    // Source: Curated based on typical Dollar Tree grocery layout
+    // Everything-$1.25 discount chain, ~8,000 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'dollar-tree',
+      name: 'Dollar Tree',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#007a3d',
+      searchNames: ['dollar tree'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','hot sauce','mustard','ketchup','soup','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks','granola bar'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','kool-aid','powdered drink','creamer'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','deli meat','hot dogs'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','waffle','burrito','ice'] },
+        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips','makeup','nail polish'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','aluminum foil','plastic wrap','zip bags','sponge','light bulbs','batteries','candles','air freshener','storage','baskets','organizers'] },
+        { name: 'Party & Seasonal', keywords: ['party supplies','balloons','plates','cups','napkins','gift wrap','greeting cards','seasonal','holiday','decorations','toys','crafts','stationery','school supplies','office','pet food'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // CVS PHARMACY (grocery items)
+    // Source: Curated based on typical CVS grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'cvs',
+      name: 'CVS Pharmacy',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#cc0000',
+      searchNames: ['cvs','cvs pharmacy','cvs health'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','protein powder','fiber'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor','glucose meter'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','dried fruit','cereal','oats','soup','canned goods','pasta','rice','peanut butter','jam','honey','crackers','instant noodles','mac and cheese'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','kombucha','sparkling water','lemonade','coconut water'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat','hummus','salad'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit','frozen vegetable'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','toner','serum','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','nail care','perfume','cologne','deodorant','razors','shaving cream','waxing','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','baby shampoo','baby powder','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','detergent','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','sponge','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','office','stationery'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // WALGREENS (grocery items)
+    // Source: Curated based on typical Walgreens grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'walgreens',
+      name: 'Walgreens',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#e31837',
+      searchNames: ['walgreens','walgreens pharmacy','duane reade'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber','protein powder'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles','mac and cheese'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade','coconut water'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // RITE AID (grocery items)
+    // Source: Curated based on typical Rite Aid grocery/convenience layout
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'rite-aid',
+      name: 'Rite Aid',
+      type: 'grocery',
+      confidence: 0.7,
+      color: '#003087',
+      searchNames: ['rite aid','rite-aid'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
+        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber'] },
+        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer'] },
+        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade'] },
+        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','ice','frozen fruit'] },
+        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
+        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
+        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
+      ]
+    },
+  ] // end grocery array
+
+  // Future categories can be added here:
+  // pharmacy: [...],
+  // hardware: [...],
+};
+
+// Helper: find a chain template by matching a Google Places store name
+function matchStoreToLibrary(placeName) {
+  if (!placeName) return null;
+  const lower = placeName.toLowerCase();
+  for (const category of Object.keys(STORE_LIBRARY)) {
+    for (const chain of STORE_LIBRARY[category]) {
+      for (const searchName of chain.searchNames) {
+        if (lower.includes(searchName)) return chain;
+      }
+    }
+  }
+  return null;
+}
+
+// Helper: get all chains in a flat list
+function getAllLibraryStores() {
+  return Object.values(STORE_LIBRARY).flat();
+}
+
+
+const AISLE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#e879f9','#facc15','#f87171','#22d3ee'];
+const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#facc15','#f87171'];
+
+// ══════════════════════════════
+// STATE
+// ══════════════════════════════
+let state = {
+  stores: [], activeStoreId: null, activeListId: {},
+  lists: {},
+  corrections: {},
+  editingStoreId: null,
+  suggestionsEnabled: true,
+  _aislesFirstCheckDone: {},
+  _historyCache: null,      // loaded once on login, array of history entries
+  _dismissedCache: null,    // loaded once on login, Set of normalised item names
+};
+let tempAisles = [];
+let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
+let tempColor = STORE_COLORS[0];
+let moveItemIndex = null;
+
+// drag state
+let dragSrcIdx = null, dragSrcAisle = null;
+let touchClone = null, touchSrcIdx = null, touchSrcAisle = null;
+let touchOffX = 0, touchOffY = 0;
+
+// ══════════════════════════════
+// AUTH UI HELPERS
+// ══════════════════════════════
+function switchAuthTab(tab) {
+  // Hide forgot panel if returning to tabs
+  document.getElementById('auth-panel-forgot')?.classList.remove('active');
+  ['signin','signup'].forEach(t => {
+    document.getElementById('auth-panel-'+t)?.classList.toggle('active', t===tab);
+  });
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>{
+    b.classList.toggle('active', (i===0&&tab==='signin')||(i===1&&tab==='signup'));
+  });
+}
+
+// Safe callers — wait for Firebase module to be ready before delegating
+function signInEmail()      { if(window._fbReady) window.signInEmail();      else showToast('Loading… please try again'); }
+function signUpEmail()      { if(window._fbReady) window.signUpEmail();      else showToast('Loading… please try again'); }
+function signInGoogle()     { if(window._fbReady) window.signInGoogle();     else showToast('Loading… please try again'); }
+function signOut()          { if(window._fbReady) window.signOut();          else showToast('Loading… please try again'); }
+function sendResetEmail()   { if(window._fbReady) window.sendResetEmail();   else showToast('Loading… please try again'); }
+function showForgotPassword(){ if(window._fbReady) window.showForgotPassword(); else showToast('Loading… please try again'); }
+function toggleChangePassword() {
+  const fields = document.getElementById('change-pass-fields');
+  const btn    = document.getElementById('btn-show-change-pass');
+  const shown  = fields.style.display !== 'none';
+  fields.style.display = shown ? 'none' : 'block';
+  btn.textContent      = shown ? '🔑 Change Password' : '✕ Cancel';
+  if (!shown) document.getElementById('current-password')?.focus();
+}
+function changePassword()   { if(window._fbReady) window.changePassword();   else showToast('Loading… please try again'); }
+
+
+
+function openProfileModal() {
+  openModal('modal-profile');
+  renderSuggestionsToggle();
+}
+
+function renderSuggestionsToggle() {
+  const btn  = document.getElementById('suggestions-toggle-btn');
+  const knob = document.getElementById('suggestions-toggle-knob');
+  if (!btn || !knob) return;
+  const on = state.suggestionsEnabled;
+  btn.style.background = on ? 'var(--green,#22c55e)' : 'var(--border,#444)';
+  knob.style.left      = on ? '21px' : '3px';
+}
+
+function toggleSuggestionsEnabled() {
+  state.suggestionsEnabled = !state.suggestionsEnabled;
+  renderSuggestionsToggle();
+  if (window.persistUserPrefs) window.persistUserPrefs();
+}
+
+function boot() {
+  renderAll();
+}
+
+// NAVIGATION
+// ══════════════════════════════
+function switchScreen(name, pushHistory=true) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const tb = document.getElementById('list-toolbar');
+  if (tb) tb.classList.toggle('visible', name === 'list');
+  const screenEl = document.getElementById('screen-'+name);
+  if (screenEl) screenEl.classList.add('active');
+  if (pushHistory) history.pushState({ type: 'screen', screen: name }, '', '');
+}
+
+// ══════════════════════════════
+// RENDER
+// ══════════════════════════════
+function renderAll(){ renderTopbar(); renderListScreen(); }
+
+function renderTopbar(){
+  const s=getActiveStore();
+  document.getElementById('active-store-name').textContent = s?s.name:'No store';
+  document.getElementById('active-store-dot').style.background = s?s.color:'#555';
+}
+
+function renderListScreen(){
+  const cont=document.getElementById('list-content');
+  const store=getActiveStore();
+  if(!store){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; const _tb1=document.getElementById('list-toolbar'); if(_tb1) _tb1.classList.remove('visible'); return; }
+  migrateListsIfNeeded(store.id);
+  const items=getActiveListItems(store.id);
+  if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="4" y="2" width="16" height="20" rx="2"/>
+  <line x1="8" y1="6" x2="8" y2="6"/>
+  <line x1="10" y1="6" x2="17" y2="6"/>
+  <line x1="8" y1="10" x2="8" y2="10"/>
+  <line x1="10" y1="10" x2="16" y2="10"/>
+  <line x1="8" y1="14" x2="8" y2="14"/>
+  <line x1="10" y1="14" x2="15" y2="14"/>
+  <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
+  <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
+  <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
+  <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
+</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; const _tb2=document.getElementById('list-toolbar'); if(_tb2) _tb2.classList.remove('visible'); return; }
+
+  // group
+  const groups={};
+  items.forEach((item,idx)=>{
+    const key=(item.aisleIndex!==null&&item.aisleIndex!==undefined)?item.aisleIndex:'unmatched';
+    if(!groups[key]) groups[key]=[];
+    groups[key].push({...item,idx});
+  });
+  const keys=Object.keys(groups).filter(k=>k!=='unmatched').sort((a,b)=>+a-+b);
+  if(groups['unmatched']) keys.push('unmatched');
+
+  const total=items.length, done=items.filter(i=>i.checked).length;
+  // Update sticky toolbar count
+  const tcEl = document.getElementById('list-toolbar-count');
+  if (tcEl) {
+    const lid = getActiveListId(store.id);
+    const lname = lid && getLists(store.id)?.lists[lid]?.name;
+    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + done + '/' + total + ' ✓';
+  }
+  const tb = document.getElementById('list-toolbar');
+  if (tb) tb.classList.add('visible');
+
+  // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
+  // on page load, so a new check in that aisle still fires suggestions.
+  // We only do this once per store per session (if the Set already exists, skip).
+  if (!state._aislesFirstCheckDone[store.id]) {
+    state._aislesFirstCheckDone[store.id] = new Set();
+    items.forEach(function(item) {
+      if (item.checked && !item.isSuggested) {
+        var ak = (item.aisleIndex !== null && item.aisleIndex !== undefined)
+          ? String(item.aisleIndex) : 'unmatched';
+        state._aislesFirstCheckDone[store.id].add(ak);
+      }
+    });
+  }
+
+  let html=``;
+
+  keys.forEach(key=>{
+    const gItems=groups[key];
+    const isUM=key==='unmatched';
+    const color=isUM?'#fbbf24':AISLE_COLORS[+key%AISLE_COLORS.length];
+    const aisle=!isUM?store.aisles[+key]:null;
+    const aisleName=isUM?'? Unmatched Items':(aisle?aisle.name:`Aisle ${+key+1}`);
+    const unchecked=gItems.filter(i=>!i.checked).length;
+
+    html+=`<div class="aisle-group">
+      <div class="aisle-group-header" style="background:${hexRgba(color,.12)};color:${color}">
+        ${isUM?'⚠':'🛒'} ${esc(aisleName)}
+        <span class="aisle-count">${unchecked} left</span>
+      </div>
+      <div class="items-container" data-aisle-key="${key}">`;
+
+    gItems.forEach(item=>{
+      const bgBadge=hexRgba(color,.18);
+      const aiDot=item.aiClassified?`<span class="ai-dot" title="AI classified">✦</span>`:'';
+      if (item.isSuggested) {
+        html+=`<div class="list-item suggested"
+            data-item-idx="${item.idx}" data-aisle-key="${key}">
+          <span class="suggested-label">Suggested</span>
+          <div class="item-name" style="flex:1;cursor:pointer" onclick="window.acceptSuggestion(${item.idx})">${esc(item.name)}</div>
+          <button class="dismiss-suggestion" onclick="window.dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
+        </div>`;
+      } else {
+        html+=`<div class="list-item ${item.checked?'checked':''}"
+            data-item-idx="${item.idx}" data-aisle-key="${key}">
+          <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
+            ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
+          </div>
+          <div class="item-name">${esc(item.name)} ${aiDot}</div>
+          <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
+            ${isUM?'?':`A${+key+1}`}
+          </div>
+        </div>`;
+      }
+    });
+
+    // Drop zone at bottom of each aisle group
+    html+=`<div class="drop-zone" data-aisle-key="${key}"
+        ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event,'${key}')"></div>`;
+    html+=`</div></div>`;
+  });
+
+  cont.innerHTML=html;
+  // Wire touch and mouse long-press drag on all non-suggested items
+  document.querySelectorAll('.list-item:not(.suggested)').forEach(el=>{
+    const idx=+el.dataset.itemIdx;
+    const key=el.dataset.aisleKey;
+    el.addEventListener('touchstart', e=>tStart(e,idx,key), {passive:true});
+    el.addEventListener('touchmove',  e=>tMove(e),           {passive:false});
+    el.addEventListener('touchend',   e=>tEnd(e),            {passive:true});
+  });
+  initItemMouseLongPress();
+}
+
+function renderStoresScreen(){
+  const cont=document.getElementById('stores-list');
+  if(!state.stores.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l1-5h16l1 5"/>
+  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
+  <path d="M5 11v9h14v-9"/>
+  <rect x="8" y="13" width="8" height="5" rx="1"/>
+  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
+  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
+</svg></div><div class="empty-title">No stores yet</div><div class="empty-sub">Add your first store to get started.</div></div>`; return; }
+  cont.innerHTML=state.stores.map(store=>{
+    migrateListsIfNeeded(store.id); const ll=getActiveListItems(store.id).length;
+    const cc=Object.keys(state.corrections[store.id]||{}).length;
+    const isOwner=!window._currentUser||store.ownerUid===window._currentUser?.uid;
+
+    return `<div class="card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:12px;height:12px;border-radius:50%;background:${store.color};flex-shrink:0"></div>
+          <div>
+            <div style="font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:8px">${esc(store.name)}</div>
+            <div class="text-muted">${store.aisles.length} aisles · ${ll} items · ${cc} corrections</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+
+          ${isOwner?`<button class="btn btn-sm btn-ghost" onclick="editStore('${store.id}')">Edit</button>`:''}
+          <button class="btn btn-sm btn-danger" onclick="deleteStore('${store.id}')">✕</button>
+        </div>
+      </div>
+      ${state.activeStoreId===store.id
+        ?'<div style="margin-top:10px;font-size:.65rem;color:var(--green);font-weight:600;letter-spacing:.08em;text-transform:uppercase">● Active</div>'
+        :`<button class="btn btn-sm btn-ghost" style="margin-top:10px" onclick="setActiveStore('${store.id}')">Set Active</button>`}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════
+// STORE MODAL
+// ══════════════════════════════
+function openStoreSwitch(){
+  document.getElementById('store-switch-list').innerHTML=state.stores.map(s=>`
+    <div class="card" style="cursor:pointer;border-color:${state.activeStoreId===s.id?s.color:'var(--border)'};margin-bottom:8px;display:flex;align-items:center;gap:10px" onclick="setActiveStore('${s.id}')">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+      <span style="font-weight:${state.activeStoreId===s.id?'600':'400'};flex:1">${esc(s.name)}</span>
+      ${state.activeStoreId===s.id?'<span style="color:var(--green);font-size:.75rem">Active</span>':''}
+      ${s.owner===state.uid?`<button class="btn btn-sm btn-ghost" style="flex-shrink:0" onclick="event.stopPropagation();document.getElementById('modal-store-switch').classList.remove('open');editStore('${s.id}')">Edit</button>`:''}
+      <button class="btn btn-sm btn-danger" style="flex-shrink:0"
+        onclick="event.stopPropagation();deleteStore('${s.id}')">✕</button>
+    </div>`).join('')||'<p class="text-muted" style="text-align:center;padding:12px 0">No stores yet.</p>';
+  openModal('modal-store-switch');
+}
+
+function setActiveStore(id){
+  // Close store switcher without triggering history.back()
+  const swEl = document.getElementById('modal-store-switch');
+  if (swEl) swEl.classList.remove('open');
+  // Show list picker for this store
+  migrateListsIfNeeded(id);
+  _listPickerStoreId = id;
+  const store = state.stores.find(s => s.id === id);
+  document.getElementById('list-picker-title').textContent = store ? store.name : 'My Lists';
+  renderListPicker(id);
+  openModal('modal-list-picker');
+}
+
+function openListPickerForActiveStore() {
+  const store = getActiveStore();
+  if (!store) return;
+  migrateListsIfNeeded(store.id);
+  _listPickerStoreId = store.id;
+  document.getElementById('list-picker-title').textContent = store.name;
+  renderListPicker(store.id);
+  openModal('modal-list-picker');
+}
+
+let _listPickerStoreId = null;
+let _listContextId = null; // which list is being acted on
+
+function renderListPicker(storeId) {
+  const lists = getLists(storeId);
+  if (!lists) return;
+  const sorted = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+  const activeId = getActiveListId(storeId);
+  document.getElementById('list-picker-items').innerHTML = sorted.map(l => `
+    <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;border-color:${l.id===activeId?'var(--green)':'var(--border)'}"
+      onclick="selectList('${storeId}','${l.id}')"
+      oncontextmenu="event.preventDefault();openListContext('${storeId}','${l.id}')"
+      data-listid="${l.id}"
+      data-storeid="${storeId}">
+      <div style="flex:1">
+        <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${l.items.length} item${l.items.length!==1?'s':''}</div>
+      </div>
+      ${l.id===activeId?'<span style="color:var(--green);font-size:.72rem">Active</span>':''}
+      <button class="btn btn-sm btn-ghost" style="flex-shrink:0;font-size:1.1rem;color:var(--text);padding:4px 10px"
+        onclick="event.stopPropagation();openListContext('${storeId}','${l.id}')">…</button>
+    </div>`).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
+
+  // Long-press support for touch
+  setTimeout(() => {
+    document.querySelectorAll('#list-picker-items [data-listid]').forEach(el => {
+      let timer;
+      el.addEventListener('touchstart', () => { timer = setTimeout(() => openListContext(el.dataset.storeid, el.dataset.listid), 600); }, {passive:true});
+      el.addEventListener('touchend', () => clearTimeout(timer), {passive:true});
+      el.addEventListener('touchmove', () => clearTimeout(timer), {passive:true});
+    });
+  }, 50);
+}
+
+function selectList(storeId, listId) {
+  state.activeStoreId = storeId;
+  state.activeListId[storeId] = listId;
+  touchListLastOpened(storeId, listId);
+  closeModal('modal-list-picker');
+  renderAll();
+  switchScreen('list');
+  if (window.persistStore) window.persistStore(storeId);
+}
+
+function promptNewList() {
+  const name = prompt('List name:', 'My List');
+  if (!name || !name.trim()) return;
+  const storeId = _listPickerStoreId;
+  const lid = createNewList(storeId, name.trim());
+  touchListLastOpened(storeId, lid);
+  renderListPicker(storeId);
+  selectList(storeId, lid);
+}
+
+function dismissListContext() {
+  const el = document.getElementById('modal-list-context');
+  if (el) el.classList.remove('open');
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+function openListContext(storeId, listId) {
+  _listPickerStoreId = storeId;
+  _listContextId = listId;
+  const lists = getLists(storeId);
+  const list = lists && lists.lists[listId];
+  if (!list) return;
+  document.getElementById('list-context-name').textContent = list.name;
+  // Bypass closeModal to avoid history.back() race with openModal
+  const pickerEl = document.getElementById('modal-list-picker');
+  if (pickerEl) pickerEl.classList.remove('open');
+  openModal('modal-list-context');
+}
+
+function renameListPrompt() {
+  const lists = getLists(_listPickerStoreId);
+  const list = lists && lists.lists[_listContextId];
+  if (!list) return;
+  const name = prompt('Rename list:', list.name);
+  if (!name || !name.trim()) return;
+  list.name = name.trim();
+  const ctxEl = document.getElementById('modal-list-context');
+  if (ctxEl) ctxEl.classList.remove('open');
+  if (window.persistStore) window.persistStore(_listPickerStoreId);
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+function deleteActiveContextList() {
+  const lists = getLists(_listPickerStoreId);
+  if (!lists) return;
+  const listCount = Object.keys(lists.lists).length;
+  if (listCount <= 1) { showToast("Can't delete the only list"); return; }
+  const list = lists.lists[_listContextId];
+  if (!list) return;
+  if (!confirm('Delete "' + list.name + '"? This cannot be undone.')) return;
+  delete lists.lists[_listContextId];
+  // If deleting active list, switch to most recent other
+  if (state.activeListId[_listPickerStoreId] === _listContextId) {
+    const remaining = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+    state.activeListId[_listPickerStoreId] = remaining[0]?.id || null;
+  }
+  const _dctxEl = document.getElementById('modal-list-context');
+  if (_dctxEl) _dctxEl.classList.remove('open');
+  if (window.persistStore) window.persistStore(_listPickerStoreId);
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+let _transferMode = null; // 'move' or 'copy'
+
+function openListTransfer(mode) {
+  _transferMode = mode;
+  document.getElementById('list-transfer-title').textContent = mode === 'move' ? 'Move to store' : 'Copy to store';
+  const otherStores = state.stores.filter(s => s.id !== _listPickerStoreId);
+  document.getElementById('list-transfer-stores').innerHTML = otherStores.map(s => `
+    <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px"
+      onclick="executeListTransfer('${s.id}')">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+      <span style="flex:1">${esc(s.name)}</span>
+    </div>`).join('') || '<p class="text-muted" style="text-align:center;padding:12px">No other stores.</p>';
+  const _ltxEl = document.getElementById('modal-list-context');
+  if (_ltxEl) _ltxEl.classList.remove('open');
+  openModal('modal-list-transfer');
+}
+
+async function executeListTransfer(destStoreId) {
+  const srcStoreId = _listPickerStoreId;
+  const listId = _listContextId;
+  const srcLists = getLists(srcStoreId);
+  if (!srcLists || !srcLists.lists[listId]) { closeModal('modal-list-transfer'); return; }
+
+  migrateListsIfNeeded(destStoreId);
+  const srcList = srcLists.lists[listId];
+
+  // Re-classify items for destination store's aisles
+  const destStore = state.stores.find(s => s.id === destStoreId);
+  const reclassified = destStore ? applyCorr(classifyItems(srcList.items.map(i => i.name), destStore), destStore) : [...srcList.items];
+
+  const newLid = 'list-' + Date.now();
+  state.lists[destStoreId].lists[newLid] = {
+    id: newLid,
+    name: _transferMode === 'copy' ? srcList.name + ' (copy)' : srcList.name,
+    items: reclassified,
+    createdAt: Date.now(),
+    lastOpened: Date.now()
+  };
+
+  if (_transferMode === 'move') {
+    const listCount = Object.keys(srcLists.lists).length;
+    if (listCount <= 1) {
+      // Can't delete last list — clear it instead
+      srcList.items = [];
+    } else {
+      delete srcLists.lists[listId];
+      if (state.activeListId[srcStoreId] === listId) {
+        const remaining = Object.values(srcLists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+        state.activeListId[srcStoreId] = remaining[0]?.id || null;
+      }
+    }
+    if (window.persistStore) window.persistStore(srcStoreId);
+  }
+
+  state.activeListId[destStoreId] = newLid;
+  closeModal('modal-list-transfer');
+  if (window.persistStore) await window.persistStore(destStoreId);
+  showToast(_transferMode === 'move' ? 'List moved ✓' : 'List copied ✓');
+  renderAll();
+}
+
+function openMoveList() {
+  const current = getActiveStore();
+  if (!current) return;
+  const others = state.stores.filter(s => s.id !== current.id);
+  if (!others.length) {
+    showToast('No other stores to move to'); return;
+  }
+  document.getElementById('move-list-options').innerHTML =
+    others.map(s => `
+      <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:12px 14px"
+           onclick="moveListToStore('${s.id}')">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <span style="font-weight:500;flex:1">${esc(s.name)}</span>
+        <span style="font-size:.7rem;color:var(--muted)">${s.aisles.length} aisles</span>
+      </div>`).join('');
+  openModal('modal-move-list');
+}
+
+function moveListToStore(destId) {
+  const src  = getActiveStore();
+  const dest = state.stores.find(s => s.id === destId);
+  if (!src || !dest) return;
+
+  migrateListsIfNeeded(src.id);
+  const items = getActiveListItems(src.id);
+  if (!items.length) { showToast('List is empty'); closeModal('modal-move-list'); return; }
+
+  // Copy items to destination, re-sorting each into the new store's aisles
+  const moved = items.map(item => ({
+    ...item,
+    checked: false,          // uncheck everything in the new store
+    aisleIndex: rematch(item.name, dest),
+  }));
+
+  // Merge with any existing items in destination (avoid duplicates by name)
+  const existingNames = new Set(
+    (getActiveListItems(dest.id)).map(i => normalise(i.name))
+  );
+  const toAdd = moved.filter(i => !existingNames.has(normalise(i.name)));
+  migrateListsIfNeeded(dest.id);
+  const _destItems = getActiveListItems(dest.id);
+  setActiveListItems(dest.id, [..._destItems, ...toAdd]);
+
+  // Switch active store to destination and persist both
+  setActiveListItems(src.id, []);
+  state.activeStoreId = dest.id;
+  if (window.persistStore) {
+    window.persistStore(src.id);
+    window.persistStore(dest.id);
+  }
+
+  closeModal('modal-move-list');
+  renderAll();
+  showToast(`Moved ${toAdd.length} item${toAdd.length !== 1 ? 's' : ''} to ${dest.name} ✓`);
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// STORE LIBRARY — UI LOGIC
+// ══════════════════════════════════════════════════════════════════════════
+
+let _libSelectedChain = null;    // currently highlighted chain in library modal
+let _libNearbyResult  = [];      // cached nearby search results
+let _libNearbyLoaded  = false;
+let _userLocationCache = null;   // {lat, lng} preloaded on login
+
+function openLibraryModal() {
+  _libSelectedChain = null;
+  document.getElementById('lib-selected-preview').style.display = 'none';
+  openModal('modal-library');
+  // Auto-trigger nearby if we haven't yet this session
+  if (!_libNearbyLoaded) {
+    switchLibTab('nearby');
+  } else {
+    renderNearbyList();
+  }
+  renderLibraryBrowse();
+}
+
+function switchLibTab(tab) {
+  ['nearby','browse'].forEach(t => {
+    document.getElementById('libtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('libpanel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+// ── Browse tab ─────────────────────────────────────────────────────────────
+function renderLibraryBrowse() {
+  const q = (document.getElementById('lib-search-input')?.value || '').toLowerCase();
+  const all = getAllLibraryStores();
+  const filtered = q
+    ? all.filter(c => c.name.toLowerCase().includes(q) ||
+        c.searchNames.some(s => s.includes(q)))
+    : all;
+
+  const grid = document.getElementById('lib-browse-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="loc-status">No chains match your search</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(chain => {
+    const isSelected = _libSelectedChain?.id === chain.id;
+    const badge = chain.dataSource === 'real'
+      ? '<span class="source-badge real">Official data</span>'
+      : '<span class="source-badge">Curated</span>';
+    return `<button class="lib-chain-card ${isSelected ? 'selected' : ''}"
+        onclick="selectLibChain('${chain.id}', 'browse')">
+      <div class="lib-chain-row">
+        <div class="lib-chain-dot" style="background:${chain.color}"></div>
+        <div>
+          <div class="lib-chain-name">${esc(chain.name)}</div>
+          <div class="lib-chain-meta">${chain.aisles.length} aisles${badge}</div>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+// ── Nearby tab ─────────────────────────────────────────────────────────────────────────
+
+// Session cache — loaded once from Firestore, reused for the life of the page
+let _storeLocationCache   = null;
+let _storeLocationLoading = false;
+
+// Infinite scroll state
+const NEARBY_PAGE_SIZE = 15;
+let   _nearbyPage      = 0;       // how many pages rendered so far
+let   _nearbyObserver  = null;    // IntersectionObserver for load-more trigger
+
+// Haversine distance in meters between two lat/lng points
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R    = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a    = Math.sin(dLat / 2) ** 2 +
+               Math.cos(lat1 * Math.PI / 180) *
+               Math.cos(lat2 * Math.PI / 180) *
+               Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Load all store locations from static JSON (once per session, then cached)
+// Source: /stores.json served from GitHub Pages — no Firestore reads needed.
+// To update: run export-store-locations.js and commit the new stores.json.
+async function loadStoreLocations() {
+  if (_storeLocationCache) return _storeLocationCache;
+  if (_storeLocationLoading) {
+    await new Promise(resolve => {
+      const t = setInterval(() => { if (!_storeLocationLoading) { clearInterval(t); resolve(); } }, 100);
+    });
+    return _storeLocationCache;
+  }
+  _storeLocationLoading = true;
+  try {
+    const resp = await fetch('/stores.json');
+    if (!resp.ok) { console.warn('stores.json not available (' + resp.status + ')'); return []; }
+    _storeLocationCache = await resp.json();
+    return _storeLocationCache;
+  } catch (err) {
+    console.warn('loadStoreLocations:', err.message);
+    return [];
+  } finally {
+    _storeLocationLoading = false;
+  }
+}
+
+// Shared helper: sort stores by distance from a given lat/lng and populate _libNearbyResult
+async function computeNearbyFromCoords(lat, lng) {
+  const allStores = await loadStoreLocations();
+  if (!allStores.length) return false;
+
+  const withDistance = allStores
+    .filter(s => s.lat && s.lng)
+    .map(s => ({ ...s, distance: haversineMeters(lat, lng, s.lat, s.lng) }))
+    .sort((a, b) => a.distance - b.distance);
+
+  const seen = new Set();
+  const deduped = withDistance.filter(s => {
+    if (seen.has(s.osm_id)) return false;
+    seen.add(s.osm_id);
+    return true;
+  });
+
+  _libNearbyResult = deduped.map(s => ({
+    place_id: s.osm_id,
+    name:     s.name,
+    address:  s.address,
+    lat:      s.lat,
+    lng:      s.lng,
+    distance: s.distance,
+    chain_id: s.chain_id,
+  }));
+  return true;
+}
+
+// Called silently on login — fires GPS + JSON fetch in parallel so the
+// Nearby tab opens instantly on first use.
+async function preloadUserLocation() {
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
+      })
+    );
+    _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    // If JSON is already loaded, go ahead and compute results now
+    if (_storeLocationCache) {
+      await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+      _libNearbyLoaded = true;
+    }
+  } catch (err) {
+    // Silently ignore — permission denied or unavailable, user can tap manually
+  }
+}
+
+async function findNearbyStores() {
+  const statusEl = document.getElementById('nearby-status');
+  const btnEl    = document.getElementById('btn-find-nearby');
+
+  statusEl.style.display = 'block';
+  statusEl.textContent   = 'Requesting your location…';
+  btnEl.disabled         = true;
+
+  try {
+    // Use preloaded location if available — avoids re-asking GPS
+    let userLat, userLng;
+    if (_userLocationCache) {
+      ({ lat: userLat, lng: userLng } = _userLocationCache);
+    } else {
+      statusEl.textContent = 'Requesting your location…';
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000, maximumAge: 600000, enableHighAccuracy: false
+        })
+      );
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      _userLocationCache = { lat: userLat, lng: userLng };
+    }
+
+    // If nearby results already computed during preload, just render them
+    if (_libNearbyLoaded) {
+      statusEl.style.display = 'none';
+      document.getElementById('nearby-location-input').value = '';
+      initNearbyScroll();
+      return;
+    }
+
+    statusEl.textContent = 'Loading store locations…';
+    const ok = await computeNearbyFromCoords(userLat, userLng);
+    if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+
+    _libNearbyLoaded = true;
+    statusEl.style.display = 'none';
+    document.getElementById('nearby-location-input').value = '';
+    initNearbyScroll();
+
+  } catch (err) {
+    statusEl.style.display = 'block';
+    if (err.code === 1) {
+      statusEl.innerHTML =
+        'Location permission denied.<br>' +
+        '<span style="font-size:.65rem">Enable location access in your browser ' +
+        'settings, or search a location above.</span>';
+    } else {
+      statusEl.textContent = 'Could not get location: ' + (err.message || 'unknown error');
+    }
+  } finally {
+    btnEl.disabled    = false;
+    btnEl.textContent = '↻ Use My Location';
+  }
+}
+
+async function searchNearbyLocation() {
+  const input    = document.getElementById('nearby-location-input');
+  const query    = input.value.trim();
+  if (!query) return;
+
+  const statusEl = document.getElementById('nearby-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent   = 'Searching for "' + query + '"…';
+
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
+      encodeURIComponent(query);
+    const resp = await fetch(url, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'InstAisle/1.0' }
+    });
+    const results = await resp.json();
+
+    if (!results.length) {
+      statusEl.textContent = 'Location not found. Try a city name or zip code.';
+      return;
+    }
+
+    const { lat, lon, display_name } = results[0];
+    statusEl.textContent = 'Loading stores near ' + display_name.split(',').slice(0, 2).join(',') + '…';
+
+    const ok = await computeNearbyFromCoords(parseFloat(lat), parseFloat(lon));
+    if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+
+    _libNearbyLoaded = true;
+    statusEl.style.display = 'none';
+    initNearbyScroll();
+
+  } catch (err) {
+    statusEl.textContent = 'Search failed. Check your connection and try again.';
+    console.error('searchNearbyLocation:', err);
+  }
+}
+
+// ── Infinite scroll rendering ──────────────────────────────────────────────
+
+function initNearbyScroll() {
+  // Disconnect old observer if any
+  if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+
+  _nearbyPage = 0;
+  const container = document.getElementById('nearby-list-container');
+  container.innerHTML = '<div class="nearby-list" id="nearby-list-inner"></div>';
+
+  renderNearbyPage();   // render first page immediately
+
+  // Set up IntersectionObserver on the trigger div
+  const trigger = document.getElementById('nearby-load-more-trigger');
+  _nearbyObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) renderNearbyPage();
+  }, { rootMargin: '120px' });
+  _nearbyObserver.observe(trigger);
+}
+
+function renderNearbyPage() {
+  const start = _nearbyPage * NEARBY_PAGE_SIZE;
+  const slice = _libNearbyResult.slice(start, start + NEARBY_PAGE_SIZE);
+  if (!slice.length) {
+    if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+    return;
+  }
+
+  const inner = document.getElementById('nearby-list-inner');
+  if (!inner) return;
+
+  slice.forEach(store => {
+    const chain      = store.chain_id
+      ? getAllLibraryStores().find(c => c.id === store.chain_id)
+      : matchStoreToLibrary(store.name);
+    const isSelected = _libSelectedChain?._placeId === store.place_id;
+
+    const matchPill = chain
+      ? '<span class="nearby-match-pill">✓ ' + esc(chain.name) + ' data</span>'
+      : '<span class="nearby-no-match-pill">No template</span>';
+
+    const card = document.createElement('div');
+    card.className = 'nearby-card' + (isSelected ? ' selected' : '');
+    card.setAttribute('data-place-id', store.place_id);
+    card.onclick = () => selectNearbyStore(store.place_id);
+    card.innerHTML =
+      '<div class="nearby-card-info">' +
+        '<div class="nearby-name">' + esc(store.name) + '</div>' +
+        '<div class="nearby-address">' + esc(store.address) + '</div>' +
+        '<div class="nearby-meta"><span class="nearby-dist">' + formatDistance(store.distance) + '</span></div>' +
+      '</div>' + matchPill;
+    inner.appendChild(card);
+  });
+
+  _nearbyPage++;
+
+  // Stop observing if we've rendered everything
+  if (_nearbyPage * NEARBY_PAGE_SIZE >= _libNearbyResult.length) {
+    if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
+  }
+}
+
+// Legacy renderNearbyList — now delegates to initNearbyScroll when results exist
+function renderNearbyList() {
+  if (_libNearbyResult.length) initNearbyScroll();
+}
+
+function formatDistance(meters) {
+  if (meters < 1000) return Math.round(meters) + ' m';
+  return (meters / 1609.34).toFixed(1) + ' mi';
+}
+
+// Sanitize OSM ID for use as Firestore document ID (slashes not allowed)
+function sanitizeLocId(id) {
+  return String(id).replace(/\//g, '_');
+}
+
+// Fetch contributed aisle data for a specific location from Firestore
+// Returns contributed aisles array if found, null otherwise
+async function fetchLocationContribution(placeId) {
+  if (!placeId || !window._fb || !window._currentUser) return null;
+  try {
+    const { db, doc, getDoc } = window._fb;
+    const locRef  = doc(db, 'store_locations', sanitizeLocId(placeId));
+    const locSnap = await getDoc(locRef);
+    if (!locSnap.exists()) return null;
+    const data = locSnap.data();
+    if (data.data_status === 'live' && data.aisles?.length) {
+      return data.aisles;
+    }
+  } catch(e) {
+    console.warn('[library] fetchLocationContribution error:', e.message);
+  }
+  return null;
+}
+
+async function selectNearbyStore(placeId) {
+  const store = _libNearbyResult.find(s => s.place_id === placeId);
+  if (!store) return;
+  // Use chain_id directly if available, otherwise fall back to name matching
+  const chain = store.chain_id
+    ? getAllLibraryStores().find(c => c.id === store.chain_id)
+    : matchStoreToLibrary(store.name);
+  // Check Firestore for user-contributed aisle data for this specific location
+  const contributed = await fetchLocationContribution(placeId);
+  const aisles = contributed || chain?.aisles || [];
+  const hasContribution = !!contributed;
+  _libSelectedChain = chain
+    ? { ...chain, aisles, _placeId: placeId, _placeName: store.name,
+        _placeAddress: store.address, _hasContribution: hasContribution }
+    : { _placeId: placeId, _placeName: store.name, _placeAddress: store.address,
+        id: null, name: store.name, color: STORE_COLORS[0], aisles,
+        _hasContribution: hasContribution };
+  renderNearbyList();
+  const metaText = hasContribution
+    ? store.address + ' · ✓ community data'
+    : store.address;
+  showLibraryPreview(store.name, metaText, { ...chain, aisles });
+}
+
+function selectLibChain(chainId, source) {
+  const chain = getAllLibraryStores().find(c => c.id === chainId);
+  if (!chain) return;
+  _libSelectedChain = { ...chain, _placeId: null, _placeName: null, _placeAddress: null };
+  if (source === 'browse') renderLibraryBrowse();
+  showLibraryPreview(chain.name, chain.aisles.length + ' aisles pre-loaded', chain);
+}
+
+function showLibraryPreview(name, meta, chain) {
+  const preview = document.getElementById('lib-selected-preview');
+  document.getElementById('lib-selected-name').textContent = name;
+  const aisles   = chain?.aisles || [];
+  const aisleCnt = aisles.length;
+  const srcLabel = chain?.dataSource === 'real' ? '✅ Official store data' : '📋 Curated typical layout';
+  document.getElementById('lib-selected-meta').textContent =
+    meta + (chain && aisleCnt ? ' · ' + aisleCnt + ' aisles · ' + srcLabel : '');
+
+  // Render collapsible aisle list
+  const container = document.getElementById('lib-aisle-preview');
+  if (!aisleCnt) { container.innerHTML = ''; }
+  else {
+    container.innerHTML = aisles.map((a, i) => `
+      <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:5px;overflow:hidden">
+        <button onclick="toggleLibAisle(${i})" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:none;border:none;cursor:pointer;text-align:left;gap:6px">
+          <span style="font-size:.75rem;font-weight:600;color:var(--text)">${a.name}</span>
+          <span id="lib-aisle-chevron-${i}" style="font-size:.65rem;color:var(--muted);flex-shrink:0">＋</span>
+        </button>
+        <div id="lib-aisle-kws-${i}" style="display:none;padding:0 10px 8px;display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${a.keywords.map(k => `<span style="font-size:.62rem;padding:2px 6px;background:var(--surface2,#f0f0f0);border-radius:99px;color:var(--muted)">${k}</span>`).join('')}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  preview.style.display = 'block';
+}
+
+function toggleLibAisle(idx) {
+  const kws     = document.getElementById('lib-aisle-kws-' + idx);
+  const chevron = document.getElementById('lib-aisle-chevron-' + idx);
+  if (!kws) return;
+  const open = kws.style.display === 'block';
+  kws.style.display     = open ? 'none' : 'block';
+  chevron.textContent   = open ? '＋' : '－';
+}
+
+async function addStoreFromLibrary() {
+  if (!_libSelectedChain) return;
+  const chain = _libSelectedChain;
+
+  const storeName  = chain._placeName || chain.name;
+  const storeColor = chain.color || STORE_COLORS[state.stores.length % STORE_COLORS.length];
+  const aisles = chain.aisles?.length
+    ? chain.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }))
+    : [
+        {name:'Produce',           keywords:['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','fruit','vegetable']},
+        {name:'Dairy & Eggs',      keywords:['milk','cheese','yogurt','butter','cream','sour cream','cream cheese','eggs','egg','cheddar','mozzarella','parmesan','half and half','oat milk','almond milk']},
+        {name:'Meat & Seafood',    keywords:['chicken','beef','pork','turkey','bacon','sausage','steak','ground beef','lamb','salmon','shrimp','tuna','tilapia','cod','crab','lobster','deli','ham','hot dog','bratwurst']},
+        {name:'Bakery & Bread',    keywords:['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','wheat bread','white bread','pita','tortilla','naan','cake','pastry','donut','baguette']},
+        {name:'Frozen',            keywords:['frozen','ice cream','pizza','frozen vegetable','frozen fruit','frozen meal','frozen dinner','frozen breakfast','waffles','tater tots','edamame','peas','corn frozen']},
+        {name:'Beverages',         keywords:['water','juice','soda','sparkling water','coffee','tea','energy drink','sports drink','lemonade','milk alternative','coconut water','beer','wine','kombucha','drink']},
+        {name:'Snacks & Cereal',   keywords:['chips','crackers','popcorn','pretzels','nuts','trail mix','granola bar','protein bar','cookies','candy','chocolate','cereal','oatmeal','granola','rice cakes','jerky','snack']},
+        {name:'Canned & Dry Goods',keywords:['canned','soup','beans','lentils','chickpeas','tomato sauce','pasta sauce','diced tomatoes','broth','stock','tuna can','sardines','rice','pasta','noodles','quinoa','flour','sugar','oats','breadcrumbs','dried']},
+        {name:'Cleaning & Paper',  keywords:['paper towel','toilet paper','tissue','napkin','trash bag','garbage bag','dish soap','laundry detergent','fabric softener','bleach','sponge','cleaning spray','windex','lysol','mop','broom','foil','plastic wrap','ziploc','zip lock']},
+        {name:'Personal Care',     keywords:['shampoo','conditioner','body wash','soap','toothpaste','toothbrush','deodorant','lotion','sunscreen','razor','shaving','feminine','vitamins','medicine','pain reliever','bandage','floss','mouthwash']},
+      ];
+  const _noContributed = !chain.aisles?.length;
+  if (_noContributed) window._storeIsGenericDefault = true;
+
+  // Close library overlay directly (bypass history.back() to avoid popstate race)
+  document.getElementById('modal-library').classList.remove('open');
+
+  // Open the store editor pre-filled with library data
+  state.editingStoreId = null;
+  pendingScannedKws = {}; aisleImgTargetIdx = null;
+  // Record library provenance so it's saved with the store
+  // Snapshot reflects contributed data (if any) so diffs are computed correctly
+  window._storeIsGenericDefault = false;
+  pendingLibraryMeta = chain.id || chain._placeId
+    ? { chain_id: chain.id || null,
+        location_id: chain._placeId ? sanitizeLocId(chain._placeId) : null,
+        aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
+    : null;
+  document.getElementById('store-modal-title').textContent = 'New Store';
+  document.getElementById('store-name-input').value = storeName;
+  tempColor  = storeColor;
+  tempAisles = aisles;
+  renderStoreModal();
+  openModal('modal-store');
+}
+// ══════════════════════════════════════════════════════════════════════════
+
+function openNewStore(){
+  state.editingStoreId=null;
+  pendingScannedKws={}; aisleImgTargetIdx=null;
+  pendingLibraryMeta=null;
+  document.getElementById('store-modal-title').textContent='New Store';
+  document.getElementById('store-name-input').value='';
+  tempColor=STORE_COLORS[state.stores.length%STORE_COLORS.length];
+  tempAisles=[
+    {name:'Produce',           keywords:['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','fruit','vegetable']},
+    {name:'Dairy & Eggs',      keywords:['milk','cheese','yogurt','butter','cream','sour cream','cream cheese','eggs','egg','cheddar','mozzarella','parmesan','half and half','oat milk','almond milk']},
+    {name:'Meat & Seafood',    keywords:['chicken','beef','pork','turkey','bacon','sausage','steak','ground beef','lamb','salmon','shrimp','tuna','tilapia','cod','crab','lobster','deli','ham','hot dog','bratwurst']},
+    {name:'Bakery & Bread',    keywords:['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','wheat bread','white bread','pita','tortilla','naan','cake','pastry','donut','baguette']},
+    {name:'Frozen',            keywords:['frozen','ice cream','pizza','frozen vegetable','frozen fruit','frozen meal','frozen dinner','frozen breakfast','waffles','tater tots','edamame','peas','corn frozen']},
+    {name:'Beverages',         keywords:['water','juice','soda','sparkling water','coffee','tea','energy drink','sports drink','lemonade','milk alternative','coconut water','beer','wine','kombucha','drink']},
+    {name:'Snacks & Cereal',   keywords:['chips','crackers','popcorn','pretzels','nuts','trail mix','granola bar','protein bar','cookies','candy','chocolate','cereal','oatmeal','granola','rice cakes','jerky','snack']},
+    {name:'Canned & Dry Goods',keywords:['canned','soup','beans','lentils','chickpeas','tomato sauce','pasta sauce','diced tomatoes','broth','stock','tuna can','sardines','rice','pasta','noodles','quinoa','flour','sugar','oats','breadcrumbs','dried']},
+    {name:'Cleaning & Paper',  keywords:['paper towel','toilet paper','tissue','napkin','trash bag','garbage bag','dish soap','laundry detergent','fabric softener','bleach','sponge','cleaning spray','windex','lysol','mop','broom','foil','plastic wrap','ziploc','zip lock']},
+    {name:'Personal Care',     keywords:['shampoo','conditioner','body wash','soap','toothpaste','toothbrush','deodorant','lotion','sunscreen','razor','shaving','feminine','vitamins','medicine','pain reliever','bandage','floss','mouthwash']},
+  ];
+  window._storeIsGenericDefault = true;
+  renderStoreModal();
+  openModal('modal-store');
+}
+
+function editStore(id){
+  const store=state.stores.find(s=>s.id===id);
+  pendingScannedKws={}; aisleImgTargetIdx=null;
+  pendingLibraryMeta=null;
+  state.editingStoreId=id;
+  document.getElementById('store-modal-title').textContent='Edit Store';
+  document.getElementById('store-name-input').value=store.name;
+  tempColor=store.color;
+  tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]}));
+  renderStoreModal();
+  openModal('modal-store');
+}
+
+function renderStoreModal(){
+  document.getElementById('store-color-picker').innerHTML=STORE_COLORS.map(c=>
+    `<div class="color-opt ${c===tempColor?'selected':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`
+  ).join('');
+  renderAisleRows();
+}
+
+function pickColor(c){
+  tempColor=c;
+  document.getElementById('store-color-picker').innerHTML=STORE_COLORS.map(col=>
+    `<div class="color-opt ${col===c?'selected':''}" style="background:${col}" onclick="pickColor('${col}')"></div>`
+  ).join('');
+}
+
+// ── AISLE ROWS with fixed chip deletion + bulk keyword upload + image scan ──
+let aisleImgTargetIdx = null; // which aisle is currently being scanned
+let pendingScannedKws = {};   // aisleIdx -> [keywords] from scan, awaiting accept
+
+function renderAisleRows(){
+  _aisleReorderMode = false;
+  // Assign stable colorIdx to each aisle if not already set
+  tempAisles.forEach((aisle, i) => { if (aisle.colorIdx === undefined) aisle.colorIdx = i; });
+  document.getElementById('aisle-rows').innerHTML=tempAisles.map((aisle,i)=>{
+    const color=AISLE_COLORS[aisle.colorIdx%AISLE_COLORS.length];
+    const pending=pendingScannedKws[i];
+    return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="aisle-drag-handle" data-aisle-idx="${i}" title="Drag to reorder">⠿</div>
+        <span style="font-size:.63rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase">AISLE ${i+1}</span>
+        <div style="flex:1"></div>
+        ${tempAisles.length>1?`<button class="btn btn-sm btn-danger" onclick="removeAisle(${i})">✕</button>`:''}
+      </div>
+      <div class="aisle-drag-body">
+      <input class="input" id="aisle-name-${i}" value="${esc(aisle.name)}"
+        placeholder="e.g. Produce" style="font-size:.82rem;padding:8px 12px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
+        <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Keywords</div>
+        <span id="kw-toggle-${i}" style="font-size:.7rem;color:var(--muted);line-height:1">＋</span>
+      </div>
+      <div id="kw-collapsible-${i}" style="display:none">
+        <div class="chips" id="chips-${i}" data-aisle="${i}">${renderChips(i)}</div>
+      </div>
+      <div class="kw-section">
+        <div class="kw-tabs">
+          <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add</button>
+          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
+        </div>
+        <div class="kw-panel active" id="panel-bulk-${i}">
+          <textarea class="kw-bulk" id="kw-bulk-${i}"
+            placeholder="Paste keywords separated by commas or line breaks:&#10;brown eggs, 2% milk&#10;instant ramen"></textarea>
+          <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
+        </div>
+        <div class="kw-panel" id="panel-scan-${i}">
+          <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
+            <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
+            <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take an aisle photo</div>
+            <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
+          </div>
+          ${pending ? renderScanResult(i, pending) : ''}
+        </div>
+      </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Event-delegated chip deletion
+  document.querySelectorAll('.chips[data-aisle]').forEach(container=>{
+    container.addEventListener('click', e=>{
+      const x=e.target.closest('.chip-x');
+      if(!x) return;
+      const chip=x.closest('.chip');
+      const kw=chip?.dataset.kw;
+      const ai=parseInt(container.dataset.aisle,10);
+      if(kw!==undefined && !isNaN(ai)) removeKw(ai,kw);
+    });
+  });
+
+  // Wire up aisle drag-to-reorder
+  initAisleDrag();
+}
+
+function toggleKwSection(i) {
+  const panel  = document.getElementById('kw-collapsible-' + i);
+  const toggle = document.getElementById('kw-toggle-' + i);
+  if (!panel) return;
+  const open = panel.style.display === 'block';
+  panel.style.display  = open ? 'none' : 'block';
+  toggle.textContent   = open ? '＋' : '－';
+}
+
+function renderChips(i){
+  return tempAisles[i].keywords.map(k=>
+    `<div class="chip" data-kw="${esc(k)}">${esc(k)}<span class="chip-x" title="Remove">×</span></div>`
+  ).join('');
+}
+
+function refreshChips(i){
+  const el=document.getElementById('chips-'+i);
+  if(!el) return;
+  el.innerHTML=renderChips(i);
+}
+
+function switchKwTab(i, tab){
+  ['bulk','scan'].forEach(t=>{
+    document.getElementById('tab-'+t+'-'+i)?.classList.toggle('active', t===tab);
+    document.getElementById('panel-'+t+'-'+i)?.classList.toggle('active', t===tab);
+  });
+  if(tab==='bulk') document.getElementById('kw-bulk-'+i)?.focus();
+}
+
+function addKw(i){
+  const inp=document.getElementById('kw-'+i);
+  if(!inp) return;
+  const val=inp.value.trim().toLowerCase();
+  if(!val){ inp.focus(); return; }
+  if(!tempAisles[i].keywords.includes(val)) tempAisles[i].keywords.push(val);
+  inp.value='';
+  refreshChips(i);
+  inp.focus();
+}
+
+function addBulkKw(i){
+  const ta=document.getElementById('kw-bulk-'+i);
+  if(!ta) return;
+  // Split on commas OR newlines only — preserves spaces within keywords
+  const vals=ta.value.split(/[,\n]+/).map(v=>v.trim().toLowerCase()).filter(Boolean);
+  let added=0;
+  vals.forEach(v=>{ if(v && !tempAisles[i].keywords.includes(v)){ tempAisles[i].keywords.push(v); added++; } });
+  ta.value='';
+  refreshChips(i);
+  showToast(`${added} keyword${added!==1?'s':''} added`);
+}
+
+function removeKw(i,kw){
+  tempAisles[i].keywords=tempAisles[i].keywords.filter(k=>k!==kw);
+  refreshChips(i);
+}
+
+// ── AISLE IMAGE SCANNING ──
+
+function triggerAisleScan(i){
+  syncNames();
+  aisleImgTargetIdx=i;
+  const inp=document.getElementById('aisle-img-input');
+  inp.value='';
+  inp.click();
+}
+
+async function handleAisleImageUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  e.target.value='';
+  const i=aisleImgTargetIdx;
+  if(i===null||i===undefined) return;
+
+  // Show image preview + spinner in scan zone
+  const zone=document.getElementById('scan-zone-'+i);
+  if(!zone) return;
+
+  const dataUrl=await fileToDataUrl(f);
+  const b64=dataUrl.split(',')[1];
+  const mime=f.type||'image/jpeg';
+
+  zone.classList.add('scanning');
+  const _isPano = (()=>{ try { const _i=new Image(); _i.src=dataUrl; return _i.naturalWidth > _i.naturalHeight*2; } catch(e){ return false; } })();
+  zone.innerHTML=`
+    <img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
+    <div class="aisle-img-spinner"></div>
+    <div style="font-size:.7rem;color:var(--blue)">Scanning ${f.type&&f.name&&f.name.toLowerCase().includes('pano')?'panorama':'shelves'}…</div>`;
+
+  try {
+    const keywords=await scanAisleImage(b64, mime);
+    pendingScannedKws[i]=keywords;
+    zone.classList.remove('scanning');
+    zone.classList.add('has-preview');
+    zone.onclick=null; // disable re-trigger while result showing
+
+    // Show preview + result row below zone
+    zone.innerHTML=`<img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
+      <div style="font-size:.68rem;color:var(--muted);margin-top:4px">
+        Found <strong style="color:var(--green)">${keywords.length}</strong> items — review below before adding
+      </div>`;
+
+    // Re-render result row in panel
+    const panel=document.getElementById('panel-scan-'+i);
+    if(panel){
+      // Remove old result row if present, then append new one
+      panel.querySelector('.scan-result-row')?.remove();
+      panel.insertAdjacentHTML('beforeend', renderScanResult(i, keywords));
+    }
+  } catch(err){
+    console.error(err);
+    zone.classList.remove('scanning');
+    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">⚠️</div>
+      <div style="font-size:.75rem;color:var(--red)">Scan failed — tap to try again</div>`;
+    zone.onclick=()=>triggerAisleScan(i);
+    showToast('Could not read image');
+  }
+}
+
+function renderScanResult(i, keywords){
+  if(!keywords||!keywords.length) return `<div style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:8px">No items detected — try a clearer photo</div>`;
+  // Show first few as a preview list, then accept/discard buttons
+  const preview=keywords.slice(0,8).map(k=>`<span style="font-size:.68rem;color:var(--text)">${esc(k)}</span>`).join(', ')
+    +(keywords.length>8?` <span style="color:var(--muted)">+${keywords.length-8} more</span>`:'');
+  return `<div class="scan-result-row">
+    <div>
+      <div class="scan-result-label" style="margin-bottom:4px">✦ Detected: ${preview}</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button class="scan-accept-btn" style="flex:1" onclick="acceptScanKws(${i})">✓ Add ${keywords.length} keyword${keywords.length!==1?'s':''}</button>
+    <button class="scan-discard-btn" onclick="discardScan(${i})">Discard</button>
+  </div>`;
+}
+
+function acceptScanKws(i){
+  const kws=pendingScannedKws[i]||[];
+  let added=0;
+  kws.forEach(k=>{ if(!tempAisles[i].keywords.includes(k)){ tempAisles[i].keywords.push(k); added++; } });
+  delete pendingScannedKws[i];
+  // Reset scan zone, re-render chips, switch to 'one' tab
+  refreshChips(i);
+  const panel=document.getElementById('panel-scan-'+i);
+  const zone=document.getElementById('scan-zone-'+i);
+  if(zone){
+    zone.classList.remove('has-preview','scanning');
+    zone.onclick=()=>triggerAisleScan(i);
+    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
+      <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
+      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
+  }
+  if(panel) panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
+  showToast(`${added} keyword${added!==1?'s':''} added from photo ✓`);
+  switchKwTab(i,'bulk');
+}
+
+function discardScan(i){
+  delete pendingScannedKws[i];
+  const zone=document.getElementById('scan-zone-'+i);
+  if(zone){
+    zone.classList.remove('has-preview','scanning');
+    zone.onclick=()=>triggerAisleScan(i);
+    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
+      <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
+      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
+  }
+  const panel=document.getElementById('panel-scan-'+i);
+  if(panel){
+    panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
+  }
+}
+
+async function scanAisleImage(b64, mime){
+  const user=window._currentUser;
+  if(!user){ showToast('Please sign in first'); return []; }
+  const token=await user.getIdToken();
+
+  // Resize before sending — panoramas get a wider cap to preserve their detail
+  const resizedB64=await new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width, h=img.height;
+      const isPanorama = w > h * 2; // aspect ratio > 2:1 = panoramic
+      const MAX_W = isPanorama ? 3072 : 1024; // preserve panorama width
+      const MAX_H = isPanorama ? 1024 : 1024;
+      if (w > MAX_W || h > MAX_H) {
+        const scaleW = MAX_W / w;
+        const scaleH = MAX_H / h;
+        const scale  = Math.min(scaleW, scaleH);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',0.88).split(',')[1]);
+    };
+    img.src=`data:${mime};base64,${b64}`;
+  });
+
+  const res=await fetch(
+    'https://us-central1-instaisle-e8d6b.cloudfunctions.net/scanAisleImage',
+    {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({imageBase64:resizedB64, mimeType:'image/jpeg'})
+    }
+  );
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    throw new Error(err?.error||`Server error ${res.status}`);
+  }
+  const data=await res.json();
+  return Array.isArray(data.keywords)?data.keywords:[];
+}
+
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=e=>resolve(e.target.result);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function addAisleRow(){
+  syncNames(); // persist typed names before re-render
+  tempAisles.push({name:`Aisle ${tempAisles.length+1}`,keywords:[]});
+  renderAisleRows();
+  // scroll modal to bottom to reveal new aisle
+  const modal=document.querySelector('#modal-store .modal');
+  if(modal) setTimeout(()=>{ modal.scrollTop=modal.scrollHeight; },50);
+}
+
+function removeAisle(i){ syncNames(); tempAisles.splice(i,1); renumberAisleNames(); renderAisleRows(); }
+
+function syncNames(){
+  tempAisles.forEach((_,i)=>{
+    const el=document.getElementById('aisle-name-'+i);
+    if(el) tempAisles[i].name=el.value;
+  });
+}
+
+// ── AISLE DRAG-TO-REORDER (pointer events — works inside scrolling modals) ──
+
+let _aisleReorderMode = false;
+
+function toggleAisleReorderMode() {
+  _aisleReorderMode = !_aisleReorderMode;
+  if (_aisleReorderMode) {
+    collapseAislesForDrag();
+    // Show done button, update handle appearance
+    document.querySelectorAll('.aisle-drag-handle').forEach(h => {
+      h.style.color = 'var(--green)';
+      h.title = 'Tap again to exit reorder mode';
+    });
+    const doneBtn = document.getElementById('aisle-reorder-done');
+    if (doneBtn) doneBtn.style.display = '';
+  } else {
+    // Release locked height before expanding
+    const modalEl = document.querySelector('#modal-store .modal');
+    if (modalEl) { modalEl.style.height = ''; modalEl.style.maxHeight = ''; }
+    expandAislesAfterDrag();
+    document.querySelectorAll('.aisle-drag-handle').forEach(h => {
+      h.style.color = '';
+      h.title = 'Tap to reorder aisles';
+    });
+    const doneBtn = document.getElementById('aisle-reorder-done');
+    if (doneBtn) doneBtn.style.display = 'none';
+  }
+}
+
+function collapseAislesForDrag() {
+  // Lock the modal's current height so it doesn't shrink
+  const modalEl = document.querySelector('#modal-store .modal');
+  if (modalEl) {
+    const h = modalEl.getBoundingClientRect().height;
+    modalEl.style.height = h + 'px';
+    modalEl.style.maxHeight = h + 'px';
+  }
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    const body = card.querySelector('.aisle-drag-body');
+    if (body) body.style.display = 'none';
+    card.style.padding = '10px 14px';
+  });
+}
+
+function expandAislesAfterDrag() {
+  if (_aisleReorderMode) return; // stay collapsed
+  // Release locked height
+  const modalEl = document.querySelector('#modal-store .modal');
+  if (modalEl) {
+    modalEl.style.height = '';
+    modalEl.style.maxHeight = '';
+  }
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    const body = card.querySelector('.aisle-drag-body');
+    if (body) body.style.display = '';
+    card.style.padding = '14px';
+  });
+}
+
+function initAisleDrag(){
+  const handles=document.querySelectorAll('.aisle-drag-handle');
+  handles.forEach(handle=>{
+    handle.addEventListener('pointerdown', onAisleDragStart, {passive:false});
+    handle.addEventListener('click', e => {
+      // If not dragging (pointer didn't move much), treat as toggle
+      if (!aisleGhost) toggleAisleReorderMode();
+    });
+  });
+}
+
+let aisleGhost=null, aisleDragSrcIdx=null, aislePointerStartY=0, aisleScrollStart=0;
+
+function onAisleDragStart(e){
+  if(e.button!==undefined && e.button!==0) return; // left-click / touch only
+  e.preventDefault();
+  syncNames(); // save typed values before we reorder
+
+  const handle=e.currentTarget;
+  aisleDragSrcIdx=parseInt(handle.dataset.aisleIdx,10);
+  const srcCard=document.getElementById('aisle-card-'+aisleDragSrcIdx);
+  if(!srcCard) return;
+  collapseAislesForDrag();
+
+  const modal=document.querySelector('#modal-store .modal');
+  const scrollEl=document.querySelector('.store-modal-scroll');
+  const cardRect=srcCard.getBoundingClientRect();
+
+  aislePointerStartY=e.clientY;
+  aisleScrollStart=scrollEl ? scrollEl.scrollTop : 0;
+
+  // Create ghost clone
+  aisleGhost=srcCard.cloneNode(true);
+  Object.assign(aisleGhost.style,{
+    position:'fixed',
+    top: cardRect.top+'px',
+    left: cardRect.left+'px',
+    width: cardRect.width+'px',
+    zIndex: '500',
+    opacity: '0.85',
+    pointerEvents: 'none',
+    boxShadow: '0 8px 32px rgba(0,0,0,.45)',
+    border: '2px solid var(--green)',
+    borderRadius: '14px',
+    transition: 'none',
+    margin: '0',
+  });
+  document.body.appendChild(aisleGhost);
+
+  srcCard.classList.add('aisle-card-dragging');
+  handle.classList.add('grabbing');
+
+  document.addEventListener('pointermove', onAisleDragMove, {passive:false});
+  document.addEventListener('pointerup',   onAisleDragEnd,  {passive:false});
+  document.addEventListener('pointercancel', onAisleDragEnd,{passive:false});
+}
+
+let _aisleScrollRAF = null;
+
+function onAisleDragMove(e){
+  if(!aisleGhost) return;
+  e.preventDefault();
+
+  const dy=e.clientY - aislePointerStartY;
+  const modal=document.querySelector('#modal-store .modal');
+  const scrollEl2=document.querySelector('.store-modal-scroll');
+  const scrollDy=scrollEl2 ? scrollEl2.scrollTop - aisleScrollStart : 0;
+  const srcCard=document.getElementById('aisle-card-'+aisleDragSrcIdx);
+  if(!srcCard) return;
+
+  const srcRect=srcCard.getBoundingClientRect();
+  aisleGhost.style.top = (srcRect.top + dy + scrollDy) + 'px';
+
+  // Auto-scroll when dragging near top or bottom edge of the scroll container
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  cancelAnimationFrame(_aisleScrollRAF);
+  if (scrollEl) {
+    const sr = scrollEl.getBoundingClientRect();
+    const zone = 80;
+    const maxSpeed = 14;
+    if (e.clientY < sr.top + zone) {
+      const speed = Math.max(1, Math.round(maxSpeed * (1 - (e.clientY - sr.top) / zone)));
+      const scroll = () => { scrollEl.scrollTop -= speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+      _aisleScrollRAF = requestAnimationFrame(scroll);
+    } else if (e.clientY > sr.bottom - zone) {
+      const speed = Math.max(1, Math.round(maxSpeed * (1 - (sr.bottom - e.clientY) / zone)));
+      const scroll = () => { scrollEl.scrollTop += speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+      _aisleScrollRAF = requestAnimationFrame(scroll);
+    }
+  }
+
+  // Find which card the ghost centre is hovering over
+  const ghostCY=e.clientY;
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card=>{
+    const idx=parseInt(card.dataset.aisleIdx,10);
+    card.classList.remove('aisle-card-dragover');
+    if(idx===aisleDragSrcIdx) return;
+    const r=card.getBoundingClientRect();
+    if(ghostCY >= r.top && ghostCY <= r.bottom){
+      card.classList.add('aisle-card-dragover');
+    }
+  });
+}
+
+function onAisleDragEnd(e){
+  if(!aisleGhost) return;
+  cancelAnimationFrame(_aisleScrollRAF);
+  document.removeEventListener('pointermove', onAisleDragMove);
+  document.removeEventListener('pointerup',   onAisleDragEnd);
+  document.removeEventListener('pointercancel', onAisleDragEnd);
+
+  // Find drop target
+  let targetIdx=null;
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card=>{
+    if(card.classList.contains('aisle-card-dragover')){
+      targetIdx=parseInt(card.dataset.aisleIdx,10);
+    }
+    card.classList.remove('aisle-card-dragover','aisle-card-dragging');
+  });
+
+  aisleGhost.remove(); aisleGhost=null;
+  document.querySelectorAll('.aisle-drag-handle').forEach(h=>h.classList.remove('grabbing'));
+
+  if(targetIdx!==null && targetIdx!==aisleDragSrcIdx){
+    // Reorder tempAisles
+    const moved=tempAisles.splice(aisleDragSrcIdx,1)[0];
+    tempAisles.splice(targetIdx,0,moved);
+    _aisleReorderMode = true; // keep collapsed after drop
+
+    // Also reorder pendingScannedKws by the same move
+    const newPending={};
+    Object.keys(pendingScannedKws).forEach(k=>{
+      const oldIdx=parseInt(k,10);
+      let newIdx=oldIdx;
+      if(oldIdx===aisleDragSrcIdx){ newIdx=targetIdx; }
+      else if(aisleDragSrcIdx<targetIdx && oldIdx>aisleDragSrcIdx && oldIdx<=targetIdx){ newIdx=oldIdx-1; }
+      else if(aisleDragSrcIdx>targetIdx && oldIdx>=targetIdx && oldIdx<aisleDragSrcIdx){ newIdx=oldIdx+1; }
+      newPending[newIdx]=pendingScannedKws[k];
+    });
+    pendingScannedKws=newPending;
+
+    renumberAisleNames();
+    renderAisleRows();
+  }
+
+  aisleDragSrcIdx=null;
+  expandAislesAfterDrag();
+}
+
+// Auto-renumber aisle names that match the pattern "Aisle N" or "Aisle N – …"
+// so moving Aisle 3 to position 1 renames it to Aisle 1, shifting others up.
+function renumberAisleNames(){
+  tempAisles.forEach((aisle,i)=>{
+    // Match "Aisle <number>" optionally followed by " – rest of name"
+    const m=aisle.name.match(/^Aisle\s+\d+(\s*[–-]\s*.*)?$/i);
+    if(m){
+      const suffix=m[1]||'';
+      aisle.name=`Aisle ${i+1}${suffix}`;
+    }
+  });
+}
+
+async function saveStore(){
+  syncNames();
+  const name=document.getElementById('store-name-input').value.trim();
+  if(!name){ showToast('Please enter a store name'); return; }
+  if(!tempAisles.length){ showToast('Add at least one aisle'); return; }
+  const aisles=tempAisles.map(a=>({name:a.name,keywords:[...a.keywords]}));
+
+  if(state.editingStoreId){
+    const store=state.stores.find(s=>s.id===state.editingStoreId);
+    store.name=name; store.color=tempColor; store.aisles=aisles;
+    if(getActiveListItems(store.id)?.length){
+      setActiveListItems(store.id, getActiveListItems(store.id).map(item=>({
+        ...item, aisleIndex: rematch(item.name,store)
+      })));
+    }
+    if(window.persistStore) await window.persistStore(store.id);
+  } else {
+    const id='store-'+Date.now();
+    const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,
+      library_chain_id:    pendingLibraryMeta?.chain_id    || null,
+      library_location_id: pendingLibraryMeta?.location_id || null,
+      library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
+    };
+    state.stores.push(newStore);
+    state.lists[id]=[]; migrateListsIfNeeded(id); state.corrections[id]={};
+    if(!state.activeStoreId) state.activeStoreId=id;
+    pendingLibraryMeta=null;
+    if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
+    if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
+  }
+  closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
+  if (window._storeIsGenericDefault) {
+    window._storeIsGenericDefault = false;
+    setTimeout(() => openModal('modal-generic-warning'), 300);
+  }
+  // Show index conflict prompt if any were flagged during contribution
+  setTimeout(window.maybeShowNameConflictPrompt, 800);
+}
+
+function rematch(itemName,store){
+  const corr=state.corrections[store.id]||{};
+  const norm=normalise(itemName);
+  if(corr[norm]!==undefined) return corr[norm];
+  return kwMatch(norm,store.aisles);
+}
+
+async function deleteStore(id){
+  const store = state.stores.find(s => s.id === id);
+  if (!store) return;
+
+  // Only the owner can delete a store
+  const uid = window._currentUser?.uid;
+  if (store.ownerUid && uid && store.ownerUid !== uid) {
+    showToast('Only the store owner can delete it'); return;
+  }
+
+  // Prevent deleting the last store
+  if (state.stores.length === 1) {
+    showToast('You must have at least one store'); return;
+  }
+
+  // Use custom confirm modal instead of confirm() which is blocked on some mobile browsers
+  showDeleteConfirm(store.name, async () => {
+    // Unsubscribe the real-time listener for this store
+    if (window._storeUnsubs) {
+      const idx = state.stores.findIndex(s => s.id === id);
+      if (idx !== -1 && window._storeUnsubs[idx]) {
+        window._storeUnsubs[idx]();
+        window._storeUnsubs.splice(idx, 1);
+      }
+    }
+    state.stores = state.stores.filter(s => s.id !== id);
+    delete state.lists[id]; delete state.corrections[id]; delete state.activeListId[id];
+    if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
+    if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
+    renderAll(); showToast('"' + store.name + '" deleted');
+  });
+}
+
+// Custom confirm dialog (avoids mobile browser confirm() suppression)
+function showDeleteConfirm(name, onConfirm) {
+  const overlay = document.getElementById('modal-delete-confirm');
+  document.getElementById('delete-confirm-name').textContent = '"' + name + '"';
+  window._deleteConfirmCallback = onConfirm;
+  openModal('modal-delete-confirm');
+}
+
+window.confirmDelete = function() {
+  closeModal('modal-delete-confirm');
+  if (window._deleteConfirmCallback) {
+    window._deleteConfirmCallback();
+    window._deleteConfirmCallback = null;
+  }
+};
+
+window.cancelDelete = function() {
+  closeModal('modal-delete-confirm');
+  window._deleteConfirmCallback = null;
+};
+
+// ══════════════════════════════
+// LIST – AI MATCHING
+// ══════════════════════════════
+function openAddList(){
+  if(!getActiveStore()){ showToast('Please select a store first'); openStoreSwitch(); return; }
+  document.getElementById('list-text-input').value='';
+  resetUploadZone();
+  openModal('modal-add-list');
+}
+
+let uploadedImageB64 = null; // stores base64 of uploaded image for AI parsing
+let uploadedImageType = null;
+
+function handleFileUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  e.target.value='';
+  const zone=document.getElementById('upload-zone');
+  const iconEl=document.getElementById('upload-icon');
+  const labelEl=document.getElementById('upload-label');
+
+  // Detect if it's an image
+  if(f.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const dataUrl=ev.target.result;
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1024;
+        let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){ if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;} }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const resized=canvas.toDataURL('image/jpeg',0.85);
+        uploadedImageB64=resized.split(',')[1];
+        uploadedImageType='image/jpeg';
+        zone.classList.add('has-image');
+        zone.innerHTML=`<img class="img-preview" src="${resized}" alt="List preview">
+          <p style="font-size:.7rem;color:var(--green);margin-top:8px">✓ Image ready — tap Organise to read your list</p>`;
+      };
+      img.src=dataUrl;
+    };
+    reader.readAsDataURL(f);
+  } else {
+    // Text / any other file — read as text
+    uploadedImageB64=null; uploadedImageType=null;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      document.getElementById('list-text-input').value=ev.target.result;
+      zone.classList.remove('has-image');
+      zone.innerHTML=`<div class="upload-icon">✅</div><p style="font-size:.78rem">${esc(f.name)} loaded</p>`;
+    };
+    reader.onerror=()=>{ showToast('Could not read file'); };
+    reader.readAsText(f);
+  }
+}
+
+async function processListInput(){
+  const store=getActiveStore();
+  closeModal('modal-add-list');
+
+  // ── Image path ──
+  if(uploadedImageB64){
+    showProcessing('Reading your list with Gemini…');
+    try {
+      const names=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
+      uploadedImageB64=null; uploadedImageType=null;
+      resetUploadZone();
+      if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
+      showProcessing(`Found ${names.length} items — sorting by aisle…`);
+      const results=classifyItems(names,store);
+      setActiveListItems(store.id, applyCorr(results,store));
+      await window.persistStore(store.id);
+      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
+    } catch(err){
+      hideProcessing(); console.error(err);
+      showToast('Could not read image: '+(err.message||'unknown error'));
+    }
+    return;
+  }
+
+  // ── Text path ──
+  const raw=document.getElementById('list-text-input').value.trim();
+  resetUploadZone();
+  if(!raw){ showToast('Enter at least one item'); return; }
+  const names=raw.split(/[\n,]/).map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
+  if(!names.length){ showToast('No items found'); return; }
+  showProcessing('Sorting items by aisle…');
+  const results=classifyItems(names,store);
+  setActiveListItems(store.id, applyCorr(results,store));
+  await window.persistStore(store.id);
+  hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
+}
+
+function resetUploadZone(){
+  uploadedImageB64=null; uploadedImageType=null;
+  const zone=document.getElementById('upload-zone');
+  if(zone){
+    zone.classList.remove('has-image');
+    zone.innerHTML=`<div class="upload-icon" id="upload-icon">📎</div>
+      <p style="font-size:.78rem" id="upload-label">Tap to upload a file or photo of your list</p>`;
+  }
+}
+
+async function parseImageWithGemini(b64, mimeType){
+  const user=window._currentUser;
+  if(!user){ showToast('Please sign in first'); return []; }
+  const token=await user.getIdToken();
+  const res=await fetch(
+    'https://us-central1-instaisle-e8d6b.cloudfunctions.net/parseShoppingList',
+    {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({imageBase64:b64, mimeType})
+    }
+  );
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    throw new Error(err?.error||`Server error ${res.status}`);
+  }
+  const data=await res.json();
+  return Array.isArray(data.items)?data.items.filter(Boolean):[];
+}
+
+function classifyItems(items,store){
+  return items.map(name=>({
+    name,
+    aisleIndex: kwMatch(normalise(name),store.aisles),
+    aiClassified: false,
+    checked: false
+  }));
+}
+
+function applyCorr(items,store){
+  const corr=state.corrections[store.id]||{};
+  return items.map(item=>{
+    const norm=normalise(item.name);
+    if(corr[norm]!==undefined) return {...item,aisleIndex:corr[norm],aiClassified:false};
+    return item;
+  });
+}
+
+function kwMatch(norm,aisles){
+  let best=0,bestIdx=null;
+  aisles.forEach((a,i)=>{
+    let sc=0; a.keywords.forEach(k=>{ if(norm.includes(k.toLowerCase())) sc+=k.length; });
+    if(sc>best){ best=sc; bestIdx=i; }
+  });
+  return bestIdx;
+}
+
+function normalise(s){ return s.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
+
+// ══════════════════════════════
+// ITEM ACTIONS
+// ══════════════════════════════
+function toggleCheck(idx){
+  var store = getActiveStore();
+  var _al2 = getActiveListItems(store.id); var item = _al2[idx];
+  if (!item) return;
+
+  // Accept suggestion when user checks it
+  if (item.isSuggested) item.isSuggested = false;
+
+  var wasChecked = item.checked;
+  item.checked = !item.checked;
+
+  if (!wasChecked && item.checked) {
+    // Record to purchase history
+    if (window.recordItemChecked)
+      window.recordItemChecked(item.name, store, item.aisleIndex);
+
+    // Trigger suggestion if this is first check in this aisle
+    var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
+    var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
+    var aisleItems = _al2.filter(function(i){
+      if (i.isSuggested) return false; // don't count suggested items
+      if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
+      return i.aisleIndex !== null && i.aisleIndex !== undefined && String(i.aisleIndex) === aisleKey;
+    });
+    var checkedCount = aisleItems.filter(function(i){ return i.checked; }).length;
+    if (checkedCount === 1) window.maybeSuggest(store, aisleKey);
+  }
+
+  renderListScreen();
+  persistActiveStore();
+}
+function uncheckAll(){
+  const store=getActiveStore();
+  const _ua = getActiveListItems(store.id);
+  const checked=_ua.filter(i=>i.checked).length;
+  if(!checked){ showToast('No checked items'); return; }
+  if(!confirm(`Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`)) return;
+  _ua.forEach(i=>{ i.checked=false; }); setActiveListItems(store.id,_ua);
+  // Reset session tracking for this store so suggestions fire fresh
+  if (state._aislesFirstCheckDone) delete state._aislesFirstCheckDone[store.id];
+  renderListScreen();
+  persistActiveStore();
+  showToast('All items unchecked ✓');
+}
+function clearChecked(){
+  const store=getActiveStore();
+  const _cc = getActiveListItems(store.id);
+  const checked=_cc.filter(i=>i.checked).length;
+  if(!checked){ showToast('No checked items'); return; }
+  if(!confirm(`Remove ${checked} checked item${checked!==1?'s':''} from your list? This cannot be undone.`)) return;
+  setActiveListItems(store.id, _cc.filter(i=>!i.checked));
+  renderListScreen(); showToast('Checked items removed');
+  persistActiveStore();
+}
+function clearList(){
+  if(!confirm('Clear the entire list?')) return;
+  const _cs=getActiveStore(); setActiveListItems(_cs.id,[]);
+  renderListScreen();
+  persistActiveStore();
+}
+
+// ── Edit List ─────────────────────────────────────────────────────────────────────────
+
+function openEditList() {
+  const store = getActiveStore();
+  if (!store) return;
+  renderEditListItems();
+  document.getElementById('edit-list-new-item').value = '';
+  openModal('modal-edit-list');
+  setTimeout(() => document.getElementById('edit-list-new-item').focus(), 300);
+}
+
+function renderEditListItems() {
+  const store = getActiveStore();
+  if (!store) return;
+  migrateListsIfNeeded(store.id);
+  const items = getActiveListItems(store.id);
+  const container = document.getElementById('edit-list-items');
+
+  if (!items.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:24px 0">No items — add some above.</div>';
+    return;
+  }
+
+  const groups = {};
+  items.forEach((item, idx) => {
+    const key = (item.aisleIndex !== null && item.aisleIndex !== undefined) ? item.aisleIndex : 'unmatched';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ ...item, idx });
+  });
+  const keys = Object.keys(groups).filter(k => k !== 'unmatched').sort((a, b) => +a - +b);
+  if (groups['unmatched']) keys.push('unmatched');
+
+  let html = '';
+  keys.forEach(key => {
+    const gItems = groups[key];
+    const isUM   = key === 'unmatched';
+    const color  = isUM ? '#fbbf24' : AISLE_COLORS[+key % AISLE_COLORS.length];
+    const aisle  = !isUM ? store.aisles[+key] : null;
+    const aisleName = isUM ? '? Unmatched' : (aisle ? aisle.name : 'Aisle ' + (+key + 1));
+
+    html += '<div style="font-size:.7rem;font-weight:700;text-transform:uppercase;' +
+      'letter-spacing:.06em;color:' + color + ';margin:12px 0 6px;padding:0 2px">' + esc(aisleName) + '</div>';
+
+    gItems.forEach(item => {
+      const badge   = isUM ? '?' : 'A' + (+key + 1);
+      const bgBadge = hexRgba(color, .18);
+      html += '<div class="edit-list-item">' +
+        '<span class="edit-item-name">' + esc(item.name) + '</span>' +
+        '<span class="edit-item-aisle" style="background:' + bgBadge + ';color:' + color + '">' + badge + '</span>' +
+        '<button class="edit-item-delete" onclick="deleteItemFromEdit(' + item.idx + ')" title="Remove">✕</button>' +
+        '</div>';
+    });
+  });
+
+  container.innerHTML = html;
+}
+
+async function deleteItemFromEdit(idx) {
+  const store = getActiveStore();
+  if (!store) return;
+  const _ri = getActiveListItems(store.id); _ri.splice(idx,1); setActiveListItems(store.id,_ri);
+  await window.persistStore(store.id);
+  renderEditListItems();
+  renderListScreen();
+}
+
+async function addItemFromEditAndClose() {
+  const input = document.getElementById('edit-list-new-item');
+  if (input.value.trim()) {
+    await addItemFromEdit();
+  }
+  closeModal('modal-edit-list');
+}
+
+async function addItemFromEdit() {
+  const store = getActiveStore();
+  if (!store) return;
+  const input = document.getElementById('edit-list-new-item');
+  const raw   = input.value.trim();
+  if (!raw) return;
+
+  // Split on commas or line breaks, clean up each entry
+  const names = raw
+    .split(/[,\n]+/)
+    .map(s => s.replace(/^[-•*\d.)]+\s*/, '').trim())
+    .filter(Boolean);
+
+  if (!names.length) return;
+
+  const results = classifyItems(names, store);
+  const newItems = applyCorr(results, store);
+
+  migrateListsIfNeeded(store.id);
+  const _afe = getActiveListItems(store.id);
+  _afe.push(...newItems);
+  setActiveListItems(store.id, _afe);
+  await window.persistStore(store.id);
+
+  input.value = '';
+  input.focus();
+  renderEditListItems();
+  renderListScreen();
+  if (names.length > 1) showToast(names.length + ' items added ✓');
+}
+
+function openMoveItem(idx){
+  const store=getActiveStore();
+  const _al3 = getActiveListItems(store.id); const item = _al3[idx];
+  moveItemIndex=idx;
+  document.getElementById('move-item-name').textContent=item.name;
+  const opts=document.getElementById('move-aisle-options');
+  opts.innerHTML=store.aisles.map((aisle,ai)=>{
+    const color=AISLE_COLORS[ai%AISLE_COLORS.length];
+    const isAct=item.aisleIndex===ai;
+    return `<div class="card" style="cursor:pointer;border-color:${isAct?color:'var(--border)'};margin-bottom:8px" onclick="moveToAisle(${ai})">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+        <span style="font-size:.85rem;font-weight:${isAct?'600':'400'}">${esc(aisle.name)}</span>
+        ${isAct?`<span style="margin-left:auto;color:${color};font-size:.7rem">Current</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  const isUM=item.aisleIndex===null||item.aisleIndex===undefined;
+  opts.innerHTML+=`<div class="card" style="cursor:pointer;border-color:${isUM?'var(--amber)':'var(--border)'};margin-bottom:8px" onclick="moveToAisle(null)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
+      <span style="font-size:.85rem;font-weight:${isUM?'600':'400'}">Unmatched</span>
+    </div>
+  </div>`;
+  openModal('modal-move-item');
+}
+
+function moveToAisle(aisleIndex){
+  const store=getActiveStore();
+  const _al4 = getActiveListItems(store.id); const item = _al4[moveItemIndex];
+  const norm=normalise(item.name);
+  if(!state.corrections[store.id]) state.corrections[store.id]={};
+  if(aisleIndex===null) delete state.corrections[store.id][norm];
+  else state.corrections[store.id][norm]=aisleIndex;
+  item.aisleIndex=aisleIndex;
+  closeModal('modal-move-item'); renderListScreen(); showToast('Correction saved ✓');
+  persistActiveStore();
+}
+
+// ══════════════════════════════
+// DRAG — MOUSE (long-press to initiate)
+// ══════════════════════════════
+let _mouseLongPressTimer = null;
+let _mouseDragReady = false;
+
+function dStart(e,idx,aisleKey){
+  if(!_mouseDragReady){ e.preventDefault(); return; }
+  dragSrcIdx=idx; dragSrcAisle=aisleKey;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{
+    const el=document.querySelector(`[data-item-idx="${idx}"]`);
+    if(el) el.classList.add('dragging');
+  },0);
+}
+function dEnd(e){
+  _mouseDragReady=false;
+  clearDropLines();
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
+  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
+  dragSrcIdx=null; dragSrcAisle=null;
+}
+function dOver(e){
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  const el=e.currentTarget;
+  const idx=+el.dataset.itemIdx;
+  if(idx===dragSrcIdx) return;
+  clearDropLines();
+  const r=el.getBoundingClientRect();
+  if(e.clientY < r.top + r.height/2) el.classList.add('drop-before');
+  else el.classList.add('drop-after');
+}
+function dDrop(e,targetIdx,targetAisleKey){
+  e.preventDefault(); e.stopPropagation();
+  const el=e.currentTarget;
+  const before=el.classList.contains('drop-before');
+  clearDropLines();
+  if(dragSrcIdx===null||dragSrcIdx===targetIdx) return;
+  reorderItems(dragSrcIdx, targetIdx, targetAisleKey, before);
+}
+function dzOver(e){ e.preventDefault(); e.currentTarget.classList.add('active'); }
+function dzLeave(e){ e.currentTarget.classList.remove('active'); }
+function dzDrop(e,aisleKey){
+  e.preventDefault(); e.currentTarget.classList.remove('active');
+  if(dragSrcIdx===null) return;
+  moveToEndOfAisle(dragSrcIdx, aisleKey);
+}
+function clearDropLines(){
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('drop-before','drop-after'));
+}
+
+function initItemMouseLongPress(){
+  document.querySelectorAll('.list-item:not(.suggested)').forEach(el=>{
+    el.addEventListener('pointerdown', e=>{
+      if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
+      if(e.pointerType==='touch') return; // handled by tStart/tMove/tEnd
+      if(e.button!==0) return;
+      clearTimeout(_mouseLongPressTimer);
+      _mouseDragReady=false;
+      _mouseLongPressTimer=setTimeout(()=>{
+        _mouseDragReady=true;
+        const idx=+el.dataset.itemIdx;
+        const key=el.dataset.aisleKey;
+        dragSrcIdx=idx; dragSrcAisle=key;
+        el.classList.add('dragging');
+        // Attach move/up listeners
+        document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
+        document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
+      }, 400);
+    },{passive:true});
+    el.addEventListener('pointerup', ()=>{ clearTimeout(_mouseLongPressTimer); },{passive:true});
+    el.addEventListener('pointerleave', ()=>{ clearTimeout(_mouseLongPressTimer); },{passive:true});
+  });
+}
+
+function _onMouseDragMove(e){
+  if(!_mouseDragReady||dragSrcIdx===null) return;
+  clearDropLines();
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const ti=under?.closest('.list-item');
+  if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
+    const r=ti.getBoundingClientRect();
+    if(e.clientY < r.top+r.height/2) ti.classList.add('drop-before');
+    else ti.classList.add('drop-after');
+  }
+}
+
+function _onMouseDragUp(e){
+  document.removeEventListener('pointermove',_onMouseDragMove);
+  document.removeEventListener('pointerup',_onMouseDragUp);
+  if(!_mouseDragReady||dragSrcIdx===null){ _mouseDragReady=false; return; }
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const ti=under?.closest('.list-item');
+  const dz=under?.closest('.drop-zone');
+  clearDropLines();
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
+  if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
+    const r=ti.getBoundingClientRect();
+    reorderItems(dragSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey, e.clientY<r.top+r.height/2);
+  } else if(dz){
+    moveToEndOfAisle(dragSrcIdx,dz.dataset.aisleKey);
+  }
+  dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
+}
+
+// ══════════════════════════════
+// DRAG — TOUCH (long-press anywhere on item)
+// ══════════════════════════════
+let _touchLongPressTimer=null;
+let _touchDragActive=false;
+
+function tStart(e,idx,aisleKey){
+  if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
+  const touch=e.touches[0];
+  const el=e.currentTarget;
+  clearTimeout(_touchLongPressTimer);
+  _touchDragActive=false;
+  const startX=touch.clientX, startY=touch.clientY;
+  _touchLongPressTimer=setTimeout(()=>{
+    _touchDragActive=true;
+    touchSrcIdx=idx; touchSrcAisle=aisleKey;
+    const rect=el.getBoundingClientRect();
+    touchOffX=touch.clientX-rect.left; touchOffY=touch.clientY-rect.top;
+    if(navigator.vibrate) navigator.vibrate(40);
+    touchClone=el.cloneNode(true);
+    Object.assign(touchClone.style,{
+      position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',
+      opacity:'0.85',zIndex:'999',border:'2px solid var(--green)',borderRadius:'10px',
+      pointerEvents:'none',background:'#22263a',transition:'none',boxShadow:'0 8px 24px rgba(0,0,0,.5)'
+    });
+    document.body.appendChild(touchClone);
+    el.style.opacity='0.25';
+  }, 400);
+}
+function tMove(e){
+  if(!_touchDragActive){
+    // Cancel long press if finger moved more than 8px
+    const t=e.touches[0];
+    clearTimeout(_touchLongPressTimer);
+    return;
+  }
+  if(!touchClone) return;
+  e.preventDefault();
+  const t=e.touches[0];
+  touchClone.style.left=(t.clientX-touchOffX)+'px';
+  touchClone.style.top=(t.clientY-touchOffY)+'px';
+  touchClone.style.display='none';
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  touchClone.style.display='';
+  clearDropLines();
+  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
+  const ti=under?.closest('.list-item');
+  if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
+    const r=ti.getBoundingClientRect();
+    if(t.clientY < r.top + r.height/2) ti.classList.add('drop-before');
+    else ti.classList.add('drop-after');
+  }
+  const dz=under?.closest('.drop-zone');
+  if(dz) dz.classList.add('active');
+}
+function tEnd(e){
+  clearTimeout(_touchLongPressTimer);
+  if(!_touchDragActive||!touchClone){ touchSrcIdx=null; _touchDragActive=false; return; }
+  const t=e.changedTouches[0];
+  touchClone.remove(); touchClone=null;
+  document.querySelectorAll('[data-item-idx]').forEach(el=>el.style.opacity='');
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  clearDropLines();
+  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
+  const ti=under?.closest('.list-item');
+  const dz=under?.closest('.drop-zone');
+  if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
+    const r=ti.getBoundingClientRect();
+    const before=t.clientY < r.top + r.height/2;
+    reorderItems(touchSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey,before);
+  } else if(dz){
+    moveToEndOfAisle(touchSrcIdx,dz.dataset.aisleKey);
+  }
+  touchSrcIdx=null; touchSrcAisle=null; _touchDragActive=false;
+}
+
+// ══════════════════════════════
+// REORDER HELPERS
+// ══════════════════════════════
+function reorderItems(srcIdx, targetIdx, targetAisleKey, before=true){
+  const store=getActiveStore();
+  const items=getActiveListItems(store.id);
+  const moved=items[srcIdx];
+  const targetAisle=targetAisleKey==='unmatched'?null:+targetAisleKey;
+  moved.aisleIndex=targetAisle;
+  items.splice(srcIdx,1);
+  // Recalculate targetIdx after splice
+  const adjustedTarget=srcIdx<targetIdx?targetIdx-1:targetIdx;
+  const insertAt=before?adjustedTarget:adjustedTarget+1;
+  items.splice(Math.max(0,insertAt),0,moved);
+  saveCorr(moved,targetAisle,store);
+  renderListScreen();
+  persistActiveStore();
+}
+
+function moveToEndOfAisle(srcIdx, aisleKey){
+  const store=getActiveStore();
+  const items=getActiveListItems(store.id);
+  const moved=items[srcIdx];
+  const targetAisle=aisleKey==='unmatched'?null:+aisleKey;
+  moved.aisleIndex=targetAisle;
+  items.splice(srcIdx,1);
+  items.push(moved);
+  saveCorr(moved,targetAisle,store);
+  renderListScreen();
+  persistActiveStore();
+}
+
+function saveCorr(item,aisleIndex,store){
+  const norm=normalise(item.name);
+  if(!state.corrections[store.id]) state.corrections[store.id]={};
+  if(aisleIndex===null) delete state.corrections[store.id][norm];
+  else state.corrections[store.id][norm]=aisleIndex;
+}
+
+// ══════════════════════════════
+// PROCESSING OVERLAY
+// ══════════════════════════════
+function showProcessing(msg){
+  const el=document.getElementById('processing-text'); if(el) el.textContent=msg||'';
+  document.getElementById('processing-overlay').classList.add('show');
+}
+function hideProcessing(){
+  document.getElementById('processing-overlay').classList.remove('show');
+}
+
+// ══════════════════════════════
+// UTILS
+// ══════════════════════════════
+function getActiveStore(){ return state.stores.find(s=>s.id===state.activeStoreId)||null; }
+
+// ── Multi-list helpers ──────────────────────────────────────────────────
+function getLists(storeId) {
+  const raw = state.lists[storeId];
+  if (!raw || Array.isArray(raw)) return null; // old format — handled by migration
+  return raw;
+}
+
+function getActiveListId(storeId) {
+  return state.activeListId[storeId] || null;
+}
+
+function getActiveListItems(storeId) {
+  const lists = getLists(storeId);
+  if (!lists) return state.lists[storeId] || []; // legacy fallback
+  const lid = getActiveListId(storeId);
+  return (lid && lists.lists[lid]) ? lists.lists[lid].items : [];
+}
+
+function setActiveListItems(storeId, items) {
+  const lists = getLists(storeId);
+  if (!lists) { state.lists[storeId] = items; return; }
+  const lid = getActiveListId(storeId);
+  if (lid && lists.lists[lid]) lists.lists[lid].items = items;
+}
+
+function migrateListsIfNeeded(storeId) {
+  const raw = state.lists[storeId];
+  if (Array.isArray(raw)) {
+    const lid = 'list-' + Date.now();
+    state.lists[storeId] = {
+      lists: { [lid]: { id: lid, name: 'My List', items: raw, createdAt: Date.now(), lastOpened: Date.now() } }
+    };
+    state.activeListId[storeId] = lid;
+  } else if (raw && typeof raw === 'object') {
+    // Already migrated — ensure activeListId is set
+    if (!state.activeListId[storeId]) {
+      const ids = Object.keys(raw.lists || {});
+      if (ids.length) {
+        // Pick most recently opened
+        const sorted = ids.sort((a,b) => (raw.lists[b].lastOpened||0) - (raw.lists[a].lastOpened||0));
+        state.activeListId[storeId] = sorted[0];
+      }
+    }
+  } else {
+    // No list yet — create empty default
+    const lid = 'list-' + Date.now();
+    state.lists[storeId] = {
+      lists: { [lid]: { id: lid, name: 'My List', items: [], createdAt: Date.now(), lastOpened: Date.now() } }
+    };
+    state.activeListId[storeId] = lid;
+  }
+}
+
+function createNewList(storeId, name) {
+  migrateListsIfNeeded(storeId);
+  const lid = 'list-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+  state.lists[storeId].lists[lid] = { id: lid, name: name, items: [], createdAt: Date.now(), lastOpened: Date.now() };
+  state.activeListId[storeId] = lid;
+  return lid;
+}
+
+function touchListLastOpened(storeId, lid) {
+  const lists = getLists(storeId);
+  if (lists && lists.lists[lid]) lists.lists[lid].lastOpened = Date.now();
+}
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  history.pushState({ type: 'modal', modalId: id }, '', '');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.classList.contains('open')) return;
+  el.classList.remove('open');
+  // If the current history state is for this modal, go back
+  if (history.state?.type === 'modal' && history.state?.modalId === id) {
+    history.back();
+  }
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function hexRgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+
+// ══════════════════════════════
+// FIREBASE SAVE HOOKS
+// Patch state-mutating functions to persist to Firestore
+// ══════════════════════════════
+function persistActiveStore() {
+  if (window.persistStore && state.activeStoreId) {
+    window.persistStore(state.activeStoreId);
+  }
+}
+
+
+boot();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/InstAisle/sw.js').catch(()=>{});
+  });
+}
+
+// ══════════════════════════════
+// ONBOARDING FLOW
+// ══════════════════════════════
+(function() {
+  const TOTAL = 5;
+  let _current = 0;
+
+  function buildDots() {
+    const container = document.getElementById('ob-dots');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'ob-dot' + (i === 0 ? ' active' : '');
+      container.appendChild(d);
+    }
+  }
+
+  function showSlide(idx) {
+    document.querySelectorAll('.ob-slide').forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.ob-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+    const nextBtn = document.getElementById('ob-btn-next');
+    const skipBtn = document.getElementById('ob-btn-skip');
+    if (nextBtn) nextBtn.style.display = idx === TOTAL - 1 ? 'none' : 'block';
+    if (skipBtn) skipBtn.style.display = idx === TOTAL - 1 ? 'none' : 'block';
+    _current = idx;
+  }
+
+  window.obNext = function() {
+    if (_current < TOTAL - 1) showSlide(_current + 1);
+  };
+
+  window.closeOnboarding = function() {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+      overlay.style.animation = 'none';
+      overlay.querySelector('.ob-card').style.animation = 'obSlideDown .3s ease forwards';
+      setTimeout(() => { overlay.style.display = 'none'; }, 280);
+    }
+    // Mark as seen in localStorage so it never shows again
+    try { localStorage.setItem('instaisle_onboarded', '1'); } catch(e) {}
+  };
+
+  window.maybeShowOnboarding = function(isNewUser) {
+    try {
+      if (localStorage.getItem('instaisle_onboarded')) return;
+    } catch(e) {}
+    if (!isNewUser) return;
+    buildDots();
+    showSlide(0);
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  };
+})();
+
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY — shown once after new account creation
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="onboarding-overlay" style="display:none">
+  <div class="ob-backdrop"></div>
+  <div class="ob-card">
+    <!-- Progress dots -->
+    <div class="ob-dots" id="ob-dots"></div>
+
+    <!-- Slides -->
+    <div class="ob-slides" id="ob-slides">
+
+      <!-- Slide 1: Welcome / Core concept -->
+      <div class="ob-slide" data-index="0">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🛒</div>
+        </div>
+        <h2 class="ob-title">Welcome to InstAisle</h2>
+        <p class="ob-body">InstAisle organizes your grocery list <strong>by aisle</strong> — so you move through the store once, in order, without backtracking.</p>
+        <div class="ob-demo" style="padding:10px 12px">
+          <div class="aisle-group" style="margin-bottom:12px">
+            <div class="aisle-group-header" style="background:rgba(74,222,128,.12);color:#4ade80">
+              🛒 Dairy &amp; Eggs <span class="aisle-count">1 left</span>
+            </div>
+            <div class="list-item checked">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check done"><span style="font-size:.7rem;color:#0a1a12">✓</span></div>
+              <div class="item-name">Milk</div>
+              <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
+            </div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Butter</div>
+              <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
+            </div>
+          </div>
+          <div class="aisle-group" style="margin-bottom:0">
+            <div class="aisle-group-header" style="background:rgba(96,165,250,.12);color:#60a5fa">
+              🛒 Bakery <span class="aisle-count">2 left</span>
+            </div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Sourdough</div>
+              <div class="item-aisle-badge" style="background:rgba(96,165,250,.18);color:#60a5fa">A2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2: Store library -->
+      <div class="ob-slide" data-index="1">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🏪</div>
+        </div>
+        <h2 class="ob-title">Start from a Template</h2>
+        <p class="ob-body">The <strong>Store Library</strong> has aisle layouts for hundreds of grocery chains near you. Add a store in seconds — no setup required.</p>
+        <div class="ob-demo" style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+          <div class="nearby-card selected">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Market Basket</div>
+              <div class="nearby-address">880 Walnut St, Newtonville</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">0.4 mi</span>
+                <span class="nearby-open open">Open</span>
+                <span class="nearby-match-pill">✓ community data · 18 aisles</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Whole Foods Market</div>
+              <div class="nearby-address">15 Washington St, Newton</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">1.2 mi</span>
+                <span class="nearby-open open">Open</span>
+                <span class="nearby-match-pill">22 aisles</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Trader Joe's</div>
+              <div class="nearby-address">905 Walnut St, Newton</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">2.1 mi</span>
+                <span class="nearby-match-pill">14 aisles</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3: Community contributions -->
+      <div class="ob-slide" data-index="2">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🤝</div>
+        </div>
+        <h2 class="ob-title">You Help Everyone</h2>
+        <p class="ob-body">When you edit a store's aisles — renaming, reordering, or adding items — your changes are shared with the community. Every correction makes the app better for everyone.</p>
+        <div class="ob-demo ob-demo-community">
+          <div class="ob-contrib-row">
+            <div class="ob-contrib-avatar">A</div>
+            <div class="ob-contrib-text">
+              <span class="ob-contrib-name">You</span> renamed "Aisle 4" →
+              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+            </div>
+            <span class="ob-contrib-tag ob-tag-live">Live</span>
+          </div>
+          <div class="ob-contrib-row">
+            <div class="ob-contrib-avatar ob-av2">B</div>
+            <div class="ob-contrib-text">
+              <span class="ob-contrib-name">Another shopper</span> confirmed
+              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+            </div>
+            <span class="ob-contrib-tag ob-tag-conf">✓ Confirmed</span>
+          </div>
+          <p class="ob-contrib-caption">2 shoppers agree — the app is updated for everyone at this store.</p>
+        </div>
+      </div>
+
+      <!-- Slide 4: Photo scan -->
+      <div class="ob-slide" data-index="3">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">📷</div>
+        </div>
+        <h2 class="ob-title">Scan an Aisle Sign</h2>
+        <p class="ob-body">Tap the camera icon on any aisle to photograph the shelf label. InstAisle reads it and fills in the keywords automatically — no typing needed.</p>
+        <div class="ob-demo ob-demo-scan">
+          <div class="ob-scan-frame">
+            <div class="ob-scan-sign">
+              <span class="ob-scan-number" style="font-family:'Outfit',sans-serif">Aisle 7</span>
+              <span class="ob-scan-text" style="font-family:'Outfit',sans-serif">Cereal · Granola · Oats · Breakfast Bars · Hot Cereal</span>
+            </div>
+            <div style="font-size:.6rem;color:#555;margin-top:6px;font-style:italic"></div>
+            <div class="ob-scan-line"></div>
+          </div>
+          <div class="ob-scan-result">
+            <div class="ob-scan-kw">cereal</div>
+            <div class="ob-scan-kw">granola</div>
+            <div class="ob-scan-kw">oats</div>
+            <div class="ob-scan-kw ob-kw-new">+ breakfast bars</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5: Suggestions -->
+      <div class="ob-slide" data-index="4">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">✨</div>
+        </div>
+        <h2 class="ob-title">Smart Suggestions</h2>
+        <p class="ob-body">After a few shopping trips, InstAisle can remember what you buy where and suggest items as you check aisles. <strong>This feature is off by default</strong> — you can turn it on anytime in your profile settings.</p>
+        <div class="ob-demo" style="padding:10px 12px">
+          <div class="aisle-group" style="margin-bottom:0">
+            <div class="aisle-group-header" style="background:rgba(251,191,36,.12);color:#fbbf24">
+              🛒 Personal Care <span class="aisle-count">2 left</span>
+            </div>
+            <div class="list-item suggested">
+              <span class="suggested-label">Suggested</span>
+              <div class="item-name">Shampoo</div>
+              <button class="dismiss-suggestion">✕</button>
+            </div>
+            <div class="list-item suggested">
+              <span class="suggested-label">Suggested</span>
+              <div class="item-name">Toothpaste</div>
+              <button class="dismiss-suggestion">✕</button>
+            </div>
+            <div class="list-item">
+              <div class="drag-handle">⠿</div>
+              <div class="item-check"></div>
+              <div class="item-name">Deodorant</div>
+              <div class="item-aisle-badge" style="background:rgba(251,191,36,.18);color:#fbbf24">A5</div>
+            </div>
+          </div>
+          <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:8px">Based on your past 3 visits here. Tap to add, ✕ to dismiss.</p>
+        </div>
+        <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
+      </div>
+
+    </div><!-- /ob-slides -->
+
+    <!-- Navigation -->
+    <div class="ob-nav">
+      <button class="ob-btn-skip" id="ob-btn-skip" onclick="window.closeOnboarding()">Skip</button>
+      <button class="ob-btn-next" id="ob-btn-next" onclick="window.obNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
