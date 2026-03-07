@@ -1181,15 +1181,11 @@ textarea.input{resize:vertical;min-height:90px;}
         style="flex:1;resize:none;line-height:1.4"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
         autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-      <button class="btn btn-primary" onclick="addItemFromEdit()" style="flex-shrink:0;padding:0 18px;height:44px">Add</button>
+      <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
     </div>
 
     <!-- Item list -->
     <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
-
-    <div style="margin-top:16px;flex-shrink:0">
-      <button class="btn btn-primary btn-full" onclick="closeModal('modal-edit-list')">Done</button>
-    </div>
   </div>
 </div>
 
@@ -1209,15 +1205,11 @@ textarea.input{resize:vertical;min-height:90px;}
         style="flex:1;resize:none;line-height:1.4"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
         autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-      <button class="btn btn-primary" onclick="addItemFromEdit()" style="flex-shrink:0;padding:0 18px;height:44px">Add</button>
+      <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
     </div>
 
     <!-- Item list -->
     <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
-
-    <div style="margin-top:16px;flex-shrink:0">
-      <button class="btn btn-primary btn-full" onclick="closeModal('modal-edit-list')">Done</button>
-    </div>
   </div>
 </div>
 
@@ -6227,6 +6219,14 @@ async function deleteItemFromEdit(idx) {
   await window.persistStore(store.id);
   renderEditListItems();
   renderListScreen();
+}
+
+async function addItemFromEditAndClose() {
+  const input = document.getElementById('edit-list-new-item');
+  if (input.value.trim()) {
+    await addItemFromEdit();
+  }
+  closeModal('modal-edit-list');
 }
 
 async function addItemFromEdit() {
