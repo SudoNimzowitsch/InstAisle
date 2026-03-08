@@ -862,6 +862,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="user-avatar" id="user-avatar-sm">?</div>
       <span id="user-name-sm">Account</span>
     </div>
+    <div class="icon-btn" onclick="topbarNewList()" title="New list">＋</div>
   </div>
 </div>
 
@@ -4889,6 +4890,13 @@ function selectList(storeId, listId) {
 }
 
 let _newListMode = false; // true when opening modal-add-list to create a new list
+
+function topbarNewList() {
+  const store = getActiveStore();
+  if (!store) { showToast('Please select a store first'); openStoreSwitch(); return; }
+  _listPickerStoreId = store.id;
+  promptNewList();
+}
 
 function promptNewList() {
   const storeId = _listPickerStoreId;
