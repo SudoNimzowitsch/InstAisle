@@ -74,17 +74,15 @@ body{
   gap:5px;align-items:center;z-index:9;
 }
 #list-toolbar.visible{display:flex;}
-#list-toolbar .btn-sm{padding:5px 8px;font-size:0.68rem;}
+#list-toolbar .btn-sm{padding:6px 10px;font-size:0.75rem;}
 .tb-short{display:none;}
 @media(max-width:480px){
-  #list-toolbar-count{display:none;}
-  #list-toolbar .btn-sm{padding:5px 6px;font-size:0.63rem;}
+  #list-toolbar .btn-sm{padding:6px 8px;font-size:0.72rem;}
   .tb-long{display:none;}
   .tb-short{display:inline;}
 }
 
 /* BOTTOM NAV */
-.bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px);}
 .nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
   padding:14px 0;cursor:pointer;border:none;background:none;color:var(--muted);
@@ -257,12 +255,9 @@ textarea.input{resize:vertical;min-height:90px;}
   transition:all .15s;position:relative;user-select:none;
 }
 .list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
-.list-item.drag-over{border:2px solid var(--green);transform:scale(1.01);}
-.drag-handle{
-  cursor:grab;color:var(--muted);font-size:.95rem;line-height:1;
-  padding:2px 3px;flex-shrink:0;touch-action:none;letter-spacing:-1px;
-}
-.drag-handle:active{cursor:grabbing;color:var(--green);}
+.list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
+.list-item.drop-after{box-shadow:0 2px 0 0 var(--green);}
+
 .list-item.checked{opacity:.45;}
 .list-item.checked .item-name{text-decoration:line-through;}
 .list-item.suggested{background:#2a2f42;border-color:#3a4060;}
@@ -875,66 +870,19 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
-  <div style="font-size:.68rem;color:var(--muted);display:flex;align-items:center;margin-right:auto;white-space:nowrap" id="list-toolbar-count"></div>
-  <button class="btn btn-sm btn-ghost" onclick="openMoveList()"><span class="tb-long">Move →</span><span class="tb-short">Move</span></button>
-  <button class="btn btn-sm btn-ghost" onclick="openEditList()">Edit</button>
+  <button class="btn btn-sm btn-ghost" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem">☰</button>
+  <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto;white-space:nowrap;margin-left:4px" id="list-toolbar-count"></div>
+  <button class="btn btn-sm btn-ghost" onclick="openEditList()"><span class="tb-long">Edit</span><span class="tb-short">Edit</span></button>
   <button class="btn btn-sm btn-ghost" onclick="uncheckAll()"><span class="tb-long">Uncheck all</span><span class="tb-short">Uncheck</span></button>
   <button class="btn btn-sm btn-ghost" onclick="clearChecked()"><span class="tb-long">Clear checked</span><span class="tb-short">× checked</span></button>
-  <button class="btn btn-sm btn-danger" onclick="clearList()"><span class="tb-long">Clear all</span><span class="tb-short">× all</span></button>
 </div>
 
 <!-- SCREENS -->
 <div class="screens">
   <div class="screen active" id="screen-list"><div id="list-content"></div></div>
-  <div class="screen" id="screen-stores">
-    <div class="section-header">
-      <span class="section-title">My Stores</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="openLibraryModal()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px">
-  <path d="M3 9l1-5h16l1 5"/>
-  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
-  <path d="M5 11v9h14v-9"/>
-  <rect x="8" y="13" width="8" height="5" rx="1"/>
-  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
-  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg>Store Library</button>
-      <button class="btn btn-ghost" style="flex:1" onclick="openNewStore()">+ Build My Own</button>
-    </div>
-    <div id="stores-list"></div>
-  </div>
+
 </div>
 
-<!-- BOTTOM NAV -->
-<div class="bottomnav">
-  <button class="nav-btn active" id="nav-list" onclick="switchScreen('list')">
-    <span class="nav-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="4" y="2" width="16" height="20" rx="2"/>
-  <line x1="8" y1="6" x2="8" y2="6"/>
-  <line x1="10" y1="6" x2="17" y2="6"/>
-  <line x1="8" y1="10" x2="8" y2="10"/>
-  <line x1="10" y1="10" x2="16" y2="10"/>
-  <line x1="8" y1="14" x2="8" y2="14"/>
-  <line x1="10" y1="14" x2="15" y2="14"/>
-  <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none"/>
-  <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/>
-  <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
-  <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
-  <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
-  <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
-</svg></span>List
-  </button>
-  <button class="nav-btn" id="nav-stores" onclick="switchScreen('stores')">
-    <span class="nav-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M3 9l1-5h16l1 5"/>
-  <path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/>
-  <path d="M5 11v9h14v-9"/>
-  <rect x="8" y="13" width="8" height="5" rx="1"/>
-  <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
-  <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg></span>Stores
-  </button>
-</div>
 
 <!-- PROCESSING OVERLAY -->
 <div class="processing-overlay" id="processing-overlay">
@@ -1050,6 +998,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <!-- Scrollable aisle list -->
     <div class="store-modal-scroll">
       <div id="aisle-rows"></div>
+<button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
       <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
     </div>
   </div>
@@ -1220,6 +1169,38 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- List Picker Modal -->
+<div class="modal-overlay" id="modal-list-picker" onclick="closeModal('modal-list-picker')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-picker-title">My Lists</div>
+    <div id="list-picker-items" style="overflow-y:auto;flex:1;margin-bottom:12px"></div>
+    <button class="btn btn-primary btn-full" onclick="promptNewList()">＋ New list</button>
+  </div>
+</div>
+
+<!-- List Context Menu -->
+<div class="modal-overlay" id="modal-list-context" onclick="dismissListContext()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-context-name" style="font-size:1rem;margin-bottom:16px"></div>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="renameListPrompt()">✏️ Rename</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('move')">→ Move to store</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('copy')">⧉ Copy to store</button>
+    <button class="btn btn-danger btn-full" onclick="deleteActiveContextList()">🗑 Delete list</button>
+  </div>
+</div>
+
+<!-- List Transfer Store Picker -->
+<div class="modal-overlay" id="modal-list-transfer" onclick="closeModal('modal-list-transfer')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="list-transfer-title">Move to store</div>
+    <div id="list-transfer-stores" style="margin-bottom:8px"></div>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="closeModal('modal-list-transfer')">Cancel</button>
+  </div>
+</div>
+
 <!-- Share Store Modal -->
 <script type="module">
 // ── Firebase imports (must be first in a module) ──
@@ -1347,7 +1328,8 @@ async function loadUserData(uid) {
       ownerUid: d.ownerUid,
       
     });
-    state.lists[snap.id]       = d.list        || [];
+    // Prefer new multi-list format; fall back to legacy flat array
+    state.lists[snap.id] = d.lists_v2 || d.list || [];
     state.corrections[snap.id] = d.corrections || {};
   });
 
@@ -1374,8 +1356,10 @@ async function loadUserData(uid) {
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
           aisles: data.aisles || [],
-          library_location_id: data.library_location_id || null };
-        state.lists[d.id]       = data.list        || [];
+          library_location_id: data.library_location_id || null,
+          library_chain_id: data.library_chain_id || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null };
+        if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
         setSyncDot('ok');
@@ -1405,7 +1389,7 @@ async function seedDemoStore(uid) {
   };
   await setDoc(doc(db, 'stores', id), demo);
   state.stores = [{...demo, id}];
-  state.lists[id] = [];
+  state.lists[id] = []; migrateListsIfNeeded(id);
   state.corrections[id] = {};
   state.activeStoreId = id;
   renderAll();
@@ -1421,7 +1405,7 @@ async function seedDemoStore(uid) {
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
           aisles: data.aisles || [] };
-        state.lists[d.id]       = data.list        || [];
+        state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
       }
@@ -1635,7 +1619,7 @@ function aisleMatchScore(histEntry, currentAisle) {
 async function generateSuggestions(store, aisleKey) {
   var aisle     = store.aisles[+aisleKey] || null;
   var listItems = {};
-  (state.lists[store.id] || []).forEach(function(i){
+  (getActiveListItems(store.id) || []).forEach(function(i){
     if (!i.isSuggested) listItems[normalise(i.name)] = 1;
   });
   var dismissed = state._dismissedCache || await window.fetchDismissed();
@@ -1679,7 +1663,7 @@ async function maybeSuggest(store, aisleKey) {
   if (!suggestions.length) return;
 
   for (var name of suggestions) {
-    state.lists[store.id].push({
+    const _sl = getActiveListItems(store.id); _sl.push({
       name: name, checked: false,
       aisleIndex:   +aisleKey,
       isSuggested:  true,
@@ -1691,9 +1675,9 @@ async function maybeSuggest(store, aisleKey) {
 
 function dismissSuggestion(idx) {
   var store = getActiveStore();
-  var item  = state.lists[store.id][idx];
+  var _mta = getActiveListItems(store.id); var item = _mta[idx];
   if (!item || !item.isSuggested) return;
-  state.lists[store.id].splice(idx, 1);
+  _mta.splice(idx, 1); setActiveListItems(store.id, _mta);
   if (window.persistDismissal) window.persistDismissal(item.name);
   renderListScreen();
 }
@@ -1701,7 +1685,7 @@ function dismissSuggestion(idx) {
 function acceptSuggestion(idx) {
   var store = getActiveStore();
   if (!store) return;
-  state.lists[store.id][idx].isSuggested = false;
+  const _as = getActiveListItems(store.id); if(_as[idx]) _as[idx].isSuggested = false; setActiveListItems(store.id,_as);
   persistActiveStore();
   renderListScreen();
 }
@@ -1726,7 +1710,14 @@ window.persistStore = async function(storeId) {
     }
     const updatePayload = {
       name: store.name, color: store.color, aisles: store.aisles,
-      list: state.lists[storeId] || [],
+      // lists_v2: new multi-list structure
+      lists_v2: (() => {
+        const raw = state.lists[storeId];
+        if (!raw || Array.isArray(raw)) return null;
+        return raw;
+      })(),
+      // list: legacy flat array — kept for rollback safety
+      list: getActiveListItems(storeId),
       corrections: state.corrections[storeId] || {}
     };
     if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
@@ -2415,7 +2406,7 @@ window.signOut = async function() {
   await fbSignOut(auth);
   // Reset state
   state.stores=[]; state.lists={}; state.corrections={};
-  state.activeStoreId=null;
+  state.activeStoreId=null; state.activeListId={};
   closeModal('modal-profile');
   renderAll();
 };
@@ -2484,7 +2475,7 @@ window.addEventListener('popstate', function(e) {
   // ── Hit the sentinel — re-push so we never fall out of the app ──
   if (!state || state.type === 'sentinel') {
     history.pushState({ type: 'screen', screen: 'list' }, '', '');
-    switchScreen('list', false);
+    document.getElementById('screen-list').classList.add('active'); const _tb=document.getElementById('list-toolbar'); if(_tb) _tb.classList.add('visible');
     return;
   }
 
@@ -4569,7 +4560,7 @@ const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399
 // STATE
 // ══════════════════════════════
 let state = {
-  stores: [], activeStoreId: null,
+  stores: [], activeStoreId: null, activeListId: {},
   lists: {},
   corrections: {},
   editingStoreId: null,
@@ -4651,16 +4642,15 @@ function switchScreen(name, pushHistory=true) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.toggle('visible', name === 'list');
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-  document.getElementById('nav-'+name).classList.add('active');
+  const screenEl = document.getElementById('screen-'+name);
+  if (screenEl) screenEl.classList.add('active');
   if (pushHistory) history.pushState({ type: 'screen', screen: name }, '', '');
 }
 
 // ══════════════════════════════
 // RENDER
 // ══════════════════════════════
-function renderAll(){ renderTopbar(); renderListScreen(); renderStoresScreen(); }
+function renderAll(){ renderTopbar(); renderListScreen(); }
 
 function renderTopbar(){
   const s=getActiveStore();
@@ -4679,7 +4669,8 @@ function renderListScreen(){
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
 </svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; const _tb1=document.getElementById('list-toolbar'); if(_tb1) _tb1.classList.remove('visible'); return; }
-  const items=state.lists[store.id]||[];
+  migrateListsIfNeeded(store.id);
+  const items=getActiveListItems(store.id);
   if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
   <rect x="4" y="2" width="16" height="20" rx="2"/>
   <line x1="8" y1="6" x2="8" y2="6"/>
@@ -4709,7 +4700,11 @@ function renderListScreen(){
   const total=items.length, done=items.filter(i=>i.checked).length;
   // Update sticky toolbar count
   const tcEl = document.getElementById('list-toolbar-count');
-  if (tcEl) tcEl.textContent = done + '/' + total + ' items ✓';
+  if (tcEl) {
+    const lid = getActiveListId(store.id);
+    const lname = lid && getLists(store.id)?.lists[lid]?.name;
+    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + done + '/' + total + ' ✓';
+  }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
 
@@ -4756,16 +4751,7 @@ function renderListScreen(){
         </div>`;
       } else {
         html+=`<div class="list-item ${item.checked?'checked':''}"
-            data-item-idx="${item.idx}" data-aisle-key="${key}"
-            draggable="true"
-            ondragstart="dStart(event,${item.idx},'${key}')"
-            ondragend="dEnd(event)"
-            ondragover="dOver(event)"
-            ondrop="dDrop(event,${item.idx},'${key}')"
-            ontouchstart="tStart(event,${item.idx},'${key}')"
-            ontouchmove="tMove(event)"
-            ontouchend="tEnd(event)">
-          <div class="drag-handle" title="Drag to reorder">⠿</div>
+            data-item-idx="${item.idx}" data-aisle-key="${key}">
           <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
             ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
           </div>
@@ -4784,6 +4770,15 @@ function renderListScreen(){
   });
 
   cont.innerHTML=html;
+  // Wire touch and mouse long-press drag on all non-suggested items
+  document.querySelectorAll('.list-item:not(.suggested)').forEach(el=>{
+    const idx=+el.dataset.itemIdx;
+    const key=el.dataset.aisleKey;
+    el.addEventListener('touchstart', e=>tStart(e,idx,key), {passive:true});
+    el.addEventListener('touchmove',  e=>tMove(e),           {passive:false});
+    el.addEventListener('touchend',   e=>tEnd(e),            {passive:true});
+  });
+  initItemMouseLongPress();
 }
 
 function renderStoresScreen(){
@@ -4797,7 +4792,7 @@ function renderStoresScreen(){
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
 </svg></div><div class="empty-title">No stores yet</div><div class="empty-sub">Add your first store to get started.</div></div>`; return; }
   cont.innerHTML=state.stores.map(store=>{
-    const ll=(state.lists[store.id]||[]).length;
+    migrateListsIfNeeded(store.id); const ll=getActiveListItems(store.id).length;
     const cc=Object.keys(state.corrections[store.id]||{}).length;
     const isOwner=!window._currentUser||store.ownerUid===window._currentUser?.uid;
 
@@ -4832,13 +4827,205 @@ function openStoreSwitch(){
       <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
       <span style="font-weight:${state.activeStoreId===s.id?'600':'400'};flex:1">${esc(s.name)}</span>
       ${state.activeStoreId===s.id?'<span style="color:var(--green);font-size:.75rem">Active</span>':''}
-      <button class="btn btn-sm btn-danger" style="flex-shrink:0;margin-left:8px"
+      ${s.owner===state.uid?`<button class="btn btn-sm btn-ghost" style="flex-shrink:0" onclick="event.stopPropagation();document.getElementById('modal-store-switch').classList.remove('open');editStore('${s.id}')">Edit</button>`:''}
+      <button class="btn btn-sm btn-danger" style="flex-shrink:0"
         onclick="event.stopPropagation();deleteStore('${s.id}')">✕</button>
     </div>`).join('')||'<p class="text-muted" style="text-align:center;padding:12px 0">No stores yet.</p>';
   openModal('modal-store-switch');
 }
 
-function setActiveStore(id){ state.activeStoreId=id; closeModal('modal-store-switch'); renderAll(); }
+function setActiveStore(id){
+  // Close store switcher without triggering history.back()
+  const swEl = document.getElementById('modal-store-switch');
+  if (swEl) swEl.classList.remove('open');
+  // Show list picker for this store
+  migrateListsIfNeeded(id);
+  _listPickerStoreId = id;
+  const store = state.stores.find(s => s.id === id);
+  document.getElementById('list-picker-title').textContent = store ? store.name : 'My Lists';
+  renderListPicker(id);
+  openModal('modal-list-picker');
+}
+
+function openListPickerForActiveStore() {
+  const store = getActiveStore();
+  if (!store) return;
+  migrateListsIfNeeded(store.id);
+  _listPickerStoreId = store.id;
+  document.getElementById('list-picker-title').textContent = store.name;
+  renderListPicker(store.id);
+  openModal('modal-list-picker');
+}
+
+let _listPickerStoreId = null;
+let _listContextId = null; // which list is being acted on
+
+function renderListPicker(storeId) {
+  const lists = getLists(storeId);
+  if (!lists) return;
+  const sorted = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+  const activeId = getActiveListId(storeId);
+  document.getElementById('list-picker-items').innerHTML = sorted.map(l => `
+    <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;border-color:${l.id===activeId?'var(--green)':'var(--border)'}"
+      onclick="selectList('${storeId}','${l.id}')"
+      oncontextmenu="event.preventDefault();openListContext('${storeId}','${l.id}')"
+      data-listid="${l.id}"
+      data-storeid="${storeId}">
+      <div style="flex:1">
+        <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${l.items.length} item${l.items.length!==1?'s':''}</div>
+      </div>
+      ${l.id===activeId?'<span style="color:var(--green);font-size:.72rem">Active</span>':''}
+      <button class="btn btn-sm btn-ghost" style="flex-shrink:0;font-size:1.1rem;color:var(--text);padding:4px 10px"
+        onclick="event.stopPropagation();openListContext('${storeId}','${l.id}')">…</button>
+    </div>`).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
+
+  // Long-press support for touch
+  setTimeout(() => {
+    document.querySelectorAll('#list-picker-items [data-listid]').forEach(el => {
+      let timer;
+      el.addEventListener('touchstart', () => { timer = setTimeout(() => openListContext(el.dataset.storeid, el.dataset.listid), 600); }, {passive:true});
+      el.addEventListener('touchend', () => clearTimeout(timer), {passive:true});
+      el.addEventListener('touchmove', () => clearTimeout(timer), {passive:true});
+    });
+  }, 50);
+}
+
+function selectList(storeId, listId) {
+  state.activeStoreId = storeId;
+  state.activeListId[storeId] = listId;
+  touchListLastOpened(storeId, listId);
+  closeModal('modal-list-picker');
+  renderAll();
+  switchScreen('list');
+  if (window.persistStore) window.persistStore(storeId);
+}
+
+function promptNewList() {
+  const name = prompt('List name:', 'My List');
+  if (!name || !name.trim()) return;
+  const storeId = _listPickerStoreId;
+  const lid = createNewList(storeId, name.trim());
+  touchListLastOpened(storeId, lid);
+  renderListPicker(storeId);
+  selectList(storeId, lid);
+}
+
+function dismissListContext() {
+  const el = document.getElementById('modal-list-context');
+  if (el) el.classList.remove('open');
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+function openListContext(storeId, listId) {
+  _listPickerStoreId = storeId;
+  _listContextId = listId;
+  const lists = getLists(storeId);
+  const list = lists && lists.lists[listId];
+  if (!list) return;
+  document.getElementById('list-context-name').textContent = list.name;
+  // Bypass closeModal to avoid history.back() race with openModal
+  const pickerEl = document.getElementById('modal-list-picker');
+  if (pickerEl) pickerEl.classList.remove('open');
+  openModal('modal-list-context');
+}
+
+function renameListPrompt() {
+  const lists = getLists(_listPickerStoreId);
+  const list = lists && lists.lists[_listContextId];
+  if (!list) return;
+  const name = prompt('Rename list:', list.name);
+  if (!name || !name.trim()) return;
+  list.name = name.trim();
+  const ctxEl = document.getElementById('modal-list-context');
+  if (ctxEl) ctxEl.classList.remove('open');
+  if (window.persistStore) window.persistStore(_listPickerStoreId);
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+function deleteActiveContextList() {
+  const lists = getLists(_listPickerStoreId);
+  if (!lists) return;
+  const listCount = Object.keys(lists.lists).length;
+  if (listCount <= 1) { showToast("Can't delete the only list"); return; }
+  const list = lists.lists[_listContextId];
+  if (!list) return;
+  if (!confirm('Delete "' + list.name + '"? This cannot be undone.')) return;
+  delete lists.lists[_listContextId];
+  // If deleting active list, switch to most recent other
+  if (state.activeListId[_listPickerStoreId] === _listContextId) {
+    const remaining = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+    state.activeListId[_listPickerStoreId] = remaining[0]?.id || null;
+  }
+  const _dctxEl = document.getElementById('modal-list-context');
+  if (_dctxEl) _dctxEl.classList.remove('open');
+  if (window.persistStore) window.persistStore(_listPickerStoreId);
+  renderListPicker(_listPickerStoreId);
+  openModal('modal-list-picker');
+}
+
+let _transferMode = null; // 'move' or 'copy'
+
+function openListTransfer(mode) {
+  _transferMode = mode;
+  document.getElementById('list-transfer-title').textContent = mode === 'move' ? 'Move to store' : 'Copy to store';
+  const otherStores = state.stores.filter(s => s.id !== _listPickerStoreId);
+  document.getElementById('list-transfer-stores').innerHTML = otherStores.map(s => `
+    <div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px"
+      onclick="executeListTransfer('${s.id}')">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+      <span style="flex:1">${esc(s.name)}</span>
+    </div>`).join('') || '<p class="text-muted" style="text-align:center;padding:12px">No other stores.</p>';
+  const _ltxEl = document.getElementById('modal-list-context');
+  if (_ltxEl) _ltxEl.classList.remove('open');
+  openModal('modal-list-transfer');
+}
+
+async function executeListTransfer(destStoreId) {
+  const srcStoreId = _listPickerStoreId;
+  const listId = _listContextId;
+  const srcLists = getLists(srcStoreId);
+  if (!srcLists || !srcLists.lists[listId]) { closeModal('modal-list-transfer'); return; }
+
+  migrateListsIfNeeded(destStoreId);
+  const srcList = srcLists.lists[listId];
+
+  // Re-classify items for destination store's aisles
+  const destStore = state.stores.find(s => s.id === destStoreId);
+  const reclassified = destStore ? applyCorr(classifyItems(srcList.items.map(i => i.name), destStore), destStore) : [...srcList.items];
+
+  const newLid = 'list-' + Date.now();
+  state.lists[destStoreId].lists[newLid] = {
+    id: newLid,
+    name: _transferMode === 'copy' ? srcList.name + ' (copy)' : srcList.name,
+    items: reclassified,
+    createdAt: Date.now(),
+    lastOpened: Date.now()
+  };
+
+  if (_transferMode === 'move') {
+    const listCount = Object.keys(srcLists.lists).length;
+    if (listCount <= 1) {
+      // Can't delete last list — clear it instead
+      srcList.items = [];
+    } else {
+      delete srcLists.lists[listId];
+      if (state.activeListId[srcStoreId] === listId) {
+        const remaining = Object.values(srcLists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+        state.activeListId[srcStoreId] = remaining[0]?.id || null;
+      }
+    }
+    if (window.persistStore) window.persistStore(srcStoreId);
+  }
+
+  state.activeListId[destStoreId] = newLid;
+  closeModal('modal-list-transfer');
+  if (window.persistStore) await window.persistStore(destStoreId);
+  showToast(_transferMode === 'move' ? 'List moved ✓' : 'List copied ✓');
+  renderAll();
+}
 
 function openMoveList() {
   const current = getActiveStore();
@@ -4863,7 +5050,8 @@ function moveListToStore(destId) {
   const dest = state.stores.find(s => s.id === destId);
   if (!src || !dest) return;
 
-  const items = state.lists[src.id] || [];
+  migrateListsIfNeeded(src.id);
+  const items = getActiveListItems(src.id);
   if (!items.length) { showToast('List is empty'); closeModal('modal-move-list'); return; }
 
   // Copy items to destination, re-sorting each into the new store's aisles
@@ -4875,12 +5063,15 @@ function moveListToStore(destId) {
 
   // Merge with any existing items in destination (avoid duplicates by name)
   const existingNames = new Set(
-    (state.lists[dest.id] || []).map(i => normalise(i.name))
+    (getActiveListItems(dest.id)).map(i => normalise(i.name))
   );
   const toAdd = moved.filter(i => !existingNames.has(normalise(i.name)));
-  state.lists[dest.id] = [...(state.lists[dest.id] || []), ...toAdd];
+  migrateListsIfNeeded(dest.id);
+  const _destItems = getActiveListItems(dest.id);
+  setActiveListItems(dest.id, [..._destItems, ...toAdd]);
 
   // Switch active store to destination and persist both
+  setActiveListItems(src.id, []);
   state.activeStoreId = dest.id;
   if (window.persistStore) {
     window.persistStore(src.id);
@@ -5416,8 +5607,11 @@ let aisleImgTargetIdx = null; // which aisle is currently being scanned
 let pendingScannedKws = {};   // aisleIdx -> [keywords] from scan, awaiting accept
 
 function renderAisleRows(){
+  _aisleReorderMode = false;
+  // Assign stable colorIdx to each aisle if not already set
+  tempAisles.forEach((aisle, i) => { if (aisle.colorIdx === undefined) aisle.colorIdx = i; });
   document.getElementById('aisle-rows').innerHTML=tempAisles.map((aisle,i)=>{
-    const color=AISLE_COLORS[i%AISLE_COLORS.length];
+    const color=AISLE_COLORS[aisle.colorIdx%AISLE_COLORS.length];
     const pending=pendingScannedKws[i];
     return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:14px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -5426,6 +5620,7 @@ function renderAisleRows(){
         <div style="flex:1"></div>
         ${tempAisles.length>1?`<button class="btn btn-sm btn-danger" onclick="removeAisle(${i})">✕</button>`:''}
       </div>
+      <div class="aisle-drag-body">
       <input class="input" id="aisle-name-${i}" value="${esc(aisle.name)}"
         placeholder="e.g. Produce" style="font-size:.82rem;padding:8px 12px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
@@ -5453,6 +5648,7 @@ function renderAisleRows(){
           </div>
           ${pending ? renderScanResult(i, pending) : ''}
         </div>
+      </div>
       </div>
     </div>`;
   }).join('');
@@ -5715,10 +5911,72 @@ function syncNames(){
 }
 
 // ── AISLE DRAG-TO-REORDER (pointer events — works inside scrolling modals) ──
+
+let _aisleReorderMode = false;
+
+function toggleAisleReorderMode() {
+  _aisleReorderMode = !_aisleReorderMode;
+  if (_aisleReorderMode) {
+    collapseAislesForDrag();
+    // Show done button, update handle appearance
+    document.querySelectorAll('.aisle-drag-handle').forEach(h => {
+      h.style.color = 'var(--green)';
+      h.title = 'Tap again to exit reorder mode';
+    });
+    const doneBtn = document.getElementById('aisle-reorder-done');
+    if (doneBtn) doneBtn.style.display = '';
+  } else {
+    // Release locked height before expanding
+    const modalEl = document.querySelector('#modal-store .modal');
+    if (modalEl) { modalEl.style.height = ''; modalEl.style.maxHeight = ''; }
+    expandAislesAfterDrag();
+    document.querySelectorAll('.aisle-drag-handle').forEach(h => {
+      h.style.color = '';
+      h.title = 'Tap to reorder aisles';
+    });
+    const doneBtn = document.getElementById('aisle-reorder-done');
+    if (doneBtn) doneBtn.style.display = 'none';
+  }
+}
+
+function collapseAislesForDrag() {
+  // Lock the modal's current height so it doesn't shrink
+  const modalEl = document.querySelector('#modal-store .modal');
+  if (modalEl) {
+    const h = modalEl.getBoundingClientRect().height;
+    modalEl.style.height = h + 'px';
+    modalEl.style.maxHeight = h + 'px';
+  }
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    const body = card.querySelector('.aisle-drag-body');
+    if (body) body.style.display = 'none';
+    card.style.padding = '10px 14px';
+  });
+}
+
+function expandAislesAfterDrag() {
+  if (_aisleReorderMode) return; // stay collapsed
+  // Release locked height
+  const modalEl = document.querySelector('#modal-store .modal');
+  if (modalEl) {
+    modalEl.style.height = '';
+    modalEl.style.maxHeight = '';
+  }
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    const body = card.querySelector('.aisle-drag-body');
+    if (body) body.style.display = '';
+    card.style.padding = '14px';
+  });
+}
+
 function initAisleDrag(){
   const handles=document.querySelectorAll('.aisle-drag-handle');
   handles.forEach(handle=>{
     handle.addEventListener('pointerdown', onAisleDragStart, {passive:false});
+    handle.addEventListener('click', e => {
+      // If not dragging (pointer didn't move much), treat as toggle
+      if (!aisleGhost) toggleAisleReorderMode();
+    });
   });
 }
 
@@ -5733,13 +5991,14 @@ function onAisleDragStart(e){
   aisleDragSrcIdx=parseInt(handle.dataset.aisleIdx,10);
   const srcCard=document.getElementById('aisle-card-'+aisleDragSrcIdx);
   if(!srcCard) return;
+  collapseAislesForDrag();
 
   const modal=document.querySelector('#modal-store .modal');
+  const scrollEl=document.querySelector('.store-modal-scroll');
   const cardRect=srcCard.getBoundingClientRect();
-  const modalRect=modal ? modal.getBoundingClientRect() : {top:0,left:0};
 
   aislePointerStartY=e.clientY;
-  aisleScrollStart=modal ? modal.scrollTop : 0;
+  aisleScrollStart=scrollEl ? scrollEl.scrollTop : 0;
 
   // Create ghost clone
   aisleGhost=srcCard.cloneNode(true);
@@ -5767,18 +6026,39 @@ function onAisleDragStart(e){
   document.addEventListener('pointercancel', onAisleDragEnd,{passive:false});
 }
 
+let _aisleScrollRAF = null;
+
 function onAisleDragMove(e){
   if(!aisleGhost) return;
   e.preventDefault();
 
   const dy=e.clientY - aislePointerStartY;
   const modal=document.querySelector('#modal-store .modal');
-  const scrollDy=modal ? modal.scrollTop - aisleScrollStart : 0;
+  const scrollEl2=document.querySelector('.store-modal-scroll');
+  const scrollDy=scrollEl2 ? scrollEl2.scrollTop - aisleScrollStart : 0;
   const srcCard=document.getElementById('aisle-card-'+aisleDragSrcIdx);
   if(!srcCard) return;
 
   const srcRect=srcCard.getBoundingClientRect();
   aisleGhost.style.top = (srcRect.top + dy + scrollDy) + 'px';
+
+  // Auto-scroll when dragging near top or bottom edge of the scroll container
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  cancelAnimationFrame(_aisleScrollRAF);
+  if (scrollEl) {
+    const sr = scrollEl.getBoundingClientRect();
+    const zone = 80;
+    const maxSpeed = 14;
+    if (e.clientY < sr.top + zone) {
+      const speed = Math.max(1, Math.round(maxSpeed * (1 - (e.clientY - sr.top) / zone)));
+      const scroll = () => { scrollEl.scrollTop -= speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+      _aisleScrollRAF = requestAnimationFrame(scroll);
+    } else if (e.clientY > sr.bottom - zone) {
+      const speed = Math.max(1, Math.round(maxSpeed * (1 - (sr.bottom - e.clientY) / zone)));
+      const scroll = () => { scrollEl.scrollTop += speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+      _aisleScrollRAF = requestAnimationFrame(scroll);
+    }
+  }
 
   // Find which card the ghost centre is hovering over
   const ghostCY=e.clientY;
@@ -5795,6 +6075,7 @@ function onAisleDragMove(e){
 
 function onAisleDragEnd(e){
   if(!aisleGhost) return;
+  cancelAnimationFrame(_aisleScrollRAF);
   document.removeEventListener('pointermove', onAisleDragMove);
   document.removeEventListener('pointerup',   onAisleDragEnd);
   document.removeEventListener('pointercancel', onAisleDragEnd);
@@ -5815,6 +6096,7 @@ function onAisleDragEnd(e){
     // Reorder tempAisles
     const moved=tempAisles.splice(aisleDragSrcIdx,1)[0];
     tempAisles.splice(targetIdx,0,moved);
+    _aisleReorderMode = true; // keep collapsed after drop
 
     // Also reorder pendingScannedKws by the same move
     const newPending={};
@@ -5833,6 +6115,7 @@ function onAisleDragEnd(e){
   }
 
   aisleDragSrcIdx=null;
+  expandAislesAfterDrag();
 }
 
 // Auto-renumber aisle names that match the pattern "Aisle N" or "Aisle N – …"
@@ -5858,10 +6141,10 @@ async function saveStore(){
   if(state.editingStoreId){
     const store=state.stores.find(s=>s.id===state.editingStoreId);
     store.name=name; store.color=tempColor; store.aisles=aisles;
-    if(state.lists[store.id]?.length){
-      state.lists[store.id]=state.lists[store.id].map(item=>({
+    if(getActiveListItems(store.id)?.length){
+      setActiveListItems(store.id, getActiveListItems(store.id).map(item=>({
         ...item, aisleIndex: rematch(item.name,store)
-      }));
+      })));
     }
     if(window.persistStore) await window.persistStore(store.id);
   } else {
@@ -5872,7 +6155,7 @@ async function saveStore(){
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
     };
     state.stores.push(newStore);
-    state.lists[id]=[]; state.corrections[id]={};
+    state.lists[id]=[]; migrateListsIfNeeded(id); state.corrections[id]={};
     if(!state.activeStoreId) state.activeStoreId=id;
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
@@ -5920,7 +6203,7 @@ async function deleteStore(id){
       }
     }
     state.stores = state.stores.filter(s => s.id !== id);
-    delete state.lists[id]; delete state.corrections[id];
+    delete state.lists[id]; delete state.corrections[id]; delete state.activeListId[id];
     if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
     if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
     renderAll(); showToast('"' + store.name + '" deleted');
@@ -5952,7 +6235,7 @@ window.cancelDelete = function() {
 // LIST – AI MATCHING
 // ══════════════════════════════
 function openAddList(){
-  if(!getActiveStore()){ showToast('Please select a store first'); switchScreen('stores'); return; }
+  if(!getActiveStore()){ showToast('Please select a store first'); openStoreSwitch(); return; }
   document.getElementById('list-text-input').value='';
   resetUploadZone();
   openModal('modal-add-list');
@@ -6019,7 +6302,7 @@ async function processListInput(){
       if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
       const results=classifyItems(names,store);
-      state.lists[store.id]=applyCorr(results,store);
+      setActiveListItems(store.id, applyCorr(results,store));
       await window.persistStore(store.id);
       hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
@@ -6037,7 +6320,7 @@ async function processListInput(){
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
   const results=classifyItems(names,store);
-  state.lists[store.id]=applyCorr(results,store);
+  setActiveListItems(store.id, applyCorr(results,store));
   await window.persistStore(store.id);
   hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
 }
@@ -6106,7 +6389,7 @@ function normalise(s){ return s.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim();
 // ══════════════════════════════
 function toggleCheck(idx){
   var store = getActiveStore();
-  var item  = state.lists[store.id][idx];
+  var _al2 = getActiveListItems(store.id); var item = _al2[idx];
   if (!item) return;
 
   // Accept suggestion when user checks it
@@ -6123,7 +6406,7 @@ function toggleCheck(idx){
     // Trigger suggestion if this is first check in this aisle
     var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
     var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
-    var aisleItems = (state.lists[store.id] || []).filter(function(i){
+    var aisleItems = _al2.filter(function(i){
       if (i.isSuggested) return false; // don't count suggested items
       if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
       return i.aisleIndex !== null && i.aisleIndex !== undefined && String(i.aisleIndex) === aisleKey;
@@ -6137,10 +6420,11 @@ function toggleCheck(idx){
 }
 function uncheckAll(){
   const store=getActiveStore();
-  const checked=state.lists[store.id].filter(i=>i.checked).length;
+  const _ua = getActiveListItems(store.id);
+  const checked=_ua.filter(i=>i.checked).length;
   if(!checked){ showToast('No checked items'); return; }
   if(!confirm(`Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`)) return;
-  state.lists[store.id].forEach(i=>{ i.checked=false; });
+  _ua.forEach(i=>{ i.checked=false; }); setActiveListItems(store.id,_ua);
   // Reset session tracking for this store so suggestions fire fresh
   if (state._aislesFirstCheckDone) delete state._aislesFirstCheckDone[store.id];
   renderListScreen();
@@ -6149,16 +6433,17 @@ function uncheckAll(){
 }
 function clearChecked(){
   const store=getActiveStore();
-  const checked=state.lists[store.id].filter(i=>i.checked).length;
+  const _cc = getActiveListItems(store.id);
+  const checked=_cc.filter(i=>i.checked).length;
   if(!checked){ showToast('No checked items'); return; }
   if(!confirm(`Remove ${checked} checked item${checked!==1?'s':''} from your list? This cannot be undone.`)) return;
-  state.lists[store.id]=state.lists[store.id].filter(i=>!i.checked);
+  setActiveListItems(store.id, _cc.filter(i=>!i.checked));
   renderListScreen(); showToast('Checked items removed');
   persistActiveStore();
 }
 function clearList(){
   if(!confirm('Clear the entire list?')) return;
-  state.lists[getActiveStore().id]=[];
+  const _cs=getActiveStore(); setActiveListItems(_cs.id,[]);
   renderListScreen();
   persistActiveStore();
 }
@@ -6177,7 +6462,8 @@ function openEditList() {
 function renderEditListItems() {
   const store = getActiveStore();
   if (!store) return;
-  const items = state.lists[store.id] || [];
+  migrateListsIfNeeded(store.id);
+  const items = getActiveListItems(store.id);
   const container = document.getElementById('edit-list-items');
 
   if (!items.length) {
@@ -6222,7 +6508,7 @@ function renderEditListItems() {
 async function deleteItemFromEdit(idx) {
   const store = getActiveStore();
   if (!store) return;
-  state.lists[store.id].splice(idx, 1);
+  const _ri = getActiveListItems(store.id); _ri.splice(idx,1); setActiveListItems(store.id,_ri);
   await window.persistStore(store.id);
   renderEditListItems();
   renderListScreen();
@@ -6254,8 +6540,10 @@ async function addItemFromEdit() {
   const results = classifyItems(names, store);
   const newItems = applyCorr(results, store);
 
-  state.lists[store.id] = state.lists[store.id] || [];
-  state.lists[store.id].push(...newItems);
+  migrateListsIfNeeded(store.id);
+  const _afe = getActiveListItems(store.id);
+  _afe.push(...newItems);
+  setActiveListItems(store.id, _afe);
   await window.persistStore(store.id);
 
   input.value = '';
@@ -6267,7 +6555,7 @@ async function addItemFromEdit() {
 
 function openMoveItem(idx){
   const store=getActiveStore();
-  const item=state.lists[store.id][idx];
+  const _al3 = getActiveListItems(store.id); const item = _al3[idx];
   moveItemIndex=idx;
   document.getElementById('move-item-name').textContent=item.name;
   const opts=document.getElementById('move-aisle-options');
@@ -6294,7 +6582,7 @@ function openMoveItem(idx){
 
 function moveToAisle(aisleIndex){
   const store=getActiveStore();
-  const item=state.lists[store.id][moveItemIndex];
+  const _al4 = getActiveListItems(store.id); const item = _al4[moveItemIndex];
   const norm=normalise(item.name);
   if(!state.corrections[store.id]) state.corrections[store.id]={};
   if(aisleIndex===null) delete state.corrections[store.id][norm];
@@ -6305,9 +6593,12 @@ function moveToAisle(aisleIndex){
 }
 
 // ══════════════════════════════
-// DRAG — MOUSE
+// DRAG — MOUSE (long-press to initiate)
 // ══════════════════════════════
+let _mouseDragReady = false;
+
 function dStart(e,idx,aisleKey){
+  if(!_mouseDragReady){ e.preventDefault(); return; }
   dragSrcIdx=idx; dragSrcAisle=aisleKey;
   e.dataTransfer.effectAllowed='move';
   setTimeout(()=>{
@@ -6316,19 +6607,29 @@ function dStart(e,idx,aisleKey){
   },0);
 }
 function dEnd(e){
-  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging','drag-over'));
+  _mouseDragReady=false;
+  clearDropLines();
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
   document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   dragSrcIdx=null; dragSrcAisle=null;
 }
 function dOver(e){
   e.preventDefault(); e.dataTransfer.dropEffect='move';
-  if(+e.currentTarget.dataset.itemIdx!==dragSrcIdx) e.currentTarget.classList.add('drag-over');
+  const el=e.currentTarget;
+  const idx=+el.dataset.itemIdx;
+  if(idx===dragSrcIdx) return;
+  clearDropLines();
+  const r=el.getBoundingClientRect();
+  if(e.clientY < r.top + r.height/2) el.classList.add('drop-before');
+  else el.classList.add('drop-after');
 }
 function dDrop(e,targetIdx,targetAisleKey){
   e.preventDefault(); e.stopPropagation();
-  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('drag-over'));
+  const el=e.currentTarget;
+  const before=el.classList.contains('drop-before');
+  clearDropLines();
   if(dragSrcIdx===null||dragSrcIdx===targetIdx) return;
-  reorderItems(dragSrcIdx, targetIdx, targetAisleKey);
+  reorderItems(dragSrcIdx, targetIdx, targetAisleKey, before);
 }
 function dzOver(e){ e.preventDefault(); e.currentTarget.classList.add('active'); }
 function dzLeave(e){ e.currentTarget.classList.remove('active'); }
@@ -6337,28 +6638,93 @@ function dzDrop(e,aisleKey){
   if(dragSrcIdx===null) return;
   moveToEndOfAisle(dragSrcIdx, aisleKey);
 }
+function clearDropLines(){
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('drop-before','drop-after'));
+}
+
+function initItemMouseLongPress(){
+  document.querySelectorAll('.list-item:not(.suggested)').forEach(el=>{
+    el.addEventListener('pointerdown', e=>{
+      if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
+      if(e.pointerType==='touch') return; // handled by tStart/tMove/tEnd
+      if(e.button!==0) return;
+      // Mouse: start drag immediately on mousedown, no delay
+      _mouseDragReady=true;
+      const idx=+el.dataset.itemIdx;
+      const key=el.dataset.aisleKey;
+      dragSrcIdx=idx; dragSrcAisle=key;
+      document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
+      document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
+    },{passive:true});
+  });
+}
+
+function _onMouseDragMove(e){
+  if(!_mouseDragReady||dragSrcIdx===null) return;
+  clearDropLines();
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const ti=under?.closest('.list-item');
+  if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
+    const r=ti.getBoundingClientRect();
+    if(e.clientY < r.top+r.height/2) ti.classList.add('drop-before');
+    else ti.classList.add('drop-after');
+  }
+}
+
+function _onMouseDragUp(e){
+  document.removeEventListener('pointermove',_onMouseDragMove);
+  document.removeEventListener('pointerup',_onMouseDragUp);
+  if(!_mouseDragReady||dragSrcIdx===null){ _mouseDragReady=false; return; }
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const ti=under?.closest('.list-item');
+  const dz=under?.closest('.drop-zone');
+  clearDropLines();
+  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
+  if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
+    const r=ti.getBoundingClientRect();
+    reorderItems(dragSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey, e.clientY<r.top+r.height/2);
+  } else if(dz){
+    moveToEndOfAisle(dragSrcIdx,dz.dataset.aisleKey);
+  }
+  dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
+}
 
 // ══════════════════════════════
-// DRAG — TOUCH
+// DRAG — TOUCH (long-press anywhere on item)
 // ══════════════════════════════
+let _touchLongPressTimer=null;
+let _touchDragActive=false;
+
 function tStart(e,idx,aisleKey){
-  if(!e.target.classList.contains('drag-handle')&&!e.target.closest('.drag-handle')) return;
-  e.preventDefault();
+  if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
   const touch=e.touches[0];
-  touchSrcIdx=idx; touchSrcAisle=aisleKey;
   const el=e.currentTarget;
-  const rect=el.getBoundingClientRect();
-  touchOffX=touch.clientX-rect.left; touchOffY=touch.clientY-rect.top;
-  touchClone=el.cloneNode(true);
-  Object.assign(touchClone.style,{
-    position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',
-    opacity:'0.82',zIndex:'999',border:'2px solid var(--green)',borderRadius:'10px',
-    pointerEvents:'none',background:'#22263a',transition:'none'
-  });
-  document.body.appendChild(touchClone);
-  el.style.opacity='0.3';
+  clearTimeout(_touchLongPressTimer);
+  _touchDragActive=false;
+  const startX=touch.clientX, startY=touch.clientY;
+  _touchLongPressTimer=setTimeout(()=>{
+    _touchDragActive=true;
+    touchSrcIdx=idx; touchSrcAisle=aisleKey;
+    const rect=el.getBoundingClientRect();
+    touchOffX=touch.clientX-rect.left; touchOffY=touch.clientY-rect.top;
+    if(navigator.vibrate) navigator.vibrate(40);
+    touchClone=el.cloneNode(true);
+    Object.assign(touchClone.style,{
+      position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',
+      opacity:'0.85',zIndex:'999',border:'2px solid var(--green)',borderRadius:'10px',
+      pointerEvents:'none',background:'#22263a',transition:'none',boxShadow:'0 8px 24px rgba(0,0,0,.5)'
+    });
+    document.body.appendChild(touchClone);
+    el.style.opacity='0.25';
+  }, 400);
 }
 function tMove(e){
+  if(!_touchDragActive){
+    // Cancel long press if finger moved more than 8px
+    const t=e.touches[0];
+    clearTimeout(_touchLongPressTimer);
+    return;
+  }
   if(!touchClone) return;
   e.preventDefault();
   const t=e.touches[0];
@@ -6367,43 +6733,51 @@ function tMove(e){
   touchClone.style.display='none';
   const under=document.elementFromPoint(t.clientX,t.clientY);
   touchClone.style.display='';
-  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('drag-over'));
+  clearDropLines();
   document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const ti=under?.closest('.list-item');
-  if(ti&&+ti.dataset.itemIdx!==touchSrcIdx) ti.classList.add('drag-over');
+  if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
+    const r=ti.getBoundingClientRect();
+    if(t.clientY < r.top + r.height/2) ti.classList.add('drop-before');
+    else ti.classList.add('drop-after');
+  }
   const dz=under?.closest('.drop-zone');
   if(dz) dz.classList.add('active');
 }
 function tEnd(e){
-  if(!touchClone){ touchSrcIdx=null; return; }
+  clearTimeout(_touchLongPressTimer);
+  if(!_touchDragActive||!touchClone){ touchSrcIdx=null; _touchDragActive=false; return; }
   const t=e.changedTouches[0];
   touchClone.remove(); touchClone=null;
   document.querySelectorAll('[data-item-idx]').forEach(el=>el.style.opacity='');
-  document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('drag-over'));
-  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const under=document.elementFromPoint(t.clientX,t.clientY);
+  clearDropLines();
+  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const ti=under?.closest('.list-item');
   const dz=under?.closest('.drop-zone');
-  if(touchSrcIdx===null){ touchSrcIdx=null; return; }
   if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
-    reorderItems(touchSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey);
+    const r=ti.getBoundingClientRect();
+    const before=t.clientY < r.top + r.height/2;
+    reorderItems(touchSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey,before);
   } else if(dz){
     moveToEndOfAisle(touchSrcIdx,dz.dataset.aisleKey);
   }
-  touchSrcIdx=null; touchSrcAisle=null;
+  touchSrcIdx=null; touchSrcAisle=null; _touchDragActive=false;
 }
 
 // ══════════════════════════════
 // REORDER HELPERS
 // ══════════════════════════════
-function reorderItems(srcIdx, targetIdx, targetAisleKey){
+function reorderItems(srcIdx, targetIdx, targetAisleKey, before=true){
   const store=getActiveStore();
-  const items=state.lists[store.id];
+  const items=getActiveListItems(store.id);
   const moved=items[srcIdx];
   const targetAisle=targetAisleKey==='unmatched'?null:+targetAisleKey;
   moved.aisleIndex=targetAisle;
   items.splice(srcIdx,1);
-  const insertAt=srcIdx<targetIdx?targetIdx-1:targetIdx;
+  // Recalculate targetIdx after splice
+  const adjustedTarget=srcIdx<targetIdx?targetIdx-1:targetIdx;
+  const insertAt=before?adjustedTarget:adjustedTarget+1;
   items.splice(Math.max(0,insertAt),0,moved);
   saveCorr(moved,targetAisle,store);
   renderListScreen();
@@ -6412,7 +6786,7 @@ function reorderItems(srcIdx, targetIdx, targetAisleKey){
 
 function moveToEndOfAisle(srcIdx, aisleKey){
   const store=getActiveStore();
-  const items=state.lists[store.id];
+  const items=getActiveListItems(store.id);
   const moved=items[srcIdx];
   const targetAisle=aisleKey==='unmatched'?null:+aisleKey;
   moved.aisleIndex=targetAisle;
@@ -6445,6 +6819,72 @@ function hideProcessing(){
 // UTILS
 // ══════════════════════════════
 function getActiveStore(){ return state.stores.find(s=>s.id===state.activeStoreId)||null; }
+
+// ── Multi-list helpers ──────────────────────────────────────────────────
+function getLists(storeId) {
+  const raw = state.lists[storeId];
+  if (!raw || Array.isArray(raw)) return null; // old format — handled by migration
+  return raw;
+}
+
+function getActiveListId(storeId) {
+  return state.activeListId[storeId] || null;
+}
+
+function getActiveListItems(storeId) {
+  const lists = getLists(storeId);
+  if (!lists) return state.lists[storeId] || []; // legacy fallback
+  const lid = getActiveListId(storeId);
+  return (lid && lists.lists[lid]) ? lists.lists[lid].items : [];
+}
+
+function setActiveListItems(storeId, items) {
+  const lists = getLists(storeId);
+  if (!lists) { state.lists[storeId] = items; return; }
+  const lid = getActiveListId(storeId);
+  if (lid && lists.lists[lid]) lists.lists[lid].items = items;
+}
+
+function migrateListsIfNeeded(storeId) {
+  const raw = state.lists[storeId];
+  if (Array.isArray(raw)) {
+    const lid = 'list-' + Date.now();
+    state.lists[storeId] = {
+      lists: { [lid]: { id: lid, name: 'My List', items: raw, createdAt: Date.now(), lastOpened: Date.now() } }
+    };
+    state.activeListId[storeId] = lid;
+  } else if (raw && typeof raw === 'object') {
+    // Already migrated — ensure activeListId is set
+    if (!state.activeListId[storeId]) {
+      const ids = Object.keys(raw.lists || {});
+      if (ids.length) {
+        // Pick most recently opened
+        const sorted = ids.sort((a,b) => (raw.lists[b].lastOpened||0) - (raw.lists[a].lastOpened||0));
+        state.activeListId[storeId] = sorted[0];
+      }
+    }
+  } else {
+    // No list yet — create empty default
+    const lid = 'list-' + Date.now();
+    state.lists[storeId] = {
+      lists: { [lid]: { id: lid, name: 'My List', items: [], createdAt: Date.now(), lastOpened: Date.now() } }
+    };
+    state.activeListId[storeId] = lid;
+  }
+}
+
+function createNewList(storeId, name) {
+  migrateListsIfNeeded(storeId);
+  const lid = 'list-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+  state.lists[storeId].lists[lid] = { id: lid, name: name, items: [], createdAt: Date.now(), lastOpened: Date.now() };
+  state.activeListId[storeId] = lid;
+  return lid;
+}
+
+function touchListLastOpened(storeId, lid) {
+  const lists = getLists(storeId);
+  if (lists && lists.lists[lid]) lists.lists[lid].lastOpened = Date.now();
+}
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   history.pushState({ type: 'modal', modalId: id }, '', '');
