@@ -1008,6 +1008,10 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title">Edit List</div>
+    <div class="input-wrap" id="list-name-wrap" style="display:none">
+      <label class="input-label">List name</label>
+      <input class="input" id="list-name-input" placeholder="e.g. Weekly shop, Mikey's birthday…" style="font-size:.88rem;padding:8px 12px">
+    </div>
     <div class="input-wrap">
       <label class="input-label">Items</label>
       <textarea class="input" id="list-text-input" placeholder="Bananas&#10;Chicken breast&#10;Greek yogurt&#10;Olive oil&#10;Shampoo"></textarea>
@@ -4906,10 +4910,11 @@ function promptNewList() {
   const storeId = _listPickerStoreId;
   if (!storeId) return;
   _newListMode = true;
-  // Close list picker without history.back() race
   const pickerEl = document.getElementById('modal-list-picker');
   if (pickerEl) pickerEl.classList.remove('open');
   document.getElementById('list-text-input').value = '';
+  document.getElementById('list-name-input').value = '';
+  document.getElementById('list-name-wrap').style.display = '';
   resetUploadZone();
   document.querySelector('#modal-add-list .modal-title').textContent = 'New List';
   openModal('modal-add-list');
@@ -6242,6 +6247,7 @@ function openAddList(){
   if(!getActiveStore()){ showToast('Please select a store first'); openStoreSwitch(); return; }
   _newListMode = false;
   document.getElementById('list-text-input').value='';
+  document.getElementById('list-name-wrap').style.display = 'none';
   resetUploadZone();
   document.querySelector('#modal-add-list .modal-title').textContent = 'Edit List';
   openModal('modal-add-list');
@@ -6302,10 +6308,9 @@ async function processListInput(){
 
   function _applyItems(items) {
     if (isNewList) {
-      // Create a new named list with these items
-      const name = prompt('Name this list:', 'My List');
-      if (!name || !name.trim()) return;
-      const lid = createNewList(store.id, name.trim());
+      const nameInput = document.getElementById('list-name-input').value.trim();
+      const name = nameInput || 'My List';
+      const lid = createNewList(store.id, name);
       const lists = getLists(store.id);
       if (lists && lists.lists[lid]) lists.lists[lid].items = items;
       state.activeListId[store.id] = lid;
