@@ -77,9 +77,7 @@ body{
 #list-toolbar .btn-sm{padding:6px 10px;font-size:0.75rem;}
 .tb-short{display:none;}
 @media(max-width:480px){
-  #list-toolbar .btn-sm{padding:6px 8px;font-size:0.72rem;}
-  .tb-long{display:none;}
-  .tb-short{display:inline;}
+  #list-toolbar .btn-sm{padding:6px 7px;font-size:0.68rem;}
 }
 
 /* BOTTOM NAV */
@@ -869,11 +867,13 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
-  <button class="btn btn-sm btn-ghost" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem">☰</button>
-  <div style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;margin-right:auto;white-space:nowrap;margin-left:4px" id="list-toolbar-count"></div>
-  <button class="btn btn-sm btn-ghost" onclick="openEditList()"><span class="tb-long">Edit</span><span class="tb-short">Edit</span></button>
-  <button class="btn btn-sm btn-ghost" onclick="uncheckAll()"><span class="tb-long">Uncheck all</span><span class="tb-short">Uncheck</span></button>
-  <button class="btn btn-sm btn-ghost" onclick="clearChecked()"><span class="tb-long">Clear checked</span><span class="tb-short">× checked</span></button>
+  <button class="btn btn-sm btn-ghost" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
+  <div style="flex:1;display:flex;justify-content:center;align-items:center;" >
+    <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
+  </div>
+  <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Edit</button>
+  <button class="btn btn-sm btn-ghost" onclick="uncheckAll()" style="flex-shrink:0">Uncheck all</button>
+  <button class="btn btn-sm btn-ghost" onclick="clearChecked()" style="flex-shrink:0">Clear checked</button>
 </div>
 
 <!-- SCREENS -->
