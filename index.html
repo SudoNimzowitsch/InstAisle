@@ -1007,7 +1007,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="modal-overlay" id="modal-add-list" onclick="closeModal('modal-add-list')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
-    <div class="modal-title">New Shopping List</div>
+    <div class="modal-title">Edit List</div>
     <div class="input-wrap">
       <label class="input-label">Items</label>
       <textarea class="input" id="list-text-input" placeholder="Bananas&#10;Chicken breast&#10;Greek yogurt&#10;Olive oil&#10;Shampoo"></textarea>
@@ -4900,14 +4900,19 @@ function selectList(storeId, listId) {
   if (window.persistStore) window.persistStore(storeId);
 }
 
+let _newListMode = false; // true when opening modal-add-list to create a new list
+
 function promptNewList() {
-  const name = prompt('List name:', 'My List');
-  if (!name || !name.trim()) return;
   const storeId = _listPickerStoreId;
-  const lid = createNewList(storeId, name.trim());
-  touchListLastOpened(storeId, lid);
-  renderListPicker(storeId);
-  selectList(storeId, lid);
+  if (!storeId) return;
+  _newListMode = true;
+  // Close list picker without history.back() race
+  const pickerEl = document.getElementById('modal-list-picker');
+  if (pickerEl) pickerEl.classList.remove('open');
+  document.getElementById('list-text-input').value = '';
+  resetUploadZone();
+  document.querySelector('#modal-add-list .modal-title').textContent = 'New List';
+  openModal('modal-add-list');
 }
 
 function dismissListContext() {
@@ -6235,8 +6240,10 @@ window.cancelDelete = function() {
 // ══════════════════════════════
 function openAddList(){
   if(!getActiveStore()){ showToast('Please select a store first'); openStoreSwitch(); return; }
+  _newListMode = false;
   document.getElementById('list-text-input').value='';
   resetUploadZone();
+  document.querySelector('#modal-add-list .modal-title').textContent = 'Edit List';
   openModal('modal-add-list');
 }
 
@@ -6290,6 +6297,23 @@ function handleFileUpload(e){
 async function processListInput(){
   const store=getActiveStore();
   closeModal('modal-add-list');
+  const isNewList = _newListMode;
+  _newListMode = false;
+
+  function _applyItems(items) {
+    if (isNewList) {
+      // Create a new named list with these items
+      const name = prompt('Name this list:', 'My List');
+      if (!name || !name.trim()) return;
+      const lid = createNewList(store.id, name.trim());
+      const lists = getLists(store.id);
+      if (lists && lists.lists[lid]) lists.lists[lid].items = items;
+      state.activeListId[store.id] = lid;
+      touchListLastOpened(store.id, lid);
+    } else {
+      setActiveListItems(store.id, items);
+    }
+  }
 
   // ── Image path ──
   if(uploadedImageB64){
@@ -6301,7 +6325,7 @@ async function processListInput(){
       if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
       const results=classifyItems(names,store);
-      setActiveListItems(store.id, applyCorr(results,store));
+      _applyItems(applyCorr(results,store));
       await window.persistStore(store.id);
       hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
@@ -6319,7 +6343,7 @@ async function processListInput(){
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
   const results=classifyItems(names,store);
-  setActiveListItems(store.id, applyCorr(results,store));
+  _applyItems(applyCorr(results,store));
   await window.persistStore(store.id);
   hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
 }
