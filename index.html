@@ -1138,7 +1138,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
         rows="2"
         style="flex:1;resize:none;line-height:1.4"
-        onkeydown="if(event.key='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
         autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
       <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
     </div>
@@ -6709,19 +6709,40 @@ function clearDropLines(){
 
 function initItemMouseLongPress(){
   document.querySelectorAll('.list-item:not(.suggested)').forEach(el=>{
-    el.addEventListener('pointerdown', e=>{
+    // Remove any previously attached listener to avoid stacking
+    el._mouseDragDown && el.removeEventListener('pointerdown', el._mouseDragDown);
+    el._mouseDragDown = e=>{
       if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
-      if(e.pointerType==='touch') return; // handled by tStart/tMove/tEnd
+      if(e.pointerType==='touch') return;
       if(e.button!==0) return;
-      // Mouse: start drag immediately on mousedown, no delay
-      _mouseDragReady=true;
+      // Don't initiate drag if any modal is open
+      if(document.querySelector('.modal-overlay.open')) return;
+      _mouseDragReady=false;
       const idx=+el.dataset.itemIdx;
       const key=el.dataset.aisleKey;
       dragSrcIdx=idx; dragSrcAisle=key;
-      document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
-      document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
-    },{passive:true});
+      document.addEventListener('pointermove', _onMouseDragActivate, {passive:false});
+      document.addEventListener('pointerup', _onMouseDragCancel, {passive:false});
+    };
+    el.addEventListener('pointerdown', el._mouseDragDown, {passive:true});
   });
+}
+
+// Only activate drag once pointer has actually moved (avoids capturing clicks)
+function _onMouseDragActivate(e){
+  document.removeEventListener('pointermove', _onMouseDragActivate);
+  document.removeEventListener('pointerup', _onMouseDragCancel);
+  if(dragSrcIdx===null) return;
+  _mouseDragReady=true;
+  document.querySelector(`[data-item-idx="${dragSrcIdx}"]`)?.classList.add('dragging');
+  document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
+  document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
+}
+
+function _onMouseDragCancel(){
+  document.removeEventListener('pointermove', _onMouseDragActivate);
+  document.removeEventListener('pointerup', _onMouseDragCancel);
+  dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
 }
 
 function _onMouseDragMove(e){
