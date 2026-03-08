@@ -1134,37 +1134,21 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-title">Edit List</div>
 
     <!-- Add item row -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;align-items:flex-end">
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-shrink:0;align-items:flex-end">
       <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
         rows="2"
         style="flex:1;resize:none;line-height:1.4"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
+        onkeydown="if(event.key='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
         autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
       <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
     </div>
 
-    <!-- Item list -->
-    <div id="edit-list-items" style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px"></div>
-  </div>
-</div>
-
-
-</div>
-
-<!-- Edit List Modal -->
-<div class="modal-overlay" id="modal-edit-list" onclick="closeModal('modal-edit-list')">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Edit List</div>
-
-    <!-- Add item row -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-shrink:0;align-items:flex-end">
-      <textarea class="input" id="edit-list-new-item" placeholder="Add items, separated by commas or line breaks…"
-        rows="2"
-        style="flex:1;resize:none;line-height:1.4"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addItemFromEdit();}"
-        autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-      <button class="btn btn-primary" onclick="addItemFromEditAndClose()" style="flex-shrink:0;padding:0 18px;height:44px">Done</button>
+    <!-- Merge from file/camera -->
+    <div style="flex-shrink:0;margin-bottom:12px">
+      <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('edit-merge-input').click()" style="color:var(--muted);font-size:.75rem">
+        📎 Merge items from file or photo
+      </button>
+      <input type="file" id="edit-merge-input" accept="*/*" style="display:none" onchange="handleEditMergeUpload(event)">
     </div>
 
     <!-- Item list -->
@@ -6351,6 +6335,59 @@ async function processListInput(){
   _applyItems(applyCorr(results,store));
   await window.persistStore(store.id);
   hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
+}
+
+async function handleEditMergeUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  e.target.value='';
+  const store=getActiveStore(); if(!store) return;
+
+  if(f.type.startsWith('image/')){
+    // Use Gemini to parse image
+    showProcessing('Reading your list with Gemini…');
+    try {
+      const b64 = await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=ev=>{ const d=ev.target.result; res(d.split(',')[1]); };
+        r.onerror=()=>rej(new Error('Read failed'));
+        r.readAsDataURL(f);
+      });
+      const names=await parseImageWithGemini(b64,'image/jpeg');
+      if(!names.length){ hideProcessing(); showToast('No items found in photo'); return; }
+      showProcessing(`Found ${names.length} items — merging…`);
+      const newItems=applyCorr(classifyItems(names,store),store);
+      const existing=getActiveListItems(store.id);
+      const existingNames=new Set(existing.map(i=>i.name.toLowerCase().trim()));
+      const toAdd=newItems.filter(i=>!existingNames.has(i.name.toLowerCase().trim()));
+      setActiveListItems(store.id, [...existing, ...toAdd]);
+      await window.persistStore(store.id);
+      hideProcessing();
+      openEditList();
+      showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
+    } catch(err){
+      hideProcessing(); showToast('Could not read image: '+(err.message||'unknown error'));
+    }
+    return;
+  }
+
+  // Text file
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const raw=ev.target.result;
+    const names=raw.split(/[\n,]/).map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
+    if(!names.length){ showToast('No items found in file'); return; }
+    showProcessing('Merging items…');
+    const newItems=applyCorr(classifyItems(names,store),store);
+    const existing=getActiveListItems(store.id);
+    const existingNames=new Set(existing.map(i=>i.name.toLowerCase().trim()));
+    const toAdd=newItems.filter(i=>!existingNames.has(i.name.toLowerCase().trim()));
+    setActiveListItems(store.id, [...existing, ...toAdd]);
+    await window.persistStore(store.id);
+    hideProcessing();
+    openEditList();
+    showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
+  };
+  reader.readAsText(f);
 }
 
 function resetUploadZone(){
