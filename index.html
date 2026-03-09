@@ -252,6 +252,8 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
 .list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
+.aisle-group-empty .aisle-group-header{opacity:.6;}
+.aisle-group-empty .drop-zone{min-height:36px;}
 .list-item.drop-after{box-shadow:0 2px 0 0 var(--green);}
 
 .list-item.checked{opacity:.45;}
@@ -4562,6 +4564,7 @@ let moveItemIndex = null;
 
 // drag state
 let dragSrcIdx = null, dragSrcAisle = null;
+let _dragExpandedMode = false;
 let touchClone = null, touchSrcIdx = null, touchSrcAisle = null;
 let touchOffX = 0, touchOffY = 0;
 
@@ -4708,20 +4711,40 @@ function renderListScreen(){
     });
   }
 
+  // In expanded drag mode, build a full aisle key list including empty aisles
+  let allKeys = keys.slice();
+  if (_dragExpandedMode) {
+    const existingKeySet = new Set(keys.map(String));
+    store.aisles.forEach((_, i) => {
+      if (!existingKeySet.has(String(i))) {
+        // Insert empty aisle in sorted position
+        const insertAt = allKeys.findIndex(k => k !== 'unmatched' && +k > i);
+        if (insertAt === -1) {
+          // before unmatched or at end
+          const umIdx = allKeys.indexOf('unmatched');
+          allKeys.splice(umIdx === -1 ? allKeys.length : umIdx, 0, String(i));
+        } else {
+          allKeys.splice(insertAt, 0, String(i));
+        }
+      }
+    });
+  }
+
   let html=``;
 
-  keys.forEach(key=>{
-    const gItems=groups[key];
+  allKeys.forEach(key=>{
+    const gItems=groups[key]||[];
+    const isEmpty=gItems.length===0;
     const isUM=key==='unmatched';
     const color=isUM?'#fbbf24':AISLE_COLORS[+key%AISLE_COLORS.length];
     const aisle=!isUM?store.aisles[+key]:null;
     const aisleName=isUM?'? Unmatched Items':(aisle?aisle.name:`Aisle ${+key+1}`);
     const unchecked=gItems.filter(i=>!i.checked).length;
 
-    html+=`<div class="aisle-group">
-      <div class="aisle-group-header" style="background:${hexRgba(color,.12)};color:${color}">
+    html+=`<div class="aisle-group${isEmpty?' aisle-group-empty':''}">
+      <div class="aisle-group-header" style="background:${hexRgba(color,isEmpty?.06:.12)};color:${isEmpty?hexRgba(color,.5):color}">
         ${isUM?'⚠':'🛒'} ${esc(aisleName)}
-        <span class="aisle-count">${unchecked} left</span>
+        ${!isEmpty?`<span class="aisle-count">${unchecked} left</span>`:'<span class="aisle-count" style="opacity:.4">empty</span>'}
       </div>
       <div class="items-container" data-aisle-key="${key}">`;
 
@@ -6746,6 +6769,8 @@ function _onMouseDragActivate(e){
   document.removeEventListener('pointerup', _onMouseDragCancel);
   if(dragSrcIdx===null) return;
   _mouseDragReady=true;
+  // Expand to show all aisles as drop targets
+  _dragExpandedMode=true; renderListScreen();
   document.querySelector(`[data-item-idx="${dragSrcIdx}"]`)?.classList.add('dragging');
   document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
   document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
@@ -6756,6 +6781,7 @@ function _onMouseDragActivate(e){
 function _onMouseDragCancel(){
   document.removeEventListener('pointermove', _onMouseDragActivate);
   document.removeEventListener('pointerup', _onMouseDragCancel);
+  _dragExpandedMode=false;
   dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
 }
 
@@ -6782,11 +6808,14 @@ function _onMouseDragUp(e){
   const dz=under?.closest('.drop-zone');
   clearDropLines();
   document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
+  _dragExpandedMode=false; // collapse before re-render
   if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
     const r=ti.getBoundingClientRect();
     reorderItems(dragSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey, e.clientY<r.top+r.height/2);
   } else if(dz){
     moveToEndOfAisle(dragSrcIdx,dz.dataset.aisleKey);
+  } else {
+    renderListScreen(); // no drop — just collapse
   }
   dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
 }
@@ -6861,12 +6890,15 @@ function tEnd(e){
   document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const ti=under?.closest('.list-item');
   const dz=under?.closest('.drop-zone');
+  _dragExpandedMode=false; // collapse back before re-render
   if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
     const r=ti.getBoundingClientRect();
     const before=t.clientY < r.top + r.height/2;
     reorderItems(touchSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey,before);
   } else if(dz){
     moveToEndOfAisle(touchSrcIdx,dz.dataset.aisleKey);
+  } else {
+    renderListScreen(); // no drop — just collapse
   }
   touchSrcIdx=null; touchSrcAisle=null; _touchDragActive=false;
 }
