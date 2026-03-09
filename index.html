@@ -6763,9 +6763,11 @@ function _onMouseDragMove(e){
     if(e.clientY < r.top+r.height/2) ti.classList.add('drop-before');
     else ti.classList.add('drop-after');
   }
+  _itemAutoScroll(e.clientY);
 }
 
 function _onMouseDragUp(e){
+  cancelAnimationFrame(_itemScrollRAF); _itemScrollRAF=null;
   document.removeEventListener('pointermove',_onMouseDragMove);
   document.removeEventListener('pointerup',_onMouseDragUp);
   if(!_mouseDragReady||dragSrcIdx===null){ _mouseDragReady=false; return; }
@@ -6788,6 +6790,7 @@ function _onMouseDragUp(e){
 // ══════════════════════════════
 let _touchLongPressTimer=null;
 let _touchDragActive=false;
+let _itemScrollRAF=null;
 
 function tStart(e,idx,aisleKey){
   if(e.target.closest('.item-check,.item-aisle-badge,.dismiss-suggestion')) return;
@@ -6837,9 +6840,12 @@ function tMove(e){
   }
   const dz=under?.closest('.drop-zone');
   if(dz) dz.classList.add('active');
+  // Auto-scroll list screen
+  _itemAutoScroll(t.clientY);
 }
 function tEnd(e){
   clearTimeout(_touchLongPressTimer);
+  cancelAnimationFrame(_itemScrollRAF); _itemScrollRAF=null;
   if(!_touchDragActive||!touchClone){ touchSrcIdx=null; _touchDragActive=false; return; }
   const t=e.changedTouches[0];
   touchClone.remove(); touchClone=null;
@@ -6862,6 +6868,22 @@ function tEnd(e){
 // ══════════════════════════════
 // REORDER HELPERS
 // ══════════════════════════════
+function _itemAutoScroll(clientY){
+  cancelAnimationFrame(_itemScrollRAF); _itemScrollRAF=null;
+  const scrollEl=document.getElementById('screen-list');
+  if(!scrollEl) return;
+  const sr=scrollEl.getBoundingClientRect();
+  const zone=80, maxSpeed=14;
+  if(clientY < sr.top + zone){
+    const speed=Math.max(1, Math.round(maxSpeed*(1-(clientY-sr.top)/zone)));
+    const scroll=()=>{ scrollEl.scrollTop-=speed; _itemScrollRAF=requestAnimationFrame(scroll); };
+    _itemScrollRAF=requestAnimationFrame(scroll);
+  } else if(clientY > sr.bottom - zone){
+    const speed=Math.max(1, Math.round(maxSpeed*(1-(sr.bottom-clientY)/zone)));
+    const scroll=()=>{ scrollEl.scrollTop+=speed; _itemScrollRAF=requestAnimationFrame(scroll); };
+    _itemScrollRAF=requestAnimationFrame(scroll);
+  }
+}
 function reorderItems(srcIdx, targetIdx, targetAisleKey, before=true){
   const store=getActiveStore();
   const items=getActiveListItems(store.id);
