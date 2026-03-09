@@ -195,10 +195,8 @@ textarea.input{resize:vertical;min-height:90px;}
 .aisle-card-dragging{
   opacity:.4;outline:2px dashed var(--green);outline-offset:2px;border-radius:14px;
 }
-.aisle-card-dragover{
-  outline:2px solid var(--green);outline-offset:2px;border-radius:14px;
-  background:rgba(74,222,128,.04);
-}
+.aisle-card-drop-before{box-shadow:0 -2px 0 0 var(--green);}
+.aisle-card-drop-after{box-shadow:0 2px 0 0 var(--green);}
 .aisle-img-zone{
   border:2px dashed var(--border);border-radius:10px;padding:18px 14px;
   text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);
@@ -6061,15 +6059,16 @@ function onAisleDragMove(e){
     }
   }
 
-  // Find which card the ghost centre is hovering over
+  // Find which card the ghost centre is hovering over and show drop line
   const ghostCY=e.clientY;
   document.querySelectorAll('.card[data-aisle-idx]').forEach(card=>{
     const idx=parseInt(card.dataset.aisleIdx,10);
-    card.classList.remove('aisle-card-dragover');
+    card.classList.remove('aisle-card-drop-before','aisle-card-drop-after');
     if(idx===aisleDragSrcIdx) return;
     const r=card.getBoundingClientRect();
     if(ghostCY >= r.top && ghostCY <= r.bottom){
-      card.classList.add('aisle-card-dragover');
+      if(ghostCY < r.top + r.height/2) card.classList.add('aisle-card-drop-before');
+      else card.classList.add('aisle-card-drop-after');
     }
   });
 }
@@ -6083,11 +6082,14 @@ function onAisleDragEnd(e){
 
   // Find drop target
   let targetIdx=null;
+  let dropBefore=true;
   document.querySelectorAll('.card[data-aisle-idx]').forEach(card=>{
-    if(card.classList.contains('aisle-card-dragover')){
-      targetIdx=parseInt(card.dataset.aisleIdx,10);
+    if(card.classList.contains('aisle-card-drop-before')){
+      targetIdx=parseInt(card.dataset.aisleIdx,10); dropBefore=true;
+    } else if(card.classList.contains('aisle-card-drop-after')){
+      targetIdx=parseInt(card.dataset.aisleIdx,10); dropBefore=false;
     }
-    card.classList.remove('aisle-card-dragover','aisle-card-dragging');
+    card.classList.remove('aisle-card-drop-before','aisle-card-drop-after','aisle-card-dragging');
   });
 
   aisleGhost.remove(); aisleGhost=null;
@@ -6096,7 +6098,9 @@ function onAisleDragEnd(e){
   if(targetIdx!==null && targetIdx!==aisleDragSrcIdx){
     // Reorder tempAisles
     const moved=tempAisles.splice(aisleDragSrcIdx,1)[0];
-    tempAisles.splice(targetIdx,0,moved);
+    const adjustedTarget=aisleDragSrcIdx<targetIdx?targetIdx-1:targetIdx;
+    const insertAt=dropBefore?adjustedTarget:adjustedTarget+1;
+    tempAisles.splice(Math.max(0,insertAt),0,moved);
     _aisleReorderMode = true; // keep collapsed after drop
 
     // Also reorder pendingScannedKws by the same move
