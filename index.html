@@ -4564,7 +4564,6 @@ let moveItemIndex = null;
 
 // drag state
 let dragSrcIdx = null, dragSrcAisle = null;
-let _dragExpandedMode = false;
 let touchClone = null, touchSrcIdx = null, touchSrcAisle = null;
 let touchOffX = 0, touchOffY = 0;
 
@@ -4711,40 +4710,20 @@ function renderListScreen(){
     });
   }
 
-  // In expanded drag mode, build a full aisle key list including empty aisles
-  let allKeys = keys.slice();
-  if (_dragExpandedMode) {
-    const existingKeySet = new Set(keys.map(String));
-    store.aisles.forEach((_, i) => {
-      if (!existingKeySet.has(String(i))) {
-        // Insert empty aisle in sorted position
-        const insertAt = allKeys.findIndex(k => k !== 'unmatched' && +k > i);
-        if (insertAt === -1) {
-          // before unmatched or at end
-          const umIdx = allKeys.indexOf('unmatched');
-          allKeys.splice(umIdx === -1 ? allKeys.length : umIdx, 0, String(i));
-        } else {
-          allKeys.splice(insertAt, 0, String(i));
-        }
-      }
-    });
-  }
-
   let html=``;
 
-  allKeys.forEach(key=>{
-    const gItems=groups[key]||[];
-    const isEmpty=gItems.length===0;
+  keys.forEach(key=>{
+    const gItems=groups[key];
     const isUM=key==='unmatched';
     const color=isUM?'#fbbf24':AISLE_COLORS[+key%AISLE_COLORS.length];
     const aisle=!isUM?store.aisles[+key]:null;
     const aisleName=isUM?'? Unmatched Items':(aisle?aisle.name:`Aisle ${+key+1}`);
     const unchecked=gItems.filter(i=>!i.checked).length;
 
-    html+=`<div class="aisle-group${isEmpty?' aisle-group-empty':''}">
-      <div class="aisle-group-header" style="background:${hexRgba(color,isEmpty?.06:.12)};color:${isEmpty?hexRgba(color,.5):color}">
+    html+=`<div class="aisle-group">
+      <div class="aisle-group-header" style="background:${hexRgba(color,.12)};color:${color}">
         ${isUM?'⚠':'🛒'} ${esc(aisleName)}
-        ${!isEmpty?`<span class="aisle-count">${unchecked} left</span>`:'<span class="aisle-count" style="opacity:.4">empty</span>'}
+        <span class="aisle-count">${unchecked} left</span>
       </div>
       <div class="items-container" data-aisle-key="${key}">`;
 
@@ -6769,8 +6748,7 @@ function _onMouseDragActivate(e){
   document.removeEventListener('pointerup', _onMouseDragCancel);
   if(dragSrcIdx===null) return;
   _mouseDragReady=true;
-  // Expand to show all aisles as drop targets
-  _dragExpandedMode=true; renderListScreen();
+  expandAislesForDrag();
   document.querySelector(`[data-item-idx="${dragSrcIdx}"]`)?.classList.add('dragging');
   document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
   document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
@@ -6781,7 +6759,7 @@ function _onMouseDragActivate(e){
 function _onMouseDragCancel(){
   document.removeEventListener('pointermove', _onMouseDragActivate);
   document.removeEventListener('pointerup', _onMouseDragCancel);
-  _dragExpandedMode=false;
+  collapseAislesAfterDrag();
   dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
 }
 
@@ -6808,14 +6786,12 @@ function _onMouseDragUp(e){
   const dz=under?.closest('.drop-zone');
   clearDropLines();
   document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
-  _dragExpandedMode=false; // collapse before re-render
+  collapseAislesAfterDrag();
   if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
     const r=ti.getBoundingClientRect();
     reorderItems(dragSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey, e.clientY<r.top+r.height/2);
   } else if(dz){
     moveToEndOfAisle(dragSrcIdx,dz.dataset.aisleKey);
-  } else {
-    renderListScreen(); // no drop — just collapse
   }
   dragSrcIdx=null; dragSrcAisle=null; _mouseDragReady=false;
 }
@@ -6840,6 +6816,7 @@ function tStart(e,idx,aisleKey){
     const rect=el.getBoundingClientRect();
     touchOffX=touch.clientX-rect.left; touchOffY=touch.clientY-rect.top;
     if(navigator.vibrate) navigator.vibrate(40);
+    expandAislesForDrag();
     touchClone=el.cloneNode(true);
     Object.assign(touchClone.style,{
       position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',
@@ -6890,15 +6867,13 @@ function tEnd(e){
   document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const ti=under?.closest('.list-item');
   const dz=under?.closest('.drop-zone');
-  _dragExpandedMode=false; // collapse back before re-render
+  collapseAislesAfterDrag();
   if(ti&&+ti.dataset.itemIdx!==touchSrcIdx){
     const r=ti.getBoundingClientRect();
     const before=t.clientY < r.top + r.height/2;
     reorderItems(touchSrcIdx,+ti.dataset.itemIdx,ti.dataset.aisleKey,before);
   } else if(dz){
     moveToEndOfAisle(touchSrcIdx,dz.dataset.aisleKey);
-  } else {
-    renderListScreen(); // no drop — just collapse
   }
   touchSrcIdx=null; touchSrcAisle=null; _touchDragActive=false;
 }
@@ -6906,6 +6881,52 @@ function tEnd(e){
 // ══════════════════════════════
 // REORDER HELPERS
 // ══════════════════════════════
+function expandAislesForDrag(){
+  const store = getActiveStore();
+  if (!store) return;
+  const cont = document.getElementById('list-content');
+  const existingKeys = new Set(
+    [...cont.querySelectorAll('.items-container[data-aisle-key]')]
+      .map(el => el.dataset.aisleKey)
+  );
+  // Find the unmatched group to insert before it
+  const unmatchedGroup = [...cont.querySelectorAll('.aisle-group')].find(g =>
+    g.querySelector('.items-container[data-aisle-key="unmatched"]')
+  );
+  store.aisles.forEach((aisle, i) => {
+    if (existingKeys.has(String(i))) return;
+    const color = AISLE_COLORS[i % AISLE_COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'aisle-group aisle-group-empty';
+    div.dataset.emptyAisle = i;
+    div.innerHTML =
+      `<div class="aisle-group-header" style="background:${hexRgba(color,.06)};color:${hexRgba(color,.5)}">` +
+      `🛒 ${esc(aisle.name)}<span class="aisle-count" style="opacity:.4">empty</span></div>` +
+      `<div class="items-container" data-aisle-key="${i}">` +
+      `<div class="drop-zone" data-aisle-key="${i}" ` +
+      `ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event,'${i}')"></div>` +
+      `</div>`;
+    // Insert in sorted position
+    const allGroups = [...cont.querySelectorAll('.aisle-group')];
+    let inserted = false;
+    for (const g of allGroups) {
+      const gKey = g.querySelector('.items-container')?.dataset.aisleKey;
+      if (gKey && gKey !== 'unmatched' && +gKey > i) {
+        cont.insertBefore(div, g);
+        inserted = true; break;
+      }
+    }
+    if (!inserted) {
+      if (unmatchedGroup) cont.insertBefore(div, unmatchedGroup);
+      else cont.appendChild(div);
+    }
+  });
+}
+
+function collapseAislesAfterDrag(){
+  document.querySelectorAll('.aisle-group-empty').forEach(el => el.remove());
+}
+
 function _itemAutoScroll(clientY){
   cancelAnimationFrame(_itemScrollRAF); _itemScrollRAF=null;
   const scrollEl=document.getElementById('screen-list');
