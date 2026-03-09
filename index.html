@@ -297,9 +297,10 @@ textarea.input{resize:vertical;min-height:90px;}
 .drop-zone{
   min-height:8px;border-radius:8px;transition:all .2s;margin-top:4px;
 }
-.drop-zone.active{
+.drop-zone.active{min-height:8px;}
+.aisle-group-empty .drop-zone.active{
   min-height:44px;border:2px dashed var(--green);
-  background:rgba(74,222,128,.06);
+  background:rgba(74,222,128,.08);
   display:flex;align-items:center;justify-content:center;
   font-size:.72rem;color:var(--green);
 }
