@@ -6745,6 +6745,8 @@ function _onMouseDragActivate(e){
   document.querySelector(`[data-item-idx="${dragSrcIdx}"]`)?.classList.add('dragging');
   document.addEventListener('pointermove', _onMouseDragMove, {passive:false});
   document.addEventListener('pointerup', _onMouseDragUp, {passive:false});
+  // Show drop line immediately on first move
+  _onMouseDragMove(e);
 }
 
 function _onMouseDragCancel(){
