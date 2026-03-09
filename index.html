@@ -253,7 +253,15 @@ textarea.input{resize:vertical;min-height:90px;}
 .list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
 .list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
 .aisle-group-empty .aisle-group-header{opacity:.6;}
-.aisle-group-empty .drop-zone{min-height:36px;}
+.aisle-group-empty .drop-zone{
+  min-height:52px;border:2px dashed var(--border);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;color:var(--muted);margin:4px 0 8px;
+}
+.aisle-group-empty .drop-zone::after{content:'Drop here';}
+.aisle-group-empty .drop-zone.active{
+  border-color:var(--green);background:rgba(74,222,128,.08);color:var(--green);
+}
 .list-item.drop-after{box-shadow:0 2px 0 0 var(--green);}
 
 .list-item.checked{opacity:.45;}
@@ -6766,6 +6774,7 @@ function _onMouseDragCancel(){
 function _onMouseDragMove(e){
   if(!_mouseDragReady||dragSrcIdx===null) return;
   clearDropLines();
+  document.querySelectorAll('.drop-zone').forEach(el=>el.classList.remove('active'));
   const under=document.elementFromPoint(e.clientX,e.clientY);
   const ti=under?.closest('.list-item');
   if(ti&&+ti.dataset.itemIdx!==dragSrcIdx){
@@ -6773,6 +6782,10 @@ function _onMouseDragMove(e){
     if(e.clientY < r.top+r.height/2) ti.classList.add('drop-before');
     else ti.classList.add('drop-after');
   }
+  const dz=under?.closest('.drop-zone');
+  if(dz) dz.classList.add('active');
+  const emptyGroup=under?.closest('.aisle-group-empty');
+  if(emptyGroup && !dz) emptyGroup.querySelector('.drop-zone')?.classList.add('active');
   _itemAutoScroll(e.clientY);
 }
 
@@ -6783,7 +6796,7 @@ function _onMouseDragUp(e){
   if(!_mouseDragReady||dragSrcIdx===null){ _mouseDragReady=false; return; }
   const under=document.elementFromPoint(e.clientX,e.clientY);
   const ti=under?.closest('.list-item');
-  const dz=under?.closest('.drop-zone');
+  const dz=under?.closest('.drop-zone') || under?.closest('.aisle-group-empty')?.querySelector('.drop-zone');
   clearDropLines();
   document.querySelectorAll('.list-item').forEach(el=>el.classList.remove('dragging'));
   collapseAislesAfterDrag();
@@ -6852,6 +6865,11 @@ function tMove(e){
   }
   const dz=under?.closest('.drop-zone');
   if(dz) dz.classList.add('active');
+  // Also highlight if hovering over empty aisle group body
+  const emptyGroup=under?.closest('.aisle-group-empty');
+  if(emptyGroup && !dz){
+    emptyGroup.querySelector('.drop-zone')?.classList.add('active');
+  }
   // Auto-scroll list screen
   _itemAutoScroll(t.clientY);
 }
