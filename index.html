@@ -197,6 +197,17 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .aisle-card-drop-before{box-shadow:0 -2px 0 0 var(--green);}
 .aisle-card-drop-after{box-shadow:0 2px 0 0 var(--green);}
+/* TEMPLATE PICKER */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.tpl-card{
+  border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;
+  cursor:pointer;transition:all .15s;text-align:left;background:var(--surface);
+}
+.tpl-card:hover,.tpl-card:active{border-color:var(--green);background:rgba(74,222,128,.06);}
+.tpl-card-name{font-size:.78rem;font-weight:600;color:var(--text);margin-bottom:2px;}
+.tpl-card-count{font-size:.62rem;color:var(--muted);}
+.tpl-search{margin-bottom:12px;}
+
 .aisle-img-zone{
   border:2px dashed var(--border);border-radius:10px;padding:18px 14px;
   text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);
@@ -985,6 +996,19 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- New / Edit Store -->
+<!-- Template Picker Modal -->
+<div class="modal-overlay" id="modal-template-picker" onclick="closeModal('modal-template-picker')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-bottom:12px">Import Aisle Template</div>
+    <input class="input tpl-search" id="tpl-search-input" placeholder="Search templates…" oninput="renderTemplatePicker()">
+    <div style="overflow-y:auto;flex:1">
+      <div class="tpl-grid" id="tpl-grid"></div>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-template-picker')">Cancel</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
   <div class="modal modal-store-shell" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
@@ -4551,6 +4575,39 @@ function getAllLibraryStores() {
 
 
 const AISLE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#e879f9','#facc15','#f87171','#22d3ee'];
+
+const GROCERY_TEMPLATES = [
+  {name:"Produce",keywords:["apple", "apples", "banana", "bananas", "orange", "oranges", "lemon", "lemons", "lime", "limes", "strawberry", "strawberries", "blueberry", "blueberries", "raspberry", "raspberries", "blackberry", "blackberries", "grape", "grapes", "watermelon", "cantaloupe", "honeydew", "peach", "peaches", "plum", "plums", "pear", "pears", "mango", "mangoes", "pineapple", "kiwi", "avocado", "avocados", "tomato", "tomatoes", "lettuce", "spinach", "kale", "broccoli", "cauliflower", "cabbage", "carrot", "carrots", "celery", "cucumber", "cucumbers", "zucchini", "squash", "bell pepper", "bell peppers", "jalapeño", "onion", "onions", "garlic", "ginger", "potato", "potatoes", "sweet potato", "sweet potatoes", "corn", "asparagus", "green beans", "peas", "mushrooms", "mushroom", "beets", "radish", "radishes", "arugula", "romaine", "iceberg", "herbs", "basil", "cilantro", "parsley", "mint", "scallions", "leek", "eggplant", "artichoke", "brussels sprouts", "cherries", "fresh herbs", "ginger root"]},
+  {name:"Meat & Poultry",keywords:["chicken breast", "chicken thighs", "chicken wings", "whole chicken", "rotisserie chicken", "ground beef", "beef steak", "ribeye", "sirloin", "filet mignon", "chuck roast", "brisket", "ground turkey", "turkey breast", "whole turkey", "turkey bacon", "pork chops", "pork tenderloin", "pork ribs", "bacon", "ham", "prosciutto", "lamb chops", "lamb shank", "ground lamb", "italian sausage", "bratwurst", "chorizo", "kielbasa", "hot dogs", "breakfast sausage", "veal", "bison", "venison", "duck", "steak", "short ribs", "flank steak", "skirt steak", "chicken drumsticks", "chicken tenders", "ground pork", "spare ribs", "bone-in chicken", "pork loin", "marinated chicken", "marinated pork", "smoked sausage", "turkey burgers", "beef patties", "bone broth", "stew meat", "kabob meat", "meatballs", "duck breast", "pancetta", "salami logs", "ham steaks"]},
+  {name:"Seafood",keywords:["salmon", "tilapia", "cod", "halibut", "tuna steak", "mahi mahi", "sea bass", "trout", "catfish", "flounder", "swordfish", "snapper", "grouper", "pollock", "haddock", "shrimp", "jumbo shrimp", "scallops", "lobster", "crab", "crab legs", "dungeness crab", "clams", "mussels", "oysters", "squid", "calamari", "octopus", "canned tuna", "canned salmon", "canned sardines", "canned anchovies", "fish fillets", "smoked salmon", "lox", "whitefish", "sushi grade tuna", "crawfish", "peeled shrimp", "imitation crab", "fish cakes", "crab cakes", "seafood mix", "seafood chowder", "frozen shrimp rings", "seafood dip", "ceviche mix"]},
+  {name:"Deli",keywords:["turkey deli meat", "ham deli meat", "roast beef", "salami", "pepperoni", "bologna", "pastrami", "corned beef", "mortadella", "capicola", "prosciutto di parma", "swiss cheese", "provolone", "muenster", "havarti", "colby jack", "pepper jack", "brie", "gouda", "gruyere", "cheddar block", "fresh mozzarella", "rotisserie chicken", "prepared salads", "potato salad", "coleslaw", "pasta salad", "macaroni salad", "hummus", "olives", "pickles", "antipasto", "sub sandwiches", "wraps", "quiche", "stuffed peppers", "deli platters", "deli chicken salad", "tuna salad", "egg salad", "meatloaf slices", "deli soups", "fried chicken"]},
+  {name:"Dairy",keywords:["milk", "whole milk", "skim milk", "2% milk", "oat milk", "almond milk", "soy milk", "half and half", "heavy cream", "whipping cream", "sour cream", "cream cheese", "butter", "margarine", "ghee", "eggs", "egg whites", "cheddar cheese", "mozzarella cheese", "parmesan cheese", "american cheese", "cottage cheese", "ricotta cheese", "feta cheese", "string cheese", "shredded cheese", "sliced cheese", "yogurt", "greek yogurt", "drinkable yogurt", "kefir", "ice cream", "frozen yogurt", "whipped cream", "pudding", "custard", "plant-based butter", "lactose-free milk", "evaporated milk", "eggnog", "buttermilk", "chocolate milk", "eggs organic"]},
+  {name:"Frozen Foods",keywords:["frozen pizza", "frozen burritos", "frozen meals", "tv dinners", "frozen lasagna", "frozen chicken nuggets", "frozen fish sticks", "frozen shrimp", "frozen salmon", "frozen vegetables", "frozen broccoli", "frozen peas", "frozen corn", "frozen spinach", "frozen edamame", "frozen stir fry vegetables", "frozen mixed vegetables", "frozen fruit", "frozen berries", "frozen mango", "frozen waffles", "frozen pancakes", "frozen breakfast sandwiches", "frozen burritos", "ice cream", "ice cream bars", "popsicles", "frozen yogurt bars", "gelato", "frozen fries", "tater tots", "frozen onion rings", "frozen pot pies", "frozen soup", "frozen dumplings", "frozen egg rolls", "frozen appetizers", "frozen hash browns", "frozen smoothie packs", "frozen ice cream"]},
+  {name:"Bakery",keywords:["white bread", "wheat bread", "sourdough bread", "rye bread", "multigrain bread", "baguette", "ciabatta", "brioche", "focaccia", "pita bread", "naan", "bagels", "english muffins", "croissants", "dinner rolls", "hamburger buns", "hot dog buns", "tortillas", "flour tortillas", "corn tortillas", "muffins", "donuts", "danishes", "cinnamon rolls", "coffee cake", "chocolate cake", "birthday cake", "cheesecake", "pie", "brownies", "cookies", "cupcakes", "macarons", "tarts", "scones", "biscotti", "sandwich bread", "artisan bread", "gluten-free bread", "sliced bread", "biscuits", "pound cake", "loaf cake", "fruit pies", "pie crust", "sheet cake"]},
+  {name:"Bread & Grains",keywords:["white bread", "wheat bread", "sourdough", "whole grain bread", "rye bread", "bagels", "english muffins", "pita", "naan", "tortillas", "lavash", "rice cakes", "breadcrumbs", "panko", "white rice", "brown rice", "jasmine rice", "basmati rice", "wild rice", "instant rice", "oatmeal", "rolled oats", "steel cut oats", "granola", "grits", "cornmeal", "quinoa", "farro", "barley", "bulgur", "couscous", "polenta", "pasta", "spaghetti", "penne", "fettuccine", "rigatoni", "orzo", "lasagna noodles", "egg noodles", "ramen noodles", "rice noodles", "udon", "soba", "split peas", "dried lentils", "risotto rice", "dried chickpeas", "ravioli dried"]},
+  {name:"Cereal & Breakfast",keywords:["corn flakes", "frosted flakes", "cheerios", "honey nut cheerios", "raisin bran", "granola", "muesli", "bran flakes", "shredded wheat", "wheat chex", "rice chex", "froot loops", "lucky charms", "cocoa puffs", "cap'n crunch", "oatmeal", "instant oatmeal", "rolled oats", "steel cut oats", "grits", "pancake mix", "waffle mix", "biscuit mix", "muffin mix", "maple syrup", "pancake syrup", "honey", "jam", "jelly", "preserves", "peanut butter", "almond butter", "nutella", "cream of wheat", "granola bars", "breakfast bars", "pop tarts", "toaster pastries", "trail mix", "dried fruit", "molasses", "breakfast biscuits", "cereal bars", "kids cereal"]},
+  {name:"Canned Goods",keywords:["canned tomatoes", "diced tomatoes", "crushed tomatoes", "tomato paste", "tomato sauce", "canned beans", "black beans", "kidney beans", "chickpeas", "pinto beans", "cannellini beans", "canned corn", "canned peas", "canned green beans", "canned carrots", "canned beets", "canned tuna", "canned salmon", "canned sardines", "canned anchovies", "canned crab", "canned chicken", "canned ham", "spam", "chicken broth", "beef broth", "vegetable broth", "chicken stock", "beef stock", "canned soup", "tomato soup", "cream of mushroom", "chicken noodle soup", "canned fruit", "peaches in syrup", "pears in syrup", "fruit cocktail", "mandarin oranges", "coconut milk", "evaporated milk", "condensed milk", "canned pumpkin", "artichoke hearts", "olives", "roasted red peppers", "sun-dried tomatoes", "capers", "canned potatoes", "canned chili", "canned lentils", "applesauce", "canned fruit cocktail"]},
+  {name:"Dry Goods & Pantry",keywords:["all-purpose flour", "bread flour", "cake flour", "almond flour", "whole wheat flour", "sugar", "brown sugar", "powdered sugar", "raw sugar", "stevia", "splenda", "baking soda", "baking powder", "cornstarch", "cream of tartar", "yeast", "cocoa powder", "chocolate chips", "vanilla extract", "almond extract", "salt", "black pepper", "garlic powder", "onion powder", "cumin", "paprika", "chili powder", "oregano", "basil", "thyme", "rosemary", "cinnamon", "nutmeg", "red pepper flakes", "bay leaves", "turmeric", "curry powder", "cayenne", "olive oil", "vegetable oil", "canola oil", "coconut oil", "sesame oil", "white vinegar", "apple cider vinegar", "balsamic vinegar", "red wine vinegar", "soy sauce", "worcestershire sauce", "hot sauce", "fish sauce", "white chocolate chips", "butterscotch chips", "sprinkles", "food coloring", "yeast packets", "pie filling", "coconut flakes", "shortening", "gelatin mix", "pudding mix", "frosting tubs", "frosting tubes", "marshmallows", "cake mix", "brownie mix"]},
+  {name:"Condiments & Sauces",keywords:["ketchup", "mustard", "yellow mustard", "dijon mustard", "mayonnaise", "miracle whip", "relish", "hot sauce", "tabasco", "sriracha", "ranch dressing", "italian dressing", "caesar dressing", "balsamic dressing", "thousand island", "blue cheese dressing", "barbecue sauce", "teriyaki sauce", "soy sauce", "hoisin sauce", "oyster sauce", "worcestershire sauce", "steak sauce", "a1 sauce", "salsa", "guacamole", "queso", "hummus", "tzatziki", "pasta sauce", "marinara sauce", "alfredo sauce", "pesto", "pickle relish", "pickles", "pepperoncini", "capers", "olives", "tartar sauce", "cocktail sauce", "horseradish", "wasabi", "chutney", "sandwich spread", "buffalo sauce", "honey mustard dressing", "taco sauce", "enchilada sauce", "pizza sauce", "gravy mix", "gravy jars", "vinaigrette dressing"]},
+  {name:"Snacks",keywords:["potato chips", "tortilla chips", "corn chips", "pretzels", "popcorn", "rice cakes", "crackers", "graham crackers", "animal crackers", "saltines", "ritz crackers", "cheese crackers", "whole grain crackers", "pita chips", "nuts", "almonds", "cashews", "peanuts", "walnuts", "mixed nuts", "pistachios", "pecans", "trail mix", "granola bars", "protein bars", "energy bars", "fruit snacks", "beef jerky", "meat sticks", "pepperoni sticks", "cookies", "oreos", "chocolate chip cookies", "fig newtons", "nutter butters", "candy", "chocolate", "gummy bears", "licorice", "hard candy", "mints", "popcorn", "microwave popcorn", "kettle chips", "veggie chips", "pork rinds", "cheese puffs", "popcorn kernels", "snack cakes", "fruit leather", "sandwich crackers", "snack crackers", "granola bites"]},
+  {name:"Beverages",keywords:["water", "sparkling water", "seltzer", "club soda", "tonic water", "orange juice", "apple juice", "grape juice", "cranberry juice", "lemonade", "iced tea", "sweet tea", "green tea", "kombucha", "coffee", "ground coffee", "whole bean coffee", "instant coffee", "cold brew", "hot tea", "herbal tea", "chamomile tea", "black tea", "soda", "cola", "diet cola", "ginger ale", "root beer", "sprite", "dr pepper", "sports drinks", "gatorade", "powerade", "electrolyte drinks", "energy drinks", "red bull", "monster", "hot chocolate mix", "cocoa", "chai mix", "cider", "coconut water", "vegetable juice", "tomato juice", "v8", "mineral water", "meal replacement shakes", "protein drinks", "drink mixers", "flavored sparkling water"]},
+  {name:"Beer, Wine & Spirits",keywords:["beer", "lager", "ale", "ipa", "stout", "pilsner", "wheat beer", "sour beer", "light beer", "craft beer", "domestic beer", "imported beer", "six pack", "case of beer", "wine", "red wine", "white wine", "rosé", "sparkling wine", "champagne", "prosecco", "cabernet sauvignon", "merlot", "pinot noir", "chardonnay", "sauvignon blanc", "pinot grigio", "riesling", "moscato", "malbec", "zinfandel", "vodka", "gin", "rum", "tequila", "whiskey", "bourbon", "scotch", "brandy", "hard seltzer", "white claw", "truly", "hard cider", "cocktail mixers", "bitters", "triple sec", "grenadine", "simple syrup", "non-alcoholic beer", "non-alcoholic wine"]},
+  {name:"International Foods",keywords:["soy sauce", "miso paste", "rice vinegar", "sesame oil", "hoisin sauce", "oyster sauce", "fish sauce", "sriracha", "chili garlic sauce", "gochujang", "kimchi", "rice noodles", "udon noodles", "soba noodles", "ramen", "glass noodles", "jasmine rice", "basmati rice", "sticky rice", "sushi rice", "nori", "seaweed", "mirin", "sake", "dashi", "tikka masala sauce", "curry paste", "coconut milk", "ghee", "tamarind", "tahini", "harissa", "za'atar", "sumac", "preserved lemons", "salsa verde", "chipotle peppers", "adobo sauce", "mole sauce", "sofrito", "sazon", "adobo seasoning", "plantain chips", "panko breadcrumbs", "furikake", "bonito flakes", "tofu", "tempeh", "edamame", "chili oil", "pho noodles", "tempura mix", "falafel mix", "taco shells", "garam masala"]},
+  {name:"Health & Natural Foods",keywords:["protein powder", "whey protein", "plant protein", "collagen powder", "chia seeds", "flaxseeds", "hemp seeds", "sunflower seeds", "pumpkin seeds", "nutritional yeast", "spirulina", "matcha powder", "turmeric powder", "almond flour", "coconut flour", "tapioca flour", "arrowroot", "coconut sugar", "agave nectar", "maple syrup", "monk fruit sweetener", "apple cider vinegar", "raw honey", "manuka honey", "quinoa", "amaranth", "millet", "teff", "almond butter", "sunflower butter", "tahini", "plant-based meat", "tofu", "tempeh", "seitan", "jackfruit", "dairy-free cheese", "oat milk", "cashew milk", "coconut yogurt", "kombucha", "kefir", "probiotics", "vitamins", "supplements", "gluten-free pasta", "gluten-free bread", "rice cakes"]},
+  {name:"Baby & Infant",keywords:["baby formula", "infant formula", "toddler formula", "breast milk bags", "baby food", "pureed baby food", "baby cereal", "teething crackers", "puffs", "baby snacks", "toddler snacks", "squeeze pouches", "applesauce pouches", "diapers", "newborn diapers", "size 1 diapers", "pull-ups", "training pants", "baby wipes", "sensitive wipes", "fragrance-free wipes", "diaper rash cream", "baby powder", "baby lotion", "baby wash", "baby shampoo", "baby oil", "baby sunscreen", "pacifiers", "bottle nipples", "baby bottles", "sippy cups", "baby monitor", "nursing pads", "nipple cream", "baby tylenol", "infant ibuprofen", "gripe water", "gas drops", "baby oatmeal", "baby puree meats", "yogurt melts", "toddler meals", "baby juice", "bottle liners", "ready formula bottles"]},
+  {name:"Personal Care",keywords:["shampoo", "conditioner", "2-in-1 shampoo", "dry shampoo", "hair mask", "body wash", "bar soap", "liquid soap", "hand soap", "antibacterial soap", "toothpaste", "toothbrush", "electric toothbrush", "dental floss", "mouthwash", "whitening strips", "deodorant", "antiperspirant", "body spray", "cologne", "perfume", "shaving cream", "razors", "razor blades", "aftershave", "electric shaver", "facial cleanser", "face wash", "moisturizer", "sunscreen", "spf lotion", "toner", "serum", "eye cream", "face mask", "exfoliator", "lotion", "body butter", "hand cream", "lip balm", "chapstick", "tampons", "pads", "menstrual cups", "panty liners", "cotton balls", "cotton swabs", "q-tips", "nail clippers", "nail polish remover", "hand sanitizer", "sunscreen spray"]},
+  {name:"Hair Care",keywords:["shampoo", "conditioner", "deep conditioner", "hair mask", "leave-in conditioner", "dry shampoo", "heat protectant", "hair serum", "hair oil", "argan oil", "hair spray", "mousse", "hair gel", "pomade", "hair wax", "texturizing spray", "curl cream", "defining cream", "edge control", "hair color", "root touch up", "hair dye", "bleach kit", "toner", "hair brush", "paddle brush", "round brush", "wide tooth comb", "detangling brush", "hair ties", "bobby pins", "hair clips", "headbands", "scrunchies", "curling iron", "flat iron", "hair dryer", "diffuser", "anti-frizz", "volumizing spray", "clarifying shampoo", "purple shampoo"]},
+  {name:"Vitamins & Supplements",keywords:["multivitamin", "vitamin c", "vitamin d", "vitamin b12", "vitamin e", "vitamin a", "vitamin k", "b complex", "prenatal vitamins", "gummy vitamins", "childrens vitamins", "omega-3", "fish oil", "flaxseed oil", "krill oil", "calcium", "magnesium", "zinc", "iron", "potassium", "selenium", "probiotics", "digestive enzymes", "fiber supplements", "psyllium husk", "melatonin", "sleep aid", "valerian root", "ashwagandha", "turmeric", "echinacea", "elderberry", "collagen", "biotin", "hair skin nails", "protein powder", "creatine", "bcaa", "pre-workout", "electrolytes", "glucosamine", "chondroitin", "coq10", "resveratrol"]},
+  {name:"Medicine & First Aid",keywords:["ibuprofen", "advil", "tylenol", "acetaminophen", "aspirin", "naproxen", "cold medicine", "dayquil", "nyquil", "cough syrup", "cough drops", "throat lozenges", "antihistamine", "benadryl", "zyrtec", "claritin", "allegra", "nasal spray", "afrin", "flonase", "neti pot", "saline spray", "antacids", "tums", "pepto-bismol", "imodium", "gas-x", "prilosec", "bandages", "band-aids", "gauze", "medical tape", "ace bandage", "antiseptic", "hydrogen peroxide", "rubbing alcohol", "neosporin", "bacitracin", "thermometer", "blood pressure monitor", "heating pad", "ice pack", "eye drops", "contact solution", "reading glasses", "pregnancy test", "ovulation test", "covid test", "blood glucose monitor", "heartburn relief", "anti diarrhea medicine", "motion sickness tablets", "electrolyte powder", "gauze pads"]},
+  {name:"Cleaning Products",keywords:["dish soap", "dish detergent", "dishwasher pods", "dishwasher detergent", "rinse aid", "laundry detergent", "liquid laundry detergent", "laundry pods", "powder detergent", "fabric softener", "dryer sheets", "stain remover", "oxiclean", "bleach", "all-purpose cleaner", "multi-surface spray", "disinfectant spray", "lysol", "clorox wipes", "bathroom cleaner", "toilet bowl cleaner", "toilet brush", "shower cleaner", "mold remover", "glass cleaner", "windex", "floor cleaner", "mop solution", "wood floor cleaner", "oven cleaner", "degreaser", "kitchen cleaner", "stainless steel cleaner", "furniture polish", "dusting spray", "drain cleaner", "drano", "plunger", "trash bags", "garbage bags", "recycling bags", "compostable bags", "sponges", "scrub brushes", "microfiber cloths", "paper towels", "cleaning gloves", "wood polish", "carpet cleaner spray", "odor eliminator"]},
+  {name:"Paper Products",keywords:["paper towels", "bounty", "viva", "select-a-size paper towels", "toilet paper", "bathroom tissue", "double roll", "mega roll", "ultra soft", "facial tissue", "kleenex", "puffs", "tissues", "napkins", "paper napkins", "cocktail napkins", "dinner napkins", "paper plates", "foam plates", "plastic plates", "heavy duty plates", "paper cups", "foam cups", "plastic cups", "hot cups", "cold cups", "plastic wrap", "saran wrap", "aluminum foil", "heavy duty foil", "wax paper", "parchment paper", "butcher paper", "zip lock bags", "sandwich bags", "gallon bags", "freezer bags", "snack bags", "plastic storage bags", "trash bags", "garbage bags", "bin liners", "coffee filters", "paper straws", "paper bowls", "freezer paper", "compost bags"]},
+  {name:"Pet Supplies",keywords:["dog food", "dry dog food", "wet dog food", "dog kibble", "grain-free dog food", "cat food", "dry cat food", "wet cat food", "cat kibble", "kitten food", "dog treats", "training treats", "dental treats", "rawhide", "bully sticks", "cat treats", "catnip", "cat chews", "dog leash", "dog collar", "cat collar", "id tags", "harness", "dog shampoo", "cat shampoo", "pet wipes", "flea and tick treatment", "flea collar", "pet toothbrush", "pet toothpaste", "cat litter", "clumping litter", "crystal litter", "litter box liners", "dog poop bags", "waste bags", "pet bowls", "water fountain", "food mat", "dog toys", "chew toys", "rope toys", "cat toys", "laser pointer", "bird food", "bird seed", "fish food", "hamster food", "small animal bedding"]},
+  {name:"Household & Hardware",keywords:["light bulbs", "led bulbs", "60 watt bulbs", "flood lights", "smart bulbs", "batteries", "aa batteries", "aaa batteries", "9 volt batteries", "d batteries", "extension cord", "power strip", "outlet covers", "cable ties", "tape", "scotch tape", "duct tape", "masking tape", "packing tape", "super glue", "gorilla glue", "wood glue", "sandpaper", "screwdrivers", "hammer", "nails", "screws", "picture hooks", "command strips", "velcro strips", "furnace filters", "air filters", "carbon monoxide detector", "smoke detector", "bug spray", "insect repellent", "wasp spray", "ant traps", "mouse traps", "rat poison", "roach bait", "caulk", "weather stripping", "door sweep", "cabinet hardware", "zip ties", "bungee cords", "rope", "carabiners"]},
+  {name:"Office & School Supplies",keywords:["pens", "ballpoint pens", "gel pens", "felt tip pens", "markers", "pencils", "mechanical pencils", "colored pencils", "pencil sharpener", "highlighters", "dry erase markers", "whiteboard markers", "notebook", "spiral notebook", "composition notebook", "legal pad", "sticky notes", "post-it notes", "index cards", "scissors", "paper clips", "binder clips", "stapler", "staples", "tape", "folders", "binders", "sheet protectors", "dividers", "envelopes", "postage stamps", "mailing labels", "return address labels", "printer paper", "cardstock", "construction paper", "calculator", "ruler", "protractor", "compass", "glue stick", "rubber cement", "white out", "correction tape", "calendar", "planner", "journal"]},
+  {name:"Kitchen Supplies",keywords:["plastic wrap", "aluminum foil", "parchment paper", "wax paper", "zip lock bags", "food storage bags", "freezer bags", "plastic containers", "glass containers", "food storage sets", "mason jars", "coffee filters", "coffee pods", "k-cups", "tea bags", "dish soap", "sponges", "scrub pads", "dish brush", "kitchen gloves", "paper towels", "kitchen towels", "dish cloths", "toothpicks", "bamboo skewers", "wooden spoons", "cupcake liners", "muffin liners", "baking cups", "cake pans", "cookie sheets", "can opener", "bottle opener", "corkscrew", "measuring cups", "measuring spoons", "plastic utensils", "plastic forks", "plastic knives", "plastic spoons", "straws", "paper straws", "reusable straws", "plastic bags", "sandwich bags", "snack bags", "produce bags"]},
+  {name:"Floral & Garden",keywords:["cut flowers", "bouquet", "roses", "tulips", "sunflowers", "lilies", "carnations", "potted plants", "succulents", "orchids", "peace lily", "snake plant", "pothos", "herb plants", "basil plant", "mint plant", "rosemary plant", "flower seeds", "vegetable seeds", "herb seeds", "potting soil", "potting mix", "garden soil", "compost", "fertilizer", "plant food", "miracle-gro", "plant stakes", "plant ties", "flower pots", "planters", "window boxes", "hanging baskets", "garden gloves", "trowel", "garden shears", "pruning shears", "watering can", "plant mister", "spray bottle", "mulch", "topsoil", "garden rocks", "pebbles", "bug spray", "insecticide", "weed killer", "herbicide", "bird feeder", "bird seed", "hummingbird feeder", "hummingbird nectar"]},
+  {name:"Coffee & Tea",keywords:["ground coffee", "whole bean coffee", "instant coffee", "espresso coffee", "decaf coffee", "flavored coffee", "coffee pods", "k-cups", "cold brew coffee", "iced coffee bottles", "black tea bags", "green tea bags", "herbal tea bags", "chamomile tea", "peppermint tea", "chai tea", "matcha powder", "loose leaf tea", "tea pods", "white tea", "oolong tea", "rooibos tea", "ginger tea", "powdered creamer", "liquid creamer", "non dairy creamer", "coffee syrup", "sugar packets", "sweetener packets", "honey sticks", "coffee filters", "french press", "pour over filters", "cold brew bags"]},
+];
 const STORE_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#facc15','#f87171'];
 
 // ══════════════════════════════
@@ -5646,22 +5703,31 @@ function renderAisleRows(){
         <div class="chips" id="chips-${i}" data-aisle="${i}">${renderChips(i)}</div>
       </div>
       <div class="kw-section">
-        <div class="kw-tabs">
-          <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add</button>
-          <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
+        <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="openTemplatePicker(${i})">
+          ✦ Import from template
+        </button>
+        <div id="advanced-toggle-${i}" style="text-align:center;margin-bottom:4px">
+          <button class="btn btn-sm btn-ghost" style="font-size:.68rem;color:var(--muted);padding:2px 10px"
+            onclick="toggleAdvancedKw(${i})">More options ▾</button>
         </div>
-        <div class="kw-panel active" id="panel-bulk-${i}">
-          <textarea class="kw-bulk" id="kw-bulk-${i}"
-            placeholder="Paste keywords separated by commas or line breaks:&#10;brown eggs, 2% milk&#10;instant ramen"></textarea>
-          <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
-        </div>
-        <div class="kw-panel" id="panel-scan-${i}">
-          <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
-            <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
-            <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take an aisle photo</div>
-            <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
+        <div id="advanced-kw-${i}" style="display:none">
+          <div class="kw-tabs">
+            <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add keywords</button>
+            <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
           </div>
-          ${pending ? renderScanResult(i, pending) : ''}
+          <div class="kw-panel active" id="panel-bulk-${i}">
+            <textarea class="kw-bulk" id="kw-bulk-${i}"
+              placeholder="Paste keywords separated by commas or line breaks:&#10;brown eggs, 2% milk&#10;instant ramen"></textarea>
+            <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
+          </div>
+          <div class="kw-panel" id="panel-scan-${i}">
+            <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
+              <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
+              <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take an aisle photo</div>
+              <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
+            </div>
+            ${pending ? renderScanResult(i, pending) : ''}
+          </div>
         </div>
       </div>
       </div>
@@ -5682,6 +5748,15 @@ function renderAisleRows(){
 
   // Wire up aisle drag-to-reorder
   initAisleDrag();
+}
+
+function toggleAdvancedKw(i) {
+  const panel = document.getElementById('advanced-kw-' + i);
+  const btn = document.querySelector(`#advanced-toggle-${i} button`);
+  if (!panel) return;
+  const open = panel.style.display === 'block';
+  panel.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? 'More options ▾' : 'More options ▴';
 }
 
 function toggleKwSection(i) {
@@ -5905,6 +5980,69 @@ function fileToDataUrl(file){
     r.onerror=reject;
     r.readAsDataURL(file);
   });
+}
+
+// ══════════════════════════════
+// TEMPLATE PICKER
+// ══════════════════════════════
+let _tplTargetAisle = null;
+
+function openTemplatePicker(aisleIdx) {
+  _tplTargetAisle = aisleIdx;
+  document.getElementById('tpl-search-input').value = '';
+  renderTemplatePicker();
+  openModal('modal-template-picker');
+}
+
+function renderTemplatePicker() {
+  const q = document.getElementById('tpl-search-input').value.trim().toLowerCase();
+  const filtered = GROCERY_TEMPLATES.filter(t =>
+    !q || t.name.toLowerCase().includes(q) ||
+    t.keywords.some(k => k.toLowerCase().includes(q))
+  );
+  document.getElementById('tpl-grid').innerHTML = filtered.map(t => `
+    <button class="tpl-card" onclick="importTemplate(${JSON.stringify(t.name)})">
+      <div class="tpl-card-name">${esc(t.name)}</div>
+      <div class="tpl-card-count">${t.keywords.length} keywords</div>
+    </button>`).join('') ||
+    '<p class="text-muted" style="text-align:center;padding:16px;grid-column:1/-1">No templates match.</p>';
+}
+
+function importTemplate(templateName) {
+  const i = _tplTargetAisle;
+  if (i === null || !tempAisles[i]) return;
+  const tpl = GROCERY_TEMPLATES.find(t => t.name === templateName);
+  if (!tpl) return;
+
+  // Set name if aisle is still using the default generated name
+  const currentName = tempAisles[i].name.trim();
+  const defaultName = `Aisle ${i + 1}`;
+  if (!currentName || currentName === defaultName) {
+    tempAisles[i].name = tpl.name;
+  }
+
+  // Merge keywords (no duplicates, case-insensitive)
+  const existing = new Set(tempAisles[i].keywords.map(k => k.toLowerCase()));
+  const added = [];
+  tpl.keywords.forEach(k => {
+    if (!existing.has(k.toLowerCase())) {
+      tempAisles[i].keywords.push(k);
+      existing.add(k.toLowerCase());
+      added.push(k);
+    }
+  });
+
+  const tplEl = document.getElementById('modal-template-picker');
+  if (tplEl) tplEl.classList.remove('open');
+  renderAisleRows();
+
+  // Expand the keywords section for this aisle so user can see what was added
+  const panel = document.getElementById('kw-collapsible-' + i);
+  const toggle = document.getElementById('kw-toggle-' + i);
+  if (panel) { panel.style.display = 'block'; }
+  if (toggle) { toggle.textContent = '－'; }
+
+  showToast(`Imported ${added.length} keywords from "${tpl.name}"`);
 }
 
 function addAisleRow(){
