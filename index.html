@@ -997,18 +997,6 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- New / Edit Store -->
 <!-- Template Picker Modal -->
-<div class="modal-overlay" id="modal-template-picker" onclick="document.getElementById('modal-template-picker').classList.remove('open')">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="margin-bottom:12px">Import Aisle Template</div>
-    <input class="input tpl-search" id="tpl-search-input" placeholder="Search templates…" oninput="renderTemplatePicker()">
-    <div style="overflow-y:auto;flex:1">
-      <div class="tpl-grid" id="tpl-grid"></div>
-    </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="document.getElementById('modal-template-picker').classList.remove('open')">Cancel</button>
-  </div>
-</div>
-
 <div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
   <div class="modal modal-store-shell" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
@@ -1034,6 +1022,19 @@ textarea.input{resize:vertical;min-height:90px;}
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
       <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
     </div>
+  </div>
+</div>
+
+<!-- Template Picker (must be after modal-store in DOM to stack above it) -->
+<div class="modal-overlay" id="modal-template-picker" onclick="event.stopPropagation();document.getElementById('modal-template-picker').classList.remove('open')" style="z-index:1001">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-bottom:12px">Import Aisle Template</div>
+    <input class="input tpl-search" id="tpl-search-input" placeholder="Search templates…" oninput="renderTemplatePicker()">
+    <div style="overflow-y:auto;flex:1">
+      <div class="tpl-grid" id="tpl-grid"></div>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="document.getElementById('modal-template-picker').classList.remove('open')">Cancel</button>
   </div>
 </div>
 
