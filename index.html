@@ -997,7 +997,7 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- New / Edit Store -->
 <!-- Template Picker Modal -->
-<div class="modal-overlay" id="modal-template-picker" onclick="closeModal('modal-template-picker')">
+<div class="modal-overlay" id="modal-template-picker" onclick="document.getElementById('modal-template-picker').classList.remove('open')">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
     <div class="modal-handle"></div>
     <div class="modal-title" style="margin-bottom:12px">Import Aisle Template</div>
@@ -1005,7 +1005,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <div style="overflow-y:auto;flex:1">
       <div class="tpl-grid" id="tpl-grid"></div>
     </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeModal('modal-template-picker')">Cancel</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="document.getElementById('modal-template-picker').classList.remove('open')">Cancel</button>
   </div>
 </div>
 
@@ -5991,7 +5991,8 @@ function openTemplatePicker(aisleIdx) {
   _tplTargetAisle = aisleIdx;
   document.getElementById('tpl-search-input').value = '';
   renderTemplatePicker();
-  openModal('modal-template-picker');
+  // Open without pushing history — we're layered on top of modal-store
+  document.getElementById('modal-template-picker').classList.add('open');
 }
 
 function renderTemplatePicker() {
@@ -6039,6 +6040,7 @@ function importTemplate(tplIdx) {
     }
   });
 
+  // Close without history.back() — no history entry was pushed when opening
   const tplEl = document.getElementById('modal-template-picker');
   if (tplEl) tplEl.classList.remove('open');
   renderAisleRows();
