@@ -6000,18 +6000,25 @@ function renderTemplatePicker() {
     !q || t.name.toLowerCase().includes(q) ||
     t.keywords.some(k => k.toLowerCase().includes(q))
   );
-  document.getElementById('tpl-grid').innerHTML = filtered.map(t => `
-    <button class="tpl-card" onclick="importTemplate(${JSON.stringify(t.name)})">
+  const grid = document.getElementById('tpl-grid');
+  grid.innerHTML = filtered.map(t => {
+    const idx = GROCERY_TEMPLATES.indexOf(t);
+    return `<button class="tpl-card" data-tpl-idx="${idx}">
       <div class="tpl-card-name">${esc(t.name)}</div>
       <div class="tpl-card-count">${t.keywords.length} keywords</div>
-    </button>`).join('') ||
+    </button>`;
+  }).join('') ||
     '<p class="text-muted" style="text-align:center;padding:16px;grid-column:1/-1">No templates match.</p>';
+  grid.onclick = e => {
+    const card = e.target.closest('.tpl-card');
+    if (card) importTemplate(parseInt(card.dataset.tplIdx, 10));
+  };
 }
 
-function importTemplate(templateName) {
+function importTemplate(tplIdx) {
   const i = _tplTargetAisle;
   if (i === null || !tempAisles[i]) return;
-  const tpl = GROCERY_TEMPLATES.find(t => t.name === templateName);
+  const tpl = GROCERY_TEMPLATES[tplIdx];
   if (!tpl) return;
 
   // Set name if aisle is still using the default generated name
