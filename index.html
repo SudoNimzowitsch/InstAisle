@@ -1182,6 +1182,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-handle"></div>
     <div class="modal-title" id="list-context-name" style="font-size:1rem;margin-bottom:16px"></div>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="renameListPrompt()">✏️ Rename</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="duplicateList()">⧉ Duplicate list</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('move')">→ Move to store</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('copy')">⧉ Copy to store</button>
     <button class="btn btn-danger btn-full" onclick="deleteActiveContextList()">🗑 Delete list</button>
@@ -4977,6 +4978,29 @@ function deleteActiveContextList() {
 }
 
 let _transferMode = null; // 'move' or 'copy'
+
+function duplicateList() {
+  const storeId = _listPickerStoreId;
+  const listId = _listContextId;
+  const lists = getLists(storeId);
+  if (!lists || !lists.lists[listId]) return;
+  const src = lists.lists[listId];
+  const newLid = 'list-' + Date.now();
+  lists.lists[newLid] = {
+    id: newLid,
+    name: src.name + ' (copy)',
+    items: JSON.parse(JSON.stringify(src.items)),
+    createdAt: Date.now(),
+    lastOpened: Date.now()
+  };
+  const ctxEl = document.getElementById('modal-list-context');
+  if (ctxEl) ctxEl.classList.remove('open');
+  if (window.persistStore) window.persistStore(storeId);
+  showToast('List duplicated ✓');
+  renderAll();
+  // Re-open list picker so user can see the new copy
+  setTimeout(() => { _listPickerStoreId = storeId; openModal('modal-list-picker'); }, 250);
+}
 
 function openListTransfer(mode) {
   _transferMode = mode;
