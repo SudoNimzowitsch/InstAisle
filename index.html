@@ -197,6 +197,15 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .aisle-card-drop-before{box-shadow:0 -2px 0 0 var(--green);}
 .aisle-card-drop-after{box-shadow:0 2px 0 0 var(--green);}
+/* AISLE ROWS — COMPACT/EXPANDED */
+.aisle-row-compact{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:36px;}
+.aisle-row-name{flex:1;font-size:.84rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aisle-row-name.empty{color:var(--muted);font-style:italic;}
+.aisle-row-chevron{font-size:.7rem;color:var(--muted);flex-shrink:0;transition:transform .2s;}
+.aisle-row-chevron.open{transform:rotate(180deg);}
+.aisle-row-body{padding-top:12px;}
+.aisle-kw-count{font-size:.65rem;color:var(--muted);flex-shrink:0;}
+
 /* TEMPLATE PICKER */
 .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
 .tpl-card{
@@ -5662,6 +5671,7 @@ function editStore(id){
 }
 
 function renderStoreModal(){
+  _expandedAisles.clear();
   document.getElementById('store-color-picker').innerHTML=STORE_COLORS.map(c=>
     `<div class="color-opt ${c===tempColor?'selected':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`
   ).join('');
@@ -5677,6 +5687,7 @@ function pickColor(c){
 
 // ── AISLE ROWS with fixed chip deletion + bulk keyword upload + image scan ──
 let aisleImgTargetIdx = null; // which aisle is currently being scanned
+let _expandedAisles = new Set(); // indices of expanded aisle cards
 let pendingScannedKws = {};   // aisleIdx -> [keywords] from scan, awaiting accept
 
 function renderAisleRows(){
@@ -5686,14 +5697,20 @@ function renderAisleRows(){
   document.getElementById('aisle-rows').innerHTML=tempAisles.map((aisle,i)=>{
     const color=AISLE_COLORS[aisle.colorIdx%AISLE_COLORS.length];
     const pending=pendingScannedKws[i];
-    return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:14px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div class="aisle-drag-handle" data-aisle-idx="${i}" title="Drag to reorder">⠿</div>
-        <span style="font-size:.63rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase">AISLE ${i+1}</span>
-        <div style="flex:1"></div>
-        ${tempAisles.length>1?`<button class="btn btn-sm btn-danger" onclick="removeAisle(${i})">✕</button>`:''}
+    const _exp = _expandedAisles.has(i);
+    const _kwc = aisle.keywords.length;
+    const _dn  = aisle.name.trim() || `Aisle ${i+1}`;
+    return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:8px 14px;margin-bottom:8px">
+      <div class="aisle-row-compact" onclick="toggleAisleExpanded(${i})">
+        <div class="aisle-drag-handle" data-aisle-idx="${i}" title="Drag to reorder" onclick="event.stopPropagation()">⠿</div>
+        <span style="font-size:.6rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">A${i+1}</span>
+        <span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>
+        ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
+        ${tempAisles.length>1?`<button class="btn btn-sm btn-danger" style="padding:2px 7px;font-size:.7rem" onclick="event.stopPropagation();removeAisle(${i})">✕</button>`:''}
+        <span class="aisle-row-chevron${_exp?' open':''}">▾</span>
       </div>
       <div class="aisle-drag-body">
+      <div class="aisle-row-body" style="display:${_exp?'block':'none'}">
       <input class="input" id="aisle-name-${i}" value="${esc(aisle.name)}"
         placeholder="e.g. Produce" style="font-size:.82rem;padding:8px 12px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
@@ -5732,6 +5749,7 @@ function renderAisleRows(){
         </div>
       </div>
       </div>
+      </div>
     </div>`;
   }).join('');
 
@@ -5749,6 +5767,16 @@ function renderAisleRows(){
 
   // Wire up aisle drag-to-reorder
   initAisleDrag();
+}
+
+function toggleAisleExpanded(i) {
+  syncNames(); // save any typed names before re-render
+  if (_expandedAisles.has(i)) {
+    _expandedAisles.delete(i);
+  } else {
+    _expandedAisles.add(i);
+  }
+  renderAisleRows();
 }
 
 function toggleAdvancedKw(i) {
@@ -6044,6 +6072,7 @@ function importTemplate(tplIdx) {
   // Close without history.back() — no history entry was pushed when opening
   const tplEl = document.getElementById('modal-template-picker');
   if (tplEl) tplEl.classList.remove('open');
+  _expandedAisles.add(i); // keep the aisle expanded so user sees the result
   renderAisleRows();
 
   // Expand the keywords section for this aisle so user can see what was added
@@ -6057,7 +6086,8 @@ function importTemplate(tplIdx) {
 
 function addAisleRow(){
   syncNames(); // persist typed names before re-render
-  tempAisles.push({name:`Aisle ${tempAisles.length+1}`,keywords:[]});
+  tempAisles.push({name:'',keywords:[]});
+  _expandedAisles.add(tempAisles.length - 1); // auto-expand new aisle
   renderAisleRows();
   // scroll modal to bottom to reveal new aisle
   const modal=document.querySelector('#modal-store .modal');
