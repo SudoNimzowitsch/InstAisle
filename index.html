@@ -6180,7 +6180,7 @@ function initAisleDrag(){
           document.removeEventListener('pointermove', onMove);
           document.removeEventListener('pointerup', onCancel);
         };
-        document.addEventListener('pointermove', onMove, {passive:true});
+        document.addEventListener('pointermove', onMove, {passive:false});
         document.addEventListener('pointerup', onCancel, {once:true});
       } else {
         // Touch: long press
@@ -6211,6 +6211,7 @@ let aisleGhost=null, aisleDragSrcIdx=null, aislePointerStartY=0, aisleScrollStar
 
 function onAisleDragStart(e, idx, initialMoveEvent){
   syncNames();
+  document.body.style.userSelect = 'none';
   aisleDragSrcIdx = idx;
   const srcCard = document.getElementById('aisle-card-' + aisleDragSrcIdx);
   if (!srcCard) return;
@@ -6251,6 +6252,7 @@ let _aisleScrollRAF = null;
 function onAisleDragMove(e){
   if(!aisleGhost) return;
   e.preventDefault();
+  if(e.pointerType==='mouse') window.getSelection()?.removeAllRanges();
 
   const dy=e.clientY - aislePointerStartY;
   const modal=document.querySelector('#modal-store .modal');
@@ -6314,6 +6316,7 @@ function onAisleDragEnd(e){
   });
 
   aisleGhost.remove(); aisleGhost=null;
+  document.body.style.userSelect = '';
 
   if(targetIdx!==null && targetIdx!==aisleDragSrcIdx){
     // Reorder tempAisles
