@@ -859,6 +859,19 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="modal-unsaved-changes" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Unsaved Changes</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem">
+      You have unsaved changes to this store.
+    </p>
+    <button class="btn btn-primary btn-full" onclick="unsavedSave()" style="margin-bottom:8px">Save changes</button>
+    <button class="btn btn-ghost btn-full" onclick="unsavedDiscard()" style="margin-bottom:8px">Proceed without saving</button>
+    <button class="btn btn-ghost btn-full" style="color:var(--muted)" onclick="unsavedCancel()">Cancel</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()" style="z-index:150">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
     <div class="modal-handle"></div>
@@ -5692,16 +5705,27 @@ function hasUnsavedStoreChanges() {
 
 function maybeCloseStoreModal() {
   if (hasUnsavedStoreChanges()) {
-    if (!confirm('You have unsaved changes. Save before closing?')) {
-      // Discard — close modal
-      document.getElementById('modal-store').classList.remove('open');
-      history.pushState({ type:'screen', screen: document.querySelector('.screen.active')?.id?.replace('screen-','') || 'list' }, '', '');
-    } else {
-      saveStore();
-    }
+    document.getElementById('modal-unsaved-changes').classList.add('open');
   } else {
     closeModal('modal-store');
   }
+}
+
+function unsavedSave() {
+  document.getElementById('modal-unsaved-changes').classList.remove('open');
+  saveStore();
+}
+
+function unsavedDiscard() {
+  document.getElementById('modal-unsaved-changes').classList.remove('open');
+  document.getElementById('modal-store').classList.remove('open');
+  const screen = document.querySelector('.screen.active')?.id?.replace('screen-','') || 'list';
+  history.pushState({ type:'screen', screen }, '', '');
+}
+
+function unsavedCancel() {
+  document.getElementById('modal-unsaved-changes').classList.remove('open');
+  // Return to edit store modal — nothing changes
 }
 
 function editStore(id){
