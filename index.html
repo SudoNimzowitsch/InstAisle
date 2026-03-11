@@ -1000,7 +1000,7 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- New / Edit Store -->
 <!-- Template Picker Modal -->
-<div class="modal-overlay" id="modal-store" onclick="closeModal('modal-store')">
+<div class="modal-overlay" id="modal-store" onclick="maybeCloseStoreModal()">
   <div class="modal modal-store-shell" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <!-- Sticky header: title + color + name + aisles toolbar -->
@@ -2491,10 +2491,15 @@ window.addEventListener('popstate', function(e) {
   // ── Close open modal first ──
   const openOverlay = document.querySelector('.modal-overlay.open');
   if (openOverlay) {
-    openOverlay.classList.remove('open');
-    // Re-push current screen state so forward/back remain meaningful
-    const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '') || 'list';
-    history.pushState({ type: 'screen', screen }, '', '');
+    if (openOverlay.id === 'modal-store') {
+      // Re-push so back button stays available while confirm is shown
+      history.pushState({ type:'modal', modalId:'modal-store' }, '', '');
+      maybeCloseStoreModal();
+    } else {
+      openOverlay.classList.remove('open');
+      const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '') || 'list';
+      history.pushState({ type: 'screen', screen }, '', '');
+    }
     return;
   }
 
@@ -4629,6 +4634,7 @@ let state = {
   _dismissedCache: null,    // loaded once on login, Set of normalised item names
 };
 let tempAisles = [];
+let _storeSnapshot = null; // snapshot of state when modal-store opened
 let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
 let tempColor = STORE_COLORS[0];
 let moveItemIndex = null;
@@ -5638,6 +5644,7 @@ async function addStoreFromLibrary() {
   document.getElementById('store-name-input').value = storeName;
   tempColor  = storeColor;
   tempAisles = aisles;
+  _storeSnapshot = null;
   renderStoreModal();
   openModal('modal-store');
 }
@@ -5663,8 +5670,38 @@ function openNewStore(){
     {name:'Personal Care',     keywords:['shampoo','conditioner','body wash','soap','toothpaste','toothbrush','deodorant','lotion','sunscreen','razor','shaving','feminine','vitamins','medicine','pain reliever','bandage','floss','mouthwash']},
   ];
   window._storeIsGenericDefault = true;
+  _storeSnapshot = null;
   renderStoreModal();
   openModal('modal-store');
+}
+
+function hasUnsavedStoreChanges() {
+  if (!_storeSnapshot) return false; // new store — no changes to lose
+  syncNames();
+  const name = document.getElementById('store-name-input')?.value.trim() || '';
+  if (name !== _storeSnapshot.name) return true;
+  if (tempColor !== _storeSnapshot.color) return true;
+  if (tempAisles.length !== _storeSnapshot.aisles.length) return true;
+  for (let i = 0; i < tempAisles.length; i++) {
+    const a = tempAisles[i], b = _storeSnapshot.aisles[i];
+    if (a.name !== b.name) return true;
+    if (JSON.stringify(a.keywords) !== JSON.stringify(b.keywords)) return true;
+  }
+  return false;
+}
+
+function maybeCloseStoreModal() {
+  if (hasUnsavedStoreChanges()) {
+    if (!confirm('You have unsaved changes. Save before closing?')) {
+      // Discard — close modal
+      document.getElementById('modal-store').classList.remove('open');
+      history.pushState({ type:'screen', screen: document.querySelector('.screen.active')?.id?.replace('screen-','') || 'list' }, '', '');
+    } else {
+      saveStore();
+    }
+  } else {
+    closeModal('modal-store');
+  }
 }
 
 function editStore(id){
@@ -5676,6 +5713,7 @@ function editStore(id){
   document.getElementById('store-name-input').value=store.name;
   tempColor=store.color;
   tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]}));
+  _storeSnapshot = { name:store.name, color:store.color, aisles:store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]})) };
   renderStoreModal();
   openModal('modal-store');
 }
