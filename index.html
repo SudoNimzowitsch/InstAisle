@@ -5791,7 +5791,7 @@ function renderAisleRows(){
           ? `<input id="aisle-name-${i}" value="${esc(aisle.name)}" placeholder="e.g. Produce"
               style="flex:1;font-size:.84rem;font-weight:500;background:transparent;border:none;
                      border-bottom:1px solid var(--border);color:var(--text);padding:0 2px;
-                     outline:none;min-width:0" onclick="event.stopPropagation()">`
+                     outline:none;min-width:0" onclick="_aisleNameClick(event,${i})">`
           : `<span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>`
         }
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
@@ -5854,6 +5854,18 @@ function renderAisleRows(){
 
   // Wire up aisle drag-to-reorder
   initAisleDrag();
+}
+
+function _aisleNameClick(e, i) {
+  const inp = e.currentTarget;
+  // If already focused and caret is at the end, collapse
+  if (document.activeElement === inp && inp.selectionStart === inp.value.length) {
+    e.stopPropagation();
+    inp.blur();
+    toggleAisleExpanded(i);
+  } else {
+    e.stopPropagation(); // just focus normally
+  }
 }
 
 function toggleAisleExpanded(i) {
@@ -6179,7 +6191,9 @@ function addAisleRow(){
   tempAisles.push({name:'',keywords:[]});
   renderAisleRows();
   const scrollEl = document.querySelector('.store-modal-scroll');
-  if (scrollEl) setTimeout(() => { scrollEl.scrollTop = scrollEl.scrollHeight; }, 50);
+  if (scrollEl) setTimeout(() => {
+    scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' });
+  }, 80);
 }
 
 function removeAisle(i){
