@@ -872,6 +872,18 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-remove-aisle" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Remove Aisle?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem">
+      Remove <strong id="remove-aisle-name"></strong> and all its keywords? This can't be undone.
+    </p>
+    <button class="btn btn-danger btn-full" onclick="confirmRemoveAisle()" style="margin-bottom:8px">Remove aisle</button>
+    <button class="btn btn-ghost btn-full" onclick="cancelRemoveAisle()">Cancel</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()" style="z-index:150">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
     <div class="modal-handle"></div>
@@ -5845,10 +5857,11 @@ function renderAisleRows(){
 }
 
 function toggleAisleExpanded(i) {
-  syncNames(); // save any typed names before re-render
+  syncNames();
   if (_expandedAisles.has(i)) {
-    _expandedAisles.delete(i);
+    _expandedAisles.clear();
   } else {
+    _expandedAisles.clear();
     _expandedAisles.add(i);
   }
   renderAisleRows();
@@ -6160,16 +6173,36 @@ function importTemplate(tplIdx) {
 }
 
 function addAisleRow(){
-  syncNames(); // persist typed names before re-render
+  syncNames();
+  _expandedAisles.clear();
+  _expandedAisles.add(tempAisles.length); // will be the new index
   tempAisles.push({name:'',keywords:[]});
-  _expandedAisles.add(tempAisles.length - 1); // auto-expand new aisle
   renderAisleRows();
-  // scroll modal to bottom to reveal new aisle
-  const modal=document.querySelector('#modal-store .modal');
-  if(modal) setTimeout(()=>{ modal.scrollTop=modal.scrollHeight; },50);
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  if (scrollEl) setTimeout(() => { scrollEl.scrollTop = scrollEl.scrollHeight; }, 50);
 }
 
-function removeAisle(i){ syncNames(); tempAisles.splice(i,1); renumberAisleNames(); renderAisleRows(); }
+function removeAisle(i){
+  const name = tempAisles[i]?.name?.trim() || `Aisle ${i+1}`;
+  _pendingRemoveAisleIdx = i;
+  document.getElementById('remove-aisle-name').textContent = name;
+  document.getElementById('modal-remove-aisle').classList.add('open');
+}
+let _pendingRemoveAisleIdx = null;
+function confirmRemoveAisle(){
+  document.getElementById('modal-remove-aisle').classList.remove('open');
+  if (_pendingRemoveAisleIdx === null) return;
+  syncNames();
+  _expandedAisles.delete(_pendingRemoveAisleIdx);
+  tempAisles.splice(_pendingRemoveAisleIdx, 1);
+  _pendingRemoveAisleIdx = null;
+  renumberAisleNames();
+  renderAisleRows();
+}
+function cancelRemoveAisle(){
+  document.getElementById('modal-remove-aisle').classList.remove('open');
+  _pendingRemoveAisleIdx = null;
+}
 
 function syncNames(){
   tempAisles.forEach((_,i)=>{
