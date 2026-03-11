@@ -6160,56 +6160,158 @@ function expandAislesAfterDrag() {
 }
 
 let _aisleLongPressTimer = null;
-let _aisleLongPressActive = false;
+let _aisleTouchDragActive = false;
+let _aisleTouchClone = null;
+let _aisleTouchSrcIdx = null;
+let _aisleTouchOffY = 0;
 
 function initAisleDrag(){
   document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    const idx = parseInt(card.dataset.aisleIdx, 10);
+
+    // ── MOUSE (pointer events) ──────────────────────────────────────────────
     card._aislePD && card.removeEventListener('pointerdown', card._aislePD);
     card._aislePD = e => {
-      // Only trigger on direct card taps, not on buttons/inputs/etc inside
+      if (e.pointerType !== 'mouse') return;
       if (e.target.closest('button,input,textarea,.chip,.chip-x,.kw-bulk,.aisle-img-zone')) return;
-      if (e.button !== undefined && e.button !== 0) return;
-      if (e.pointerType === 'mouse') {
-        // For mouse: start drag immediately on move
-        _aisleLongPressActive = false;
-        const startY = e.clientY;
-        const onMove = mv => {
-          if (Math.abs(mv.clientY - startY) > 4 && !aisleGhost) {
-            document.removeEventListener('pointermove', onMove);
-            document.removeEventListener('pointerup', onCancel);
-            _aisleLongPressActive = true;
-            onAisleDragStart(e, parseInt(card.dataset.aisleIdx, 10), mv);
-          }
-        };
-        const onCancel = () => {
+      if (e.button !== 0) return;
+      const startY = e.clientY;
+      const onMove = mv => {
+        if (Math.abs(mv.clientY - startY) > 4 && !aisleGhost) {
           document.removeEventListener('pointermove', onMove);
           document.removeEventListener('pointerup', onCancel);
-        };
-        document.addEventListener('pointermove', onMove, {passive:false});
-        document.addEventListener('pointerup', onCancel, {once:true});
-      } else {
-        // Touch: long press
-        const touch = e.touches ? e.touches[0] : e;
-        const startX = touch.clientX, startY = touch.clientY;
-        clearTimeout(_aisleLongPressTimer);
-        _aisleLongPressActive = false;
-        _aisleLongPressTimer = setTimeout(() => {
-          _aisleLongPressActive = true;
-          if (navigator.vibrate) navigator.vibrate(40);
-          onAisleDragStart(e, parseInt(card.dataset.aisleIdx, 10), null);
-        }, 400);
-        const cancelLP = mv => {
-          const t = mv.touches ? mv.touches[0] : mv;
-          if (Math.abs(t.clientX - startX) > 8 || Math.abs(t.clientY - startY) > 8) {
-            clearTimeout(_aisleLongPressTimer);
-            card.removeEventListener('touchmove', cancelLP);
-          }
-        };
-        card.addEventListener('touchmove', cancelLP, {once:true, passive:true});
-      }
+          onAisleDragStart(e, idx, mv);
+        }
+      };
+      const onCancel = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onCancel);
+      };
+      document.addEventListener('pointermove', onMove, {passive:false});
+      document.addEventListener('pointerup', onCancel, {once:true});
     };
     card.addEventListener('pointerdown', card._aislePD, {passive:true});
+
+    // ── TOUCH (touch events — reliable long-press + drag) ───────────────────
+    card._aisleTS && card.removeEventListener('touchstart', card._aisleTS);
+    card._aisleTS = e => {
+      if (e.target.closest('button,input,textarea,.chip,.chip-x,.kw-bulk,.aisle-img-zone')) return;
+      const t = e.touches[0];
+      const startX = t.clientX, startY = t.clientY;
+      clearTimeout(_aisleLongPressTimer);
+      _aisleTouchDragActive = false;
+
+      _aisleLongPressTimer = setTimeout(() => {
+        _aisleTouchDragActive = true;
+        if (navigator.vibrate) navigator.vibrate(40);
+        syncNames();
+        document.body.style.userSelect = 'none';
+        _aisleTouchSrcIdx = idx;
+        collapseAislesForDrag();
+        const srcCard = document.getElementById('aisle-card-' + idx);
+        const cardRect = srcCard.getBoundingClientRect();
+        _aisleTouchOffY = t.clientY - cardRect.top;
+        _aisleTouchClone = srcCard.cloneNode(true);
+        Object.assign(_aisleTouchClone.style, {
+          position:'fixed', top:cardRect.top+'px', left:cardRect.left+'px',
+          width:cardRect.width+'px', zIndex:'500', opacity:'0.85',
+          pointerEvents:'none', boxShadow:'0 8px 32px rgba(0,0,0,.45)',
+          border:'2px solid var(--green)', borderRadius:'14px',
+          transition:'none', margin:'0',
+        });
+        document.body.appendChild(_aisleTouchClone);
+        srcCard.classList.add('aisle-card-dragging');
+      }, 400);
+
+      const onTM = mv => {
+        const tt = mv.touches[0];
+        if (!_aisleTouchDragActive) {
+          // Cancel long press if finger moved too much
+          if (Math.abs(tt.clientX - startX) > 8 || Math.abs(tt.clientY - startY) > 8) {
+            clearTimeout(_aisleLongPressTimer);
+            card.removeEventListener('touchmove', onTM);
+            card.removeEventListener('touchend', onTE);
+          }
+          return;
+        }
+        mv.preventDefault();
+        const scrollEl = document.querySelector('.store-modal-scroll');
+        _aisleTouchClone.style.top = (tt.clientY - _aisleTouchOffY) + 'px';
+        // Auto-scroll
+        cancelAnimationFrame(_aisleScrollRAF);
+        if (scrollEl) {
+          const sr = scrollEl.getBoundingClientRect();
+          const zone = 80, maxSpeed = 14;
+          if (tt.clientY < sr.top + zone) {
+            const speed = Math.max(1, Math.round(maxSpeed * (1-(tt.clientY-sr.top)/zone)));
+            const scroll = () => { scrollEl.scrollTop -= speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+            _aisleScrollRAF = requestAnimationFrame(scroll);
+          } else if (tt.clientY > sr.bottom - zone) {
+            const speed = Math.max(1, Math.round(maxSpeed * (1-(sr.bottom-tt.clientY)/zone)));
+            const scroll = () => { scrollEl.scrollTop += speed; _aisleScrollRAF = requestAnimationFrame(scroll); };
+            _aisleScrollRAF = requestAnimationFrame(scroll);
+          }
+        }
+        // Drop line
+        const ghostCY = tt.clientY;
+        document.querySelectorAll('.card[data-aisle-idx]').forEach(c => {
+          const ci = parseInt(c.dataset.aisleIdx, 10);
+          c.classList.remove('aisle-card-drop-before','aisle-card-drop-after');
+          if (ci === _aisleTouchSrcIdx) return;
+          const r = c.getBoundingClientRect();
+          if (ghostCY >= r.top && ghostCY <= r.bottom) {
+            c.classList.add(ghostCY < r.top + r.height/2 ? 'aisle-card-drop-before' : 'aisle-card-drop-after');
+          }
+        });
+      };
+
+      const onTE = e2 => {
+        clearTimeout(_aisleLongPressTimer);
+        cancelAnimationFrame(_aisleScrollRAF);
+        card.removeEventListener('touchmove', onTM);
+        card.removeEventListener('touchend', onTE);
+        if (!_aisleTouchDragActive) return;
+        _aisleTouchDragActive = false;
+        document.body.style.userSelect = '';
+        if (_aisleTouchClone) { _aisleTouchClone.remove(); _aisleTouchClone = null; }
+        // Find drop target
+        let targetIdx = null, dropBefore = true;
+        document.querySelectorAll('.card[data-aisle-idx]').forEach(c => {
+          if (c.classList.contains('aisle-card-drop-before')) { targetIdx = parseInt(c.dataset.aisleIdx,10); dropBefore = true; }
+          else if (c.classList.contains('aisle-card-drop-after')) { targetIdx = parseInt(c.dataset.aisleIdx,10); dropBefore = false; }
+          c.classList.remove('aisle-card-drop-before','aisle-card-drop-after','aisle-card-dragging');
+        });
+        if (targetIdx !== null && targetIdx !== _aisleTouchSrcIdx) {
+          const moved = tempAisles.splice(_aisleTouchSrcIdx, 1)[0];
+          const adj = _aisleTouchSrcIdx < targetIdx ? targetIdx-1 : targetIdx;
+          const insertAt = dropBefore ? adj : adj+1;
+          tempAisles.splice(Math.max(0,insertAt), 0, moved);
+          _reorderPendingKws(_aisleTouchSrcIdx, targetIdx);
+          renumberAisleNames();
+        }
+        _aisleTouchSrcIdx = null;
+        expandAislesAfterDrag();
+        renderAisleRows();
+      };
+
+      card.addEventListener('touchmove', onTM, {passive:false});
+      card.addEventListener('touchend', onTE, {passive:true});
+    };
+    card.addEventListener('touchstart', card._aisleTS, {passive:true});
   });
+}
+
+function _reorderPendingKws(srcIdx, targetIdx) {
+  const newPending = {};
+  Object.keys(pendingScannedKws).forEach(k => {
+    const oldIdx = parseInt(k,10);
+    let newIdx = oldIdx;
+    if (oldIdx === srcIdx) { newIdx = targetIdx; }
+    else if (srcIdx < targetIdx && oldIdx > srcIdx && oldIdx <= targetIdx) { newIdx = oldIdx-1; }
+    else if (srcIdx > targetIdx && oldIdx >= targetIdx && oldIdx < srcIdx) { newIdx = oldIdx+1; }
+    newPending[newIdx] = pendingScannedKws[k];
+  });
+  pendingScannedKws = newPending;
 }
 
 let aisleGhost=null, aisleDragSrcIdx=null, aislePointerStartY=0, aisleScrollStart=0;
@@ -6331,17 +6433,7 @@ function onAisleDragEnd(e){
     tempAisles.splice(Math.max(0,insertAt),0,moved);
     _aisleReorderMode = true; // keep collapsed after drop
 
-    // Also reorder pendingScannedKws by the same move
-    const newPending={};
-    Object.keys(pendingScannedKws).forEach(k=>{
-      const oldIdx=parseInt(k,10);
-      let newIdx=oldIdx;
-      if(oldIdx===aisleDragSrcIdx){ newIdx=targetIdx; }
-      else if(aisleDragSrcIdx<targetIdx && oldIdx>aisleDragSrcIdx && oldIdx<=targetIdx){ newIdx=oldIdx-1; }
-      else if(aisleDragSrcIdx>targetIdx && oldIdx>=targetIdx && oldIdx<aisleDragSrcIdx){ newIdx=oldIdx+1; }
-      newPending[newIdx]=pendingScannedKws[k];
-    });
-    pendingScannedKws=newPending;
+    _reorderPendingKws(aisleDragSrcIdx, targetIdx);
 
     renumberAisleNames();
     renderAisleRows();
