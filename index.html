@@ -1127,6 +1127,7 @@ textarea.input{resize:vertical;min-height:90px;}
       </button>
     </div>
     <div class="divider"></div>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px;font-size:.8rem;color:var(--muted)" onclick="clearCacheAndReload()">↺ Check for updates</button>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
   </div>
 </div>
@@ -4656,6 +4657,21 @@ function signInEmail()      { if(window._fbReady) window.signInEmail();      els
 function signUpEmail()      { if(window._fbReady) window.signUpEmail();      else showToast('Loading… please try again'); }
 function signInGoogle()     { if(window._fbReady) window.signInGoogle();     else showToast('Loading… please try again'); }
 function signOut()          { if(window._fbReady) window.signOut();          else showToast('Loading… please try again'); }
+
+async function clearCacheAndReload() {
+  showToast('Checking for updates…');
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch(e) {}
+  location.reload(true);
+}
 function sendResetEmail()   { if(window._fbReady) window.sendResetEmail();   else showToast('Loading… please try again'); }
 function showForgotPassword(){ if(window._fbReady) window.showForgotPassword(); else showToast('Loading… please try again'); }
 function toggleChangePassword() {
