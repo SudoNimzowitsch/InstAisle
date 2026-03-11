@@ -184,14 +184,7 @@ textarea.input{resize:vertical;min-height:90px;}
 .kw-bulk-btn:hover{border-color:var(--green);color:var(--green);}
 
 /* AISLE DRAG HANDLE */
-.aisle-drag-handle{
-  cursor:grab;color:var(--muted);font-size:1.1rem;line-height:1;
-  padding:2px 4px;border-radius:4px;touch-action:none;
-  transition:color .15s,background .15s;flex-shrink:0;letter-spacing:-1px;
-  user-select:none;-webkit-user-select:none;
-}
-.aisle-drag-handle:hover{color:var(--text);background:var(--surface2);}
-.aisle-drag-handle:active,.aisle-drag-handle.grabbing{cursor:grabbing;color:var(--green);}
+
 .aisle-card-dragging{
   opacity:.4;outline:2px dashed var(--green);outline-offset:2px;border-radius:14px;
 }
@@ -5702,7 +5695,6 @@ function renderAisleRows(){
     const _dn  = aisle.name.trim() || `Aisle ${i+1}`;
     return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:8px 14px;margin-bottom:8px">
       <div class="aisle-row-compact" onclick="toggleAisleExpanded(${i})">
-        <div class="aisle-drag-handle" data-aisle-idx="${i}" title="Drag to reorder" onclick="event.stopPropagation()">⠿</div>
         <span style="font-size:.6rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">A${i+1}</span>
         <span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
@@ -6162,40 +6154,77 @@ function expandAislesAfterDrag() {
   });
 }
 
+let _aisleLongPressTimer = null;
+let _aisleLongPressActive = false;
+
 function initAisleDrag(){
-  const handles=document.querySelectorAll('.aisle-drag-handle');
-  handles.forEach(handle=>{
-    handle.addEventListener('pointerdown', onAisleDragStart, {passive:false});
-    handle.addEventListener('click', e => {
-      // If not dragging (pointer didn't move much), treat as toggle
-      if (!aisleGhost) toggleAisleReorderMode();
-    });
+  document.querySelectorAll('.card[data-aisle-idx]').forEach(card => {
+    card._aislePD && card.removeEventListener('pointerdown', card._aislePD);
+    card._aislePD = e => {
+      // Only trigger on direct card taps, not on buttons/inputs/etc inside
+      if (e.target.closest('button,input,textarea,.chip,.chip-x,.kw-bulk,.aisle-img-zone')) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.pointerType === 'mouse') {
+        // For mouse: start drag immediately on move
+        _aisleLongPressActive = false;
+        const startY = e.clientY;
+        const onMove = mv => {
+          if (Math.abs(mv.clientY - startY) > 4 && !aisleGhost) {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onCancel);
+            _aisleLongPressActive = true;
+            onAisleDragStart(e, parseInt(card.dataset.aisleIdx, 10), mv);
+          }
+        };
+        const onCancel = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onCancel);
+        };
+        document.addEventListener('pointermove', onMove, {passive:true});
+        document.addEventListener('pointerup', onCancel, {once:true});
+      } else {
+        // Touch: long press
+        const touch = e.touches ? e.touches[0] : e;
+        const startX = touch.clientX, startY = touch.clientY;
+        clearTimeout(_aisleLongPressTimer);
+        _aisleLongPressActive = false;
+        _aisleLongPressTimer = setTimeout(() => {
+          _aisleLongPressActive = true;
+          if (navigator.vibrate) navigator.vibrate(40);
+          onAisleDragStart(e, parseInt(card.dataset.aisleIdx, 10), null);
+        }, 400);
+        const cancelLP = mv => {
+          const t = mv.touches ? mv.touches[0] : mv;
+          if (Math.abs(t.clientX - startX) > 8 || Math.abs(t.clientY - startY) > 8) {
+            clearTimeout(_aisleLongPressTimer);
+            card.removeEventListener('touchmove', cancelLP);
+          }
+        };
+        card.addEventListener('touchmove', cancelLP, {once:true, passive:true});
+      }
+    };
+    card.addEventListener('pointerdown', card._aislePD, {passive:true});
   });
 }
 
 let aisleGhost=null, aisleDragSrcIdx=null, aislePointerStartY=0, aisleScrollStart=0;
 
-function onAisleDragStart(e){
-  if(e.button!==undefined && e.button!==0) return; // left-click / touch only
-  e.preventDefault();
-  syncNames(); // save typed values before we reorder
-
-  const handle=e.currentTarget;
-  aisleDragSrcIdx=parseInt(handle.dataset.aisleIdx,10);
-  const srcCard=document.getElementById('aisle-card-'+aisleDragSrcIdx);
-  if(!srcCard) return;
+function onAisleDragStart(e, idx, initialMoveEvent){
+  syncNames();
+  aisleDragSrcIdx = idx;
+  const srcCard = document.getElementById('aisle-card-' + aisleDragSrcIdx);
+  if (!srcCard) return;
   collapseAislesForDrag();
 
-  const modal=document.querySelector('#modal-store .modal');
-  const scrollEl=document.querySelector('.store-modal-scroll');
-  const cardRect=srcCard.getBoundingClientRect();
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  const cardRect = srcCard.getBoundingClientRect();
+  const clientY = (initialMoveEvent || e).clientY;
 
-  aislePointerStartY=e.clientY;
-  aisleScrollStart=scrollEl ? scrollEl.scrollTop : 0;
+  aislePointerStartY = clientY;
+  aisleScrollStart = scrollEl ? scrollEl.scrollTop : 0;
 
-  // Create ghost clone
-  aisleGhost=srcCard.cloneNode(true);
-  Object.assign(aisleGhost.style,{
+  aisleGhost = srcCard.cloneNode(true);
+  Object.assign(aisleGhost.style, {
     position:'fixed',
     top: cardRect.top+'px',
     left: cardRect.left+'px',
@@ -6210,13 +6239,11 @@ function onAisleDragStart(e){
     margin: '0',
   });
   document.body.appendChild(aisleGhost);
-
   srcCard.classList.add('aisle-card-dragging');
-  handle.classList.add('grabbing');
 
   document.addEventListener('pointermove', onAisleDragMove, {passive:false});
   document.addEventListener('pointerup',   onAisleDragEnd,  {passive:false});
-  document.addEventListener('pointercancel', onAisleDragEnd,{passive:false});
+  document.addEventListener('pointercancel', onAisleDragEnd, {passive:false});
 }
 
 let _aisleScrollRAF = null;
@@ -6287,7 +6314,6 @@ function onAisleDragEnd(e){
   });
 
   aisleGhost.remove(); aisleGhost=null;
-  document.querySelectorAll('.aisle-drag-handle').forEach(h=>h.classList.remove('grabbing'));
 
   if(targetIdx!==null && targetIdx!==aisleDragSrcIdx){
     // Reorder tempAisles
