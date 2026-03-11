@@ -363,7 +363,8 @@ textarea.input{resize:vertical;min-height:90px;}
 /* STORE MODAL — sticky header + scrollable aisles */
 .modal-store-shell{
   display:flex;flex-direction:column;
-  max-height:85vh;overflow:hidden;padding:24px 20px 0;
+  height:100dvh;max-height:100dvh;overflow:hidden;padding:24px 20px 0;
+  border-radius:0;
 }
 .store-modal-sticky{
   flex-shrink:0;background:var(--surface);
@@ -5696,15 +5697,19 @@ function renderAisleRows(){
     return `<div class="card" id="aisle-card-${i}" data-aisle-idx="${i}" style="border-left:3px solid ${color};padding:8px 14px;margin-bottom:8px">
       <div class="aisle-row-compact" onclick="toggleAisleExpanded(${i})">
         <span style="font-size:.6rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">A${i+1}</span>
-        <span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>
+        ${_exp
+          ? `<input id="aisle-name-${i}" value="${esc(aisle.name)}" placeholder="e.g. Produce"
+              style="flex:1;font-size:.84rem;font-weight:500;background:transparent;border:none;
+                     border-bottom:1px solid var(--border);color:var(--text);padding:0 2px;
+                     outline:none;min-width:0" onclick="event.stopPropagation()">`
+          : `<span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>`
+        }
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
         ${tempAisles.length>1?`<button class="btn btn-sm btn-danger" style="padding:2px 7px;font-size:.7rem" onclick="event.stopPropagation();removeAisle(${i})">✕</button>`:''}
         <span class="aisle-row-chevron${_exp?' open':''}">▾</span>
       </div>
       <div class="aisle-drag-body">
       <div class="aisle-row-body" style="display:${_exp?'block':'none'}">
-      <input class="input" id="aisle-name-${i}" value="${esc(aisle.name)}"
-        placeholder="e.g. Produce" style="font-size:.82rem;padding:8px 12px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
         <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Keywords</div>
         <span id="kw-toggle-${i}" style="font-size:.7rem;color:var(--muted);line-height:1">＋</span>
