@@ -5789,12 +5789,10 @@ function renderAisleRows(){
         <span style="font-size:.6rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">A${i+1}</span>
         ${_exp
           ? `<input id="aisle-name-${i}" value="${esc(aisle.name)}" placeholder="e.g. Produce"
-              style="font-size:.84rem;font-weight:500;background:transparent;border:none;
+              style="flex:1;font-size:.84rem;font-weight:500;background:transparent;border:none;
                      border-bottom:1px solid var(--border);color:var(--text);padding:0 2px;
-                     outline:none;min-width:0;width:1px;max-width:100%"
-              oninput="_aisleNameResize(this)" onfocus="_aisleNameResize(this)"
-              onclick="_aisleNameClick(event,${i})">
-            <div style="flex:1;cursor:pointer;min-width:8px" onclick="toggleAisleExpanded(${i})"></div>`
+                     outline:none;min-width:0"
+              onclick="_aisleNameClick(event,${i})">`
           : `<span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>`
         }
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
@@ -5875,15 +5873,24 @@ function _aisleNameResize(inp) {
 }
 
 function _aisleNameClick(e, i) {
+  e.stopPropagation();
   const inp = e.currentTarget;
-  // If already focused and caret is at the end, collapse
-  if (document.activeElement === inp && inp.selectionStart === inp.value.length) {
-    e.stopPropagation();
-    inp.blur();
-    toggleAisleExpanded(i);
-  } else {
-    e.stopPropagation(); // just focus normally
+  // Only collapse if already focused AND click lands past text + 4-char buffer
+  if (document.activeElement === inp) {
+    if (!_aisleNameResize._canvas) _aisleNameResize._canvas = document.createElement('canvas');
+    const ctx = _aisleNameResize._canvas.getContext('2d');
+    const cs = window.getComputedStyle(inp);
+    ctx.font = cs.fontSize + ' ' + cs.fontFamily;
+    const textW = ctx.measureText(inp.value || '').width;
+    const charW = ctx.measureText('m').width;
+    const clickX = e.clientX - inp.getBoundingClientRect().left - 2; // subtract padding
+    if (clickX > textW + charW * 4) {
+      inp.blur();
+      toggleAisleExpanded(i);
+    }
+    // else: let browser place cursor normally
   }
+  // If not yet focused, browser will focus and place cursor — nothing extra needed
 }
 
 function toggleAisleExpanded(i) {
