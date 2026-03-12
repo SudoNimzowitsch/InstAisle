@@ -5789,9 +5789,12 @@ function renderAisleRows(){
         <span style="font-size:.6rem;font-weight:700;color:${color};letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">A${i+1}</span>
         ${_exp
           ? `<input id="aisle-name-${i}" value="${esc(aisle.name)}" placeholder="e.g. Produce"
-              style="flex:1;font-size:.84rem;font-weight:500;background:transparent;border:none;
+              style="font-size:.84rem;font-weight:500;background:transparent;border:none;
                      border-bottom:1px solid var(--border);color:var(--text);padding:0 2px;
-                     outline:none;min-width:0" onclick="_aisleNameClick(event,${i})">`
+                     outline:none;min-width:0;width:1px;max-width:100%"
+              oninput="_aisleNameResize(this)" onfocus="_aisleNameResize(this)"
+              onclick="_aisleNameClick(event,${i})">
+            <div style="flex:1;cursor:pointer;min-width:8px" onclick="toggleAisleExpanded(${i})"></div>`
           : `<span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>`
         }
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
@@ -5854,6 +5857,21 @@ function renderAisleRows(){
 
   // Wire up aisle drag-to-reorder
   initAisleDrag();
+  // Size any visible name inputs
+  document.querySelectorAll('[id^="aisle-name-"]').forEach(inp => _aisleNameResize && _aisleNameResize(inp));
+}
+
+function _aisleNameResize(inp) {
+  // Measure text width using a hidden canvas
+  if (!_aisleNameResize._canvas) {
+    _aisleNameResize._canvas = document.createElement('canvas');
+  }
+  const ctx = _aisleNameResize._canvas.getContext('2d');
+  const style = window.getComputedStyle(inp);
+  ctx.font = style.fontSize + ' ' + style.fontFamily;
+  const textW = ctx.measureText(inp.value || inp.placeholder).width;
+  const charW = ctx.measureText('m').width; // ~1 char width for padding
+  inp.style.width = Math.min(textW + charW * 4, inp.parentElement.offsetWidth * 0.85) + 'px';
 }
 
 function _aisleNameClick(e, i) {
