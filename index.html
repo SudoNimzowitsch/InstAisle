@@ -910,6 +910,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="user-avatar" id="user-avatar-sm">?</div>
       <span id="user-name-sm">Account</span>
     </div>
+    <div class="icon-btn" onclick="topbarShareList()" title="Share list" id="topbar-share-btn" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     <div class="icon-btn" onclick="topbarNewList()" title="New list">＋</div>
   </div>
 </div>
@@ -5191,7 +5192,7 @@ function renderListScreen(){
   <rect x="8" y="13" width="8" height="5" rx="1"/>
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; const _tb1=document.getElementById('list-toolbar'); if(_tb1) _tb1.classList.remove('visible'); return; }
+</svg></div><div class="empty-title">No store selected</div><div class="empty-sub">Go to Stores and add your first store.</div></div>`; const _tb1=document.getElementById('list-toolbar'); if(_tb1) _tb1.classList.remove('visible'); const _sb1=document.getElementById('topbar-share-btn'); if(_sb1) _sb1.style.display='none'; return; }
   migrateListsIfNeeded(store.id);
   const items=getActiveListItems(store.id);
   if(!items.length){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -5208,7 +5209,7 @@ function renderListScreen(){
   <path d="M10 6 Q12 5.5 14 6.2 Q16 6.8 17 6" stroke-width="1.2"/>
   <path d="M10 10 Q12 9.4 14 10.1 Q15.5 10.6 16 10" stroke-width="1.2"/>
   <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
-</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; const _tb2=document.getElementById('list-toolbar'); if(_tb2) _tb2.classList.remove('visible'); return; }
+</svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; const _tb2=document.getElementById('list-toolbar'); if(_tb2) _tb2.classList.remove('visible'); const _sb2=document.getElementById('topbar-share-btn'); if(_sb2) _sb2.style.display='none'; return; }
 
   // group
   const groups={};
@@ -5231,6 +5232,8 @@ function renderListScreen(){
   }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
+  const _shareBtn = document.getElementById('topbar-share-btn');
+  if (_shareBtn) _shareBtn.style.display = '';
 
   // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
   // on page load, so a new check in that aisle still fires suggestions.
@@ -5426,6 +5429,16 @@ function selectList(storeId, listId) {
 }
 
 let _newListMode = false; // true when opening modal-add-list to create a new list
+
+function topbarShareList() {
+  const store = getActiveStore();
+  if (!store) return;
+  const lid = getActiveListId(store.id);
+  if (!lid) return;
+  // Reuse openShareList but set the context list id first
+  _listContextId = lid;
+  openShareList();
+}
 
 function topbarNewList() {
   const store = getActiveStore();
