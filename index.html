@@ -4778,8 +4778,9 @@ async function openShareList() {
   document.getElementById('share-list-subtitle').textContent =
     '"' + list.name + '" · ' + store.name;
 
-  // Check if already shared
-  const existing = state.sharedListMeta?.[_listContextId];
+  // Check if a share link already exists (accepted or pending)
+  const existing = state.sharedListMeta?.[_listContextId]
+                || state.pendingShareLinks?.[_listContextId];
   if (existing) {
     _renderShareModal(existing.shareId);
     openModal('modal-share-list');
@@ -4812,14 +4813,11 @@ async function openShareList() {
         ownerDisplayName: name });
 
     const shareId = shareRef.id;
-    // Persist shareId to the list metadata in state
-    if (!state.sharedListMeta) state.sharedListMeta = {};
-    state.sharedListMeta[_listContextId] = { shareId, ownerUid: uid };
+    // Track pending share (not yet accepted by anyone else)
+    if (!state.pendingShareLinks) state.pendingShareLinks = {};
+    state.pendingShareLinks[_listContextId] = { shareId, ownerUid: uid, storeId };
 
-    // Save sharedListMeta back to the store doc
-    _saveSharedMeta(storeId);
-
-    // Subscribe to real-time updates
+    // Subscribe — will mark as shared once members.length > 1
     _subscribeSharedList(_listContextId, shareId, storeId);
 
     _renderShareModal(shareId);
@@ -4879,6 +4877,17 @@ function _subscribeSharedList(listId, shareId, storeId) {
   const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
     if (!snap.exists()) return;
     const data = snap.data();
+    // Promote to sharedListMeta once someone else has accepted
+    if ((data.members || []).length > 1) {
+      if (!state.sharedListMeta) state.sharedListMeta = {};
+      if (!state.sharedListMeta[listId]) {
+        state.sharedListMeta[listId] = { shareId, ownerUid: data.ownerUid };
+        // Clean up pending entry
+        if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+        _saveSharedMeta(storeId);
+        renderAll(); // update badge
+      }
+    }
     const lists = getLists(storeId);
     if (!lists || !lists.lists[listId]) return;
     // Only update if remote items differ (avoid echo of own writes)
