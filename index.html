@@ -4875,22 +4875,39 @@ function _subscribeSharedList(listId, shareId, storeId) {
   if (_shareListUnsubs[listId]) return; // already subscribed
   const { db, doc, onSnapshot } = window._fb;
   const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
-    if (!snap.exists()) return;
+    const lists = getLists(storeId);
+
+    // Doc deleted (owner transferred then last member left, or doc purged)
+    if (!snap.exists()) {
+      if (state.sharedListMeta) delete state.sharedListMeta[listId];
+      if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+      _saveSharedMeta(storeId);
+      renderAll();
+      return;
+    }
+
     const data = snap.data();
-    // Promote to sharedListMeta once someone else has accepted
-    if ((data.members || []).length > 1) {
+    const members = data.members || [];
+
+    if (members.length > 1) {
+      // Someone has joined — promote to sharedListMeta and update ownerUid
       if (!state.sharedListMeta) state.sharedListMeta = {};
-      if (!state.sharedListMeta[listId]) {
-        state.sharedListMeta[listId] = { shareId, ownerUid: data.ownerUid };
-        // Clean up pending entry
-        if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+      const changed = !state.sharedListMeta[listId]
+        || state.sharedListMeta[listId].ownerUid !== data.ownerUid;
+      state.sharedListMeta[listId] = { shareId, ownerUid: data.ownerUid };
+      if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+      if (changed) { _saveSharedMeta(storeId); renderAll(); }
+    } else {
+      // Members dropped back to 1 — remove badge
+      if (state.sharedListMeta?.[listId]) {
+        delete state.sharedListMeta[listId];
         _saveSharedMeta(storeId);
-        renderAll(); // update badge
+        renderAll();
       }
     }
-    const lists = getLists(storeId);
+
     if (!lists || !lists.lists[listId]) return;
-    // Only update if remote items differ (avoid echo of own writes)
+    // Sync items if remote differs (avoid echo of own writes)
     const remote = JSON.stringify(data.items || []);
     const local  = JSON.stringify(lists.lists[listId].items || []);
     if (remote !== local && !window._isSharingWrite) {
@@ -5512,8 +5529,13 @@ function deleteActiveContextList() {
   const list = lists.lists[_listContextId];
   if (!list) return;
   if (!confirm('Delete "' + list.name + '"? This cannot be undone.')) return;
+
+  // Handle shared list cleanup before removing locally
+  const shareMeta = state.sharedListMeta?.[_listContextId]
+                 || state.pendingShareLinks?.[_listContextId];
+  if (shareMeta) _leaveOrTransferSharedList(_listContextId, _listPickerStoreId, shareMeta);
+
   delete lists.lists[_listContextId];
-  // If deleting active list, switch to most recent other
   if (state.activeListId[_listPickerStoreId] === _listContextId) {
     const remaining = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
     state.activeListId[_listPickerStoreId] = remaining[0]?.id || null;
@@ -5523,6 +5545,40 @@ function deleteActiveContextList() {
   if (window.persistStore) window.persistStore(_listPickerStoreId);
   renderListPicker(_listPickerStoreId);
   openModal('modal-list-picker');
+}
+
+async function _leaveOrTransferSharedList(listId, storeId, shareMeta) {
+  const { db, doc, updateDoc, deleteDoc, arrayRemove } = window._fb;
+  const uid = window._currentUser?.uid;
+  if (!uid) return;
+  const shareRef = doc(db, 'shared_lists', shareMeta.shareId);
+  try {
+    const { getDoc } = window._fb;
+    const snap = await getDoc(shareRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const members = (data.members || []).filter(m => m !== uid);
+
+    if (members.length === 0) {
+      // Last person out — delete the doc entirely
+      await deleteDoc(shareRef);
+    } else if (data.ownerUid === uid) {
+      // Owner leaving — transfer ownership to first remaining member
+      await updateDoc(shareRef, {
+        ownerUid: members[0],
+        members: arrayRemove(uid),
+      });
+    } else {
+      // Non-owner leaving — just remove self from members
+      await updateDoc(shareRef, { members: arrayRemove(uid) });
+    }
+  } catch(e) { console.warn('Share leave error', e); }
+
+  // Clean up local state
+  if (state.sharedListMeta) delete state.sharedListMeta[listId];
+  if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+  if (_shareListUnsubs[listId]) { _shareListUnsubs[listId](); delete _shareListUnsubs[listId]; }
+  _saveSharedMeta(storeId);
 }
 
 let _transferMode = null; // 'move' or 'copy'
