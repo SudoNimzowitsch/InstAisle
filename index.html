@@ -1235,6 +1235,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title" id="list-context-name" style="font-size:1rem;margin-bottom:16px"></div>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openShareList()">🔗 Share list</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="renameListPrompt()">✏️ Rename</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('move')">→ Move to store</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('copy')">⧉ Copy to store</button>
@@ -1249,6 +1250,39 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-title" id="list-transfer-title">Move to store</div>
     <div id="list-transfer-stores" style="margin-bottom:8px"></div>
     <button class="btn btn-ghost btn-full btn-sm" onclick="closeModal('modal-list-transfer')">Cancel</button>
+  </div>
+</div>
+
+
+<!-- Share List Modal -->
+<div class="modal-overlay" id="modal-share-list" onclick="closeModal('modal-share-list')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="font-size:1rem;margin-bottom:4px">Share List</div>
+    <p class="text-muted" style="font-size:.82rem;margin-bottom:16px" id="share-list-subtitle"></p>
+    <div id="share-link-box" style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <input id="share-link-input" readonly style="flex:1;font-size:.75rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);overflow:hidden;text-overflow:ellipsis">
+      <button class="btn btn-primary" style="flex-shrink:0;padding:8px 14px" onclick="copyShareLink()">Copy</button>
+    </div>
+    <div id="share-members-section" style="margin-bottom:16px;display:none">
+      <div style="font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Shared with</div>
+      <div id="share-members-list"></div>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="closeModal('modal-share-list')">Done</button>
+  </div>
+</div>
+
+<!-- Accept Share Modal -->
+<div class="modal-overlay" id="modal-accept-share">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:340px">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:4px;font-size:1.5rem">🛒</div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem" id="accept-share-title">Shared List</div>
+    <p class="text-muted" style="text-align:center;font-size:.85rem;margin-bottom:8px" id="accept-share-from"></p>
+    <p class="text-muted" style="text-align:center;font-size:.82rem;margin-bottom:20px" id="accept-share-store"></p>
+    <div id="accept-share-store-warning" style="display:none;background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:var(--muted)"></div>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="acceptSharedList()">Add to my account</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="declineSharedList()">Decline</button>
   </div>
 </div>
 
@@ -1303,6 +1337,11 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     window._currentUser = user;
     updateUserUI(user);
+    // Handle share link that arrived before auth was ready
+    if (window._pendingShareId) {
+      const sid = window._pendingShareId; window._pendingShareId = null;
+      setTimeout(() => { if (window._loadSharePreview) _loadSharePreview(sid); }, 1200);
+    }
     document.getElementById('auth-screen').style.display = 'none';
     await loadUserData(user.uid);
     if (window._isNewSignup) {
@@ -1365,6 +1404,7 @@ async function loadUserData(uid) {
   state.stores = [];
   state.lists  = {};
   state.corrections = {};
+  state.sharedListMeta = state.sharedListMeta || {}; // shareId keyed by listId
 
   if (storeDocs.length === 0) {
     // First time — seed demo store to Firestore
@@ -1382,6 +1422,8 @@ async function loadUserData(uid) {
     // Prefer new multi-list format; fall back to legacy flat array
     state.lists[snap.id] = d.lists_v2 || d.list || [];
     state.corrections[snap.id] = d.corrections || {};
+    // Merge sharedListMeta from Firestore
+    if (d.sharedListMeta) Object.assign(state.sharedListMeta, d.sharedListMeta);
   });
 
   if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
@@ -1390,6 +1432,8 @@ async function loadUserData(uid) {
 
   renderAll();
   setSyncDot('ok');
+  // Resubscribe any shared lists
+  if (window.resubscribeSharedLists) resubscribeSharedLists();
 
   // Preload store locations + user GPS in background so nearby tab opens instantly
   loadStoreLocations().catch(() => {}); // silent — stores.json may not exist yet
@@ -2494,6 +2538,10 @@ window.setSyncDot = setSyncDot;
 
 // Signal that the Firebase module is fully loaded
 window._fbReady = true;
+// Check for ?share= URL param now that Firebase is ready
+setTimeout(() => {
+  if (window.checkShareParam) checkShareParam();
+}, 200);
 
 // ── Browser back/forward navigation ──────────────────────────────────────
 // ── Browser back/forward navigation ──────────────────────────────────────
@@ -4703,6 +4751,376 @@ async function clearCacheAndReload() {
   } catch(e) {}
   location.reload(true);
 }
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LIST SHARING
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _shareListUnsubs = {}; // listId -> unsubscribe fn for real-time listener
+let _pendingShareId  = null; // shareId from URL ?share= param, waiting for auth
+
+// ── Open share sheet for the context list ────────────────────────────────────
+async function openShareList() {
+  const storeId = state.activeStoreId;
+  if (!storeId || !_listContextId) return;
+  closeModal('modal-list-context');
+
+  const lists  = getLists(storeId);
+  const list   = lists?.lists[_listContextId];
+  const store  = getActiveStore();
+  if (!list || !store) return;
+
+  const uid  = window._currentUser?.uid;
+  const name = window._currentUser?.displayName || window._currentUser?.email || 'Someone';
+
+  document.getElementById('share-list-subtitle').textContent =
+    '"' + list.name + '" · ' + store.name;
+
+  // Check if already shared
+  const existing = state.sharedListMeta?.[_listContextId];
+  if (existing) {
+    _renderShareModal(existing.shareId);
+    openModal('modal-share-list');
+    return;
+  }
+
+  // Create share doc
+  showToast('Creating share link…');
+  try {
+    const { db, collection, addDoc, serverTimestamp } = window._fb;
+    const shareRef = await addDoc(collection(db, 'shared_lists'), {
+      listName:         list.name,
+      storeName:        store.name,
+      storeChainId:     store.library_chain_id     || null,
+      storeLocationId:  store.library_location_id  || null,
+      storeAisles:      store.aisles,
+      ownerUid:         uid,
+      ownerDisplayName: name,
+      createdAt:        serverTimestamp(),
+      members:          [uid],
+      memberNames:      { [uid]: name },
+      items:            list.items || [],
+    });
+    // Write preview subcollection — readable without membership
+    const { setDoc: _sdoc } = window._fb;
+    await _sdoc(window._fb.doc(db, 'shared_lists', shareRef.id, 'meta', 'preview'),
+      { listName: list.name, storeName: store.name,
+        storeChainId: store.library_chain_id || null,
+        storeLocationId: store.library_location_id || null,
+        ownerDisplayName: name });
+
+    const shareId = shareRef.id;
+    // Persist shareId to the list metadata in state
+    if (!state.sharedListMeta) state.sharedListMeta = {};
+    state.sharedListMeta[_listContextId] = { shareId, ownerUid: uid };
+
+    // Save sharedListMeta back to the store doc
+    _saveSharedMeta(storeId);
+
+    // Subscribe to real-time updates
+    _subscribeSharedList(_listContextId, shareId, storeId);
+
+    _renderShareModal(shareId);
+    openModal('modal-share-list');
+  } catch(e) {
+    showToast('Error creating share link');
+    console.error(e);
+  }
+}
+
+function _renderShareModal(shareId) {
+  const link = window.location.origin + '/?share=' + shareId;
+  document.getElementById('share-link-input').value = link;
+
+  // Load member names from Firestore
+  const { db, doc, getDoc } = window._fb;
+  getDoc(doc(db, 'shared_lists', shareId)).then(snap => {
+    if (!snap.exists()) return;
+    const d = snap.data();
+    const members = d.members || [];
+    const names   = d.memberNames || {};
+    const sec  = document.getElementById('share-members-section');
+    const list = document.getElementById('share-members-list');
+    if (members.length > 1) {
+      sec.style.display = '';
+      list.innerHTML = members.map(uid => {
+        const n = names[uid] || uid;
+        const isOwner = uid === d.ownerUid;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.8rem">${n[0].toUpperCase()}</span>
+          <span style="flex:1;font-size:.85rem">${esc(n)}</span>
+          ${isOwner ? '<span style="font-size:.7rem;color:var(--muted)">owner</span>' : ''}
+        </div>`;
+      }).join('');
+    } else {
+      sec.style.display = 'none';
+    }
+  }).catch(() => {});
+}
+
+async function copyShareLink() {
+  const val = document.getElementById('share-link-input').value;
+  try {
+    await navigator.clipboard.writeText(val);
+    showToast('Link copied!');
+  } catch(e) {
+    // fallback — select text
+    document.getElementById('share-link-input').select();
+    showToast('Link ready — copy manually');
+  }
+}
+
+// ── Subscribe to real-time updates for a shared list ─────────────────────────
+function _subscribeSharedList(listId, shareId, storeId) {
+  if (_shareListUnsubs[listId]) return; // already subscribed
+  const { db, doc, onSnapshot } = window._fb;
+  const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const lists = getLists(storeId);
+    if (!lists || !lists.lists[listId]) return;
+    // Only update if remote items differ (avoid echo of own writes)
+    const remote = JSON.stringify(data.items || []);
+    const local  = JSON.stringify(lists.lists[listId].items || []);
+    if (remote !== local && !window._isSharingWrite) {
+      lists.lists[listId].items = data.items || [];
+      renderListScreen();
+    }
+  });
+  _shareListUnsubs[listId] = unsub;
+}
+
+// ── Write items back to shared doc whenever local list changes ───────────────
+async function syncSharedListWrite(storeId, listId) {
+  const meta = state.sharedListMeta?.[listId];
+  if (!meta) return;
+  const lists = getLists(storeId);
+  const items = lists?.lists[listId]?.items || [];
+  const { db, doc, updateDoc } = window._fb;
+  window._isSharingWrite = true;
+  try {
+    await updateDoc(doc(db, 'shared_lists', meta.shareId), { items });
+  } catch(e) {
+    console.warn('Shared list sync error', e);
+  } finally {
+    setTimeout(() => { window._isSharingWrite = false; }, 800);
+  }
+}
+
+// ── Save sharedListMeta to Firestore store doc ───────────────────────────────
+async function _saveSharedMeta(storeId) {
+  if (!window._currentUser) return;
+  const { db, doc, updateDoc } = window._fb;
+  try {
+    await updateDoc(doc(db, 'stores', storeId), {
+      sharedListMeta: state.sharedListMeta || {}
+    });
+  } catch(e) { console.warn('sharedMeta save error', e); }
+}
+
+// ── Check URL for ?share= param on load ──────────────────────────────────────
+function checkShareParam() {
+  const params = new URLSearchParams(window.location.search);
+  const shareId = params.get('share');
+  if (!shareId) return;
+  // Clean URL immediately
+  window.history.replaceState({}, '', window.location.pathname);
+  if (window._currentUser) {
+    _loadSharePreview(shareId);
+  } else {
+    // Auth not ready yet — stash and handle after login
+    _pendingShareId = shareId;
+  }
+}
+
+async function _loadSharePreview(shareId) {
+  const { db, doc, getDoc } = window._fb;
+  try {
+    const uid = window._currentUser.uid;
+
+    // Try to read the full doc — succeeds only if already a member
+    let isMember = false, fullData = null;
+    try {
+      const fullSnap = await getDoc(doc(db, 'shared_lists', shareId));
+      if (fullSnap.exists()) { fullData = fullSnap.data(); isMember = fullData.members?.includes(uid); }
+    } catch(_) { /* permission denied — not a member */ }
+
+    if (isMember && fullData) { _activateSharedList(shareId, fullData); return; }
+
+    // Not a member — read only the safe preview subcollection (no items exposed)
+    const prevSnap = await getDoc(doc(db, 'shared_lists', shareId, 'meta', 'preview'));
+    if (!prevSnap.exists()) { showToast('Share link not found or expired'); return; }
+    const d = prevSnap.data();
+
+    document.getElementById('accept-share-title').textContent = '"' + d.listName + '"';
+    document.getElementById('accept-share-from').textContent =
+      'Shared by ' + (d.ownerDisplayName || 'someone');
+
+    const matchedStore = _findMatchingStore(d);
+    const warn = document.getElementById('accept-share-store-warning');
+    if (matchedStore) {
+      document.getElementById('accept-share-store').textContent =
+        'Will appear in: ' + matchedStore.name;
+      warn.style.display = 'none';
+    } else if (d.storeLocationId || d.storeChainId) {
+      document.getElementById('accept-share-store').textContent =
+        'Store: ' + d.storeName;
+      warn.style.display = '';
+      warn.textContent = "You don't have this store yet — " + d.storeName +
+        ' will be added to your account.';
+    } else {
+      document.getElementById('accept-share-store').textContent =
+        'Store: ' + d.storeName;
+      warn.style.display = '';
+      warn.innerHTML = 'Which of your stores should this list belong to? ' +
+        '<select id="accept-store-picker" style="margin-top:6px;width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.82rem">' +
+        state.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('') +
+        '<option value="__import__">Import ' + esc(d.storeName) + ' as new store</option>' +
+        '</select>';
+    }
+
+    // _shareData holds preview only; full data loaded on accept
+    document.getElementById('modal-accept-share')._shareId = shareId;
+    document.getElementById('modal-accept-share')._shareData = d;
+    document.getElementById('modal-accept-share').classList.add('open');
+  } catch(e) {
+    showToast('Could not load share link');
+    console.error(e);
+  }
+}
+
+function _findMatchingStore(d) {
+  if (!d.storeLocationId && !d.storeChainId) return null;
+  return state.stores.find(s => {
+    if (d.storeLocationId && s.library_location_id)
+      return s.library_location_id === d.storeLocationId;
+    if (d.storeChainId && s.library_chain_id)
+      return s.library_chain_id === d.storeChainId && !d.storeLocationId;
+    return false;
+  }) || null;
+}
+
+async function acceptSharedList() {
+  const modal = document.getElementById('modal-accept-share');
+  const shareId = modal._shareId;
+  const d = modal._shareData;
+  modal.classList.remove('open');
+  if (!shareId || !d) return;
+
+  const uid  = window._currentUser.uid;
+  const name = window._currentUser?.displayName || window._currentUser?.email || 'User';
+  const { db, doc, updateDoc, arrayUnion } = window._fb;
+
+  showToast('Adding list…');
+
+  // Determine target store
+  let targetStoreId = null;
+  const picker = document.getElementById('accept-store-picker');
+  if (picker) {
+    const val = picker.value;
+    if (val === '__import__') {
+      targetStoreId = await _importStoreFromShare(d);
+    } else {
+      targetStoreId = val;
+    }
+  } else {
+    const matched = _findMatchingStore(d);
+    if (matched) {
+      targetStoreId = matched.id;
+    } else {
+      targetStoreId = await _importStoreFromShare(d);
+    }
+  }
+
+  if (!targetStoreId) { showToast('Error finding store'); return; }
+
+  // Add list to local state
+  migrateListsIfNeeded(targetStoreId);
+  const listId = 'list-' + Date.now() + '-shared';
+  const lists = getLists(targetStoreId);
+  lists.lists[listId] = {
+    id: listId, name: d.listName, items: d.items || [],
+    createdAt: Date.now(), lastOpened: Date.now()
+  };
+  state.activeListId[targetStoreId] = listId;
+  state.activeStoreId = targetStoreId;
+
+  // Record meta
+  if (!state.sharedListMeta) state.sharedListMeta = {};
+  state.sharedListMeta[listId] = { shareId, ownerUid: d.ownerUid };
+  _saveSharedMeta(targetStoreId);
+
+  // Add self to share doc members
+  try {
+    await updateDoc(doc(db, 'shared_lists', shareId), {
+      members: arrayUnion(uid),
+      ['memberNames.' + uid]: name,
+    });
+  } catch(e) { console.warn('member update error', e); }
+
+  // Subscribe real-time
+  _subscribeSharedList(listId, shareId, targetStoreId);
+
+  // Save to Firestore
+  saveState(targetStoreId);
+  renderAll();
+  showToast('List added! 🎉');
+}
+
+async function _importStoreFromShare(d) {
+  const { db, doc, setDoc, serverTimestamp } = window._fb;
+  const uid = window._currentUser.uid;
+  const storeId = 'store-' + Date.now();
+  const newStore = {
+    ownerUid: uid,
+    name: d.storeName,
+    color: '#4ade80',
+    aisles: d.storeAisles || [],
+    library_chain_id:    d.storeChainId    || null,
+    library_location_id: d.storeLocationId || null,
+    createdAt: serverTimestamp(),
+    list: [], corrections: {}
+  };
+  await setDoc(doc(db, 'stores', storeId), newStore);
+  state.stores.push({ ...newStore, id: storeId });
+  state.lists[storeId] = {};
+  state.corrections[storeId] = {};
+  migrateListsIfNeeded(storeId);
+  // subscribe store
+  window._storeUnsubs.push(
+    window._fb.onSnapshot(window._fb.doc(db, 'stores', storeId), (snap) => {
+      if (!snap.exists() || window._isSaving) return;
+      const data = snap.data();
+      const idx = state.stores.findIndex(s => s.id === storeId);
+      if (idx !== -1) {
+        state.stores[idx] = { ...state.stores[idx], name: data.name,
+          color: data.color, aisles: data.aisles || [] };
+        state.lists[storeId] = data.lists_v2 || data.list || [];
+        renderAll();
+      }
+    })
+  );
+  return storeId;
+}
+
+function declineSharedList() {
+  document.getElementById('modal-accept-share').classList.remove('open');
+}
+
+// ── Resubscribe shared lists on app load / auth ───────────────────────────────
+function resubscribeSharedLists() {
+  if (!state.sharedListMeta) return;
+  state.stores.forEach(store => {
+    const meta = state.sharedListMeta;
+    Object.keys(meta).forEach(listId => {
+      const { shareId } = meta[listId];
+      _subscribeSharedList(listId, shareId, store.id);
+    });
+  });
+}
+
+
 function sendResetEmail()   { if(window._fbReady) window.sendResetEmail();   else showToast('Loading… please try again'); }
 function showForgotPassword(){ if(window._fbReady) window.showForgotPassword(); else showToast('Loading… please try again'); }
 function toggleChangePassword() {
@@ -4808,7 +5226,8 @@ function renderListScreen(){
   if (tcEl) {
     const lid = getActiveListId(store.id);
     const lname = lid && getLists(store.id)?.lists[lid]?.name;
-    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + done + '/' + total + ' ✓';
+    const _isShared = lid && state.sharedListMeta?.[lid];
+    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + (_isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px" title="Shared list">🔗</span>' : '') + done + '/' + total + ' ✓';
   }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
@@ -7570,6 +7989,11 @@ function hexRgba(hex,a){
 function persistActiveStore() {
   if (window.persistStore && state.activeStoreId) {
     window.persistStore(state.activeStoreId);
+    // Sync to shared list doc if this list is shared
+    const lid = getActiveListId(state.activeStoreId);
+    if (lid && window.syncSharedListWrite) {
+      syncSharedListWrite(state.activeStoreId, lid);
+    }
   }
 }
 
