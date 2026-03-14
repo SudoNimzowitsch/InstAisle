@@ -4955,6 +4955,63 @@ function checkShareParam() {
   window.history.replaceState({}, '', window.location.pathname);
 }
 
+async function _activateSharedList(shareId, fullData) {
+  // Find which local store this shared list belongs to
+  const uid = window._currentUser?.uid;
+  let targetStoreId = null;
+
+  // Check if list already exists locally
+  if (state.sharedListMeta) {
+    for (const [listId, meta] of Object.entries(state.sharedListMeta)) {
+      if (meta.shareId === shareId) {
+        // Already set up — just switch to it
+        const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+        if (owningStore) {
+          state.activeStoreId = owningStore.id;
+          state.activeListId[owningStore.id] = listId;
+          renderAll();
+          switchScreen('list');
+          return;
+        }
+      }
+    }
+  }
+
+  // List not in local state — need to add it (member from another device/session)
+  showToast('Loading shared list…');
+  const matched = _findMatchingStore(fullData);
+  if (matched) {
+    targetStoreId = matched.id;
+  } else {
+    targetStoreId = await _importStoreFromShare(fullData);
+  }
+  if (!targetStoreId) { showToast('Error setting up store'); return; }
+
+  if (!state.lists[targetStoreId] || Array.isArray(state.lists[targetStoreId])) {
+    state.lists[targetStoreId] = { lists: {} };
+  }
+  const listId = 'list-' + Date.now() + '-shared';
+  const lists = getLists(targetStoreId);
+  lists.lists[listId] = {
+    id: listId, name: fullData.listName, items: fullData.items || [],
+    createdAt: Date.now(), lastOpened: Date.now()
+  };
+  state.activeListId[targetStoreId] = listId;
+  state.activeStoreId = targetStoreId;
+
+  if (!state.sharedListMeta) state.sharedListMeta = {};
+  state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
+  _saveSharedMeta(targetStoreId);
+  _subscribeSharedList(listId, shareId, targetStoreId);
+
+  window._isAcceptingShare = true;
+  saveState(targetStoreId);
+  renderAll();
+  switchScreen('list');
+  showToast('List ready! 🎉');
+  setTimeout(() => { window._isAcceptingShare = false; }, 3000);
+}
+
 async function _loadSharePreview(shareId) {
   const { db, doc, getDoc } = window._fb;
   try {
@@ -5077,6 +5134,7 @@ async function acceptSharedList() {
   window._isAcceptingShare = true;
   saveState(targetStoreId);
   renderAll();
+  switchScreen('list');
   showToast('List added! 🎉');
   setTimeout(() => { window._isAcceptingShare = false; }, 3000);
 }
@@ -5124,12 +5182,12 @@ function declineSharedList() {
 // ── Resubscribe shared lists on app load / auth ───────────────────────────────
 function resubscribeSharedLists() {
   if (!state.sharedListMeta) return;
-  state.stores.forEach(store => {
-    const meta = state.sharedListMeta;
-    Object.keys(meta).forEach(listId => {
-      const { shareId } = meta[listId];
-      _subscribeSharedList(listId, shareId, store.id);
-    });
+  Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
+    // Find the store that actually contains this list
+    const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+    if (owningStore) {
+      _subscribeSharedList(listId, shareId, owningStore.id);
+    }
   });
 }
 
