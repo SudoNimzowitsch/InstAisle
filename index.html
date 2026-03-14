@@ -1338,13 +1338,13 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     window._currentUser = user;
     updateUserUI(user);
-    // Handle share link that arrived before auth was ready
-    if (window._pendingShareId) {
-      const sid = window._pendingShareId; window._pendingShareId = null;
-      setTimeout(() => { if (window._loadSharePreview) _loadSharePreview(sid); }, 1200);
-    }
     document.getElementById('auth-screen').style.display = 'none';
     await loadUserData(user.uid);
+    // Handle share link — must be AFTER loadUserData so state.stores is populated
+    if (window._pendingShareId) {
+      const sid = window._pendingShareId; window._pendingShareId = null;
+      if (window._loadSharePreview) _loadSharePreview(sid);
+    }
     if (window._isNewSignup) {
       window._isNewSignup = false;
       setTimeout(() => window.maybeShowOnboarding(true), 600);
@@ -4954,7 +4954,8 @@ function checkShareParam() {
   // Clean URL immediately
   window.history.replaceState({}, '', window.location.pathname);
   if (window._currentUser) {
-    _loadSharePreview(shareId);
+    // Defer until after any in-flight loadUserData
+    setTimeout(() => _loadSharePreview(shareId), 500);
   } else {
     // Auth not ready yet — stash and handle after login
     _pendingShareId = shareId;
@@ -5031,15 +5032,32 @@ function _findMatchingStore(d) {
 async function acceptSharedList() {
   const modal = document.getElementById('modal-accept-share');
   const shareId = modal._shareId;
-  const d = modal._shareData;
+  const previewData = modal._shareData; // preview only — no items
   modal.classList.remove('open');
-  if (!shareId || !d) return;
+  if (!shareId || !previewData) return;
 
   const uid  = window._currentUser.uid;
   const name = window._currentUser?.displayName || window._currentUser?.email || 'User';
-  const { db, doc, updateDoc, arrayUnion } = window._fb;
+  const { db, doc, updateDoc, arrayUnion, getDoc } = window._fb;
 
   showToast('Adding list…');
+
+  // Fetch full doc to get actual items (preview doc has none)
+  // We add ourselves to members first so the read is permitted
+  try {
+    await updateDoc(doc(db, 'shared_lists', shareId), {
+      members: arrayUnion(uid),
+      ['memberNames.' + uid]: name,
+    });
+  } catch(e) { showToast('Could not join list'); console.error(e); return; }
+
+  let fullData = null;
+  try {
+    const fullSnap = await getDoc(doc(db, 'shared_lists', shareId));
+    if (fullSnap.exists()) fullData = fullSnap.data();
+  } catch(e) { console.warn('Could not read full share doc', e); }
+
+  const d = fullData || previewData; // fall back to preview if read fails
 
   // Determine target store
   let targetStoreId = null;
@@ -5078,13 +5096,7 @@ async function acceptSharedList() {
   state.sharedListMeta[listId] = { shareId, ownerUid: d.ownerUid };
   _saveSharedMeta(targetStoreId);
 
-  // Add self to share doc members
-  try {
-    await updateDoc(doc(db, 'shared_lists', shareId), {
-      members: arrayUnion(uid),
-      ['memberNames.' + uid]: name,
-    });
-  } catch(e) { console.warn('member update error', e); }
+  // (member join already done above before fetching full doc)
 
   // Subscribe real-time
   _subscribeSharedList(listId, shareId, targetStoreId);
