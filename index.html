@@ -7500,8 +7500,18 @@ let _filteredReviewStore = null;
 let _filteredReviewItems = [];
 
 function showFilteredReviewModal(groceryCount, filteredItems, store) {
-  // Dismiss keyboard before showing modal so it doesn't obscure the summary
+  // Close any open modal (e.g. edit list) and dismiss keyboard first,
+  // then wait for keyboard animation to finish before showing modal
   if (document.activeElement) document.activeElement.blur();
+  const editListModal = document.getElementById('modal-edit-list');
+  if (editListModal?.classList.contains('open')) {
+    editListModal.classList.remove('open');
+  }
+  // Defer opening to give keyboard time to collapse (~300ms)
+  setTimeout(() => _showFilteredReviewModal(groceryCount, filteredItems, store), 350);
+}
+
+function _showFilteredReviewModal(groceryCount, filteredItems, store) {
   _filteredReviewStore = store;
   _filteredReviewItems = filteredItems;
 
@@ -7512,12 +7522,10 @@ function showFilteredReviewModal(groceryCount, filteredItems, store) {
 
   // Stage 1 — added line
   const addedEl = document.getElementById('filtered-summary-added');
-  if (groceryCount > 0) {
-    addedEl.style.display = '';
-    addedEl.textContent = groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list';
-  } else {
-    addedEl.style.display = 'none';
-  }
+  addedEl.style.display = groceryCount > 0 ? '' : 'none';
+  addedEl.textContent = groceryCount > 0
+    ? groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list'
+    : '';
 
   // Stage 1 — filtered line with preview + green Review? link
   const preview = filteredItems.slice(0, 2).join(', ')
