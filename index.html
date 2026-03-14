@@ -1293,6 +1293,9 @@ textarea.input{resize:vertical;min-height:90px;}
       <div style="font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Shared with</div>
       <div id="share-members-list"></div>
     </div>
+    <button id="share-leave-btn" class="btn btn-ghost btn-full btn-sm"
+      style="color:var(--red,#f87171);margin-bottom:8px;display:none"
+      onclick="leaveSharedList()">Leave shared list</button>
     <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="closeModal('modal-share-list')">Done</button>
   </div>
 </div>
@@ -4857,34 +4860,115 @@ async function openShareList() {
   }
 }
 
+// shareId currently displayed in the share modal
+let _shareModalShareId = null;
+let _shareModalListId  = null;
+let _shareModalStoreId = null;
+
 function _renderShareModal(shareId) {
+  _shareModalShareId = shareId;
+
+  // Find the listId and storeId for this share
+  if (state.sharedListMeta) {
+    for (const [lid, meta] of Object.entries(state.sharedListMeta)) {
+      if (meta.shareId === shareId) {
+        _shareModalListId = lid;
+        const owningStore = state.stores.find(s => getLists(s.id)?.lists[lid]);
+        _shareModalStoreId = owningStore?.id || null;
+        break;
+      }
+    }
+  }
+  if (!_shareModalListId && state.pendingShareLinks) {
+    for (const [lid, meta] of Object.entries(state.pendingShareLinks)) {
+      if (meta.shareId === shareId) {
+        _shareModalListId = lid;
+        _shareModalStoreId = meta.storeId || null;
+        break;
+      }
+    }
+  }
+
   const link = window.location.origin + '/?share=' + shareId;
   document.getElementById('share-link-input').value = link;
 
-  // Load member names from Firestore
   const { db, doc, getDoc } = window._fb;
+  const myUid = window._currentUser?.uid;
+
   getDoc(doc(db, 'shared_lists', shareId)).then(snap => {
     if (!snap.exists()) return;
     const d = snap.data();
-    const members = d.members || [];
-    const names   = d.memberNames || {};
+    const members  = d.members || [];
+    const names    = d.memberNames || {};
+    const amOwner  = d.ownerUid === myUid;
     const sec  = document.getElementById('share-members-section');
     const list = document.getElementById('share-members-list');
+    const leaveBtn = document.getElementById('share-leave-btn');
+
+    // Members section — always show if shared
     if (members.length > 1) {
       sec.style.display = '';
       list.innerHTML = members.map(uid => {
         const n = names[uid] || uid;
         const isOwner = uid === d.ownerUid;
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.8rem">${n[0].toUpperCase()}</span>
-          <span style="flex:1;font-size:.85rem">${esc(n)}</span>
-          ${isOwner ? '<span style="font-size:.7rem;color:var(--muted)">owner</span>' : ''}
+        const isMe    = uid === myUid;
+        const canBoot = amOwner && !isMe; // owner can boot others
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">${esc(n[0].toUpperCase())}</span>
+          <span style="flex:1;font-size:.85rem">${esc(n)}${isMe ? ' <span style="font-size:.7rem;color:var(--muted)">(you)</span>' : ''}</span>
+          ${isOwner ? '<span style="font-size:.7rem;color:var(--muted);flex-shrink:0">owner</span>' : ''}
+          ${canBoot ? `<button onclick="bootShareMember('${uid}','${esc(n)}')"
+            style="font-size:.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);
+              background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0">Remove</button>` : ''}
         </div>`;
       }).join('');
     } else {
       sec.style.display = 'none';
     }
+
+    // Leave button — visible to non-owners who are members
+    leaveBtn.style.display = (!amOwner && members.includes(myUid)) ? '' : 'none';
   }).catch(() => {});
+}
+
+async function leaveSharedList() {
+  if (!_shareModalShareId || !_shareModalListId) return;
+  if (!confirm('Leave this shared list? Your local copy will remain but changes will no longer sync.')) return;
+  closeModal('modal-share-list');
+  const { db, doc, updateDoc, arrayRemove } = window._fb;
+  const uid = window._currentUser.uid;
+  try {
+    await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
+      members: arrayRemove(uid)
+    });
+  } catch(e) { console.warn('Leave error', e); }
+  // Clean up local meta and unsubscribe — keep the list items intact
+  if (state.sharedListMeta) delete state.sharedListMeta[_shareModalListId];
+  if (state.pendingShareLinks) delete state.pendingShareLinks[_shareModalListId];
+  if (_shareListUnsubs[_shareModalListId]) {
+    _shareListUnsubs[_shareModalListId]();
+    delete _shareListUnsubs[_shareModalListId];
+  }
+  if (_shareModalStoreId) _saveSharedMeta(_shareModalStoreId);
+  renderAll();
+  showToast('Left shared list — your copy is still here');
+}
+
+async function bootShareMember(memberUid, memberName) {
+  if (!_shareModalShareId) return;
+  if (!confirm('Remove ' + memberName + ' from this shared list? They will keep their local copy but can no longer sync changes.')) return;
+  const { db, doc, updateDoc, arrayRemove } = window._fb;
+  try {
+    await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
+      members: arrayRemove(memberUid)
+    });
+    showToast(memberName + ' removed');
+    // Re-render the modal to reflect the change
+    _renderShareModal(_shareModalShareId);
+  } catch(e) {
+    showToast('Could not remove member');
+    console.warn('Boot error', e);
+  }
 }
 
 async function copyShareLink() {
