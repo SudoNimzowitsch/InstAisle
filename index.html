@@ -4812,6 +4812,8 @@ async function openShareList() {
                     || state.pendingShareLinks?.[_listContextId];
   if (existingMeta && existingMeta.ownerUid !== uid) {
     // Member trying to share — open the manage modal instead
+    document.getElementById('share-list-subtitle').textContent =
+      '"' + list.name + '" · ' + store.name;
     _renderShareModal(existingMeta.shareId);
     openModal('modal-share-list');
     return;
@@ -4936,23 +4938,55 @@ function _renderShareModal(shareId) {
       sec.style.display = 'none';
     }
 
-    // Leave button — visible to non-owners who are members
-    leaveBtn.style.display = (!amOwner && members.includes(myUid)) ? '' : 'none';
+    // Leave button — visible to any member
+    // Owners see 'Leave & transfer ownership', non-owners see 'Leave shared list'
+    if (members.includes(myUid)) {
+      leaveBtn.style.display = '';
+      leaveBtn.textContent = amOwner
+        ? (members.length > 1 ? 'Leave & transfer ownership' : 'Stop sharing')
+        : 'Leave shared list';
+    } else {
+      leaveBtn.style.display = 'none';
+    }
   }).catch(() => {});
 }
 
 async function leaveSharedList() {
   if (!_shareModalShareId || !_shareModalListId) return;
-  if (!confirm('Leave this shared list? Your local copy will remain but changes will no longer sync.')) return;
-  closeModal('modal-share-list');
-  const { db, doc, updateDoc, arrayRemove } = window._fb;
+  const { db, doc, getDoc, updateDoc, deleteDoc, arrayRemove } = window._fb;
   const uid = window._currentUser.uid;
-  try {
+
+  // Get current state to check if we're the owner
+  const snap = await getDoc(doc(db, 'shared_lists', _shareModalShareId)).catch(() => null);
+  if (!snap || !snap.exists()) { closeModal('modal-share-list'); return; }
+  const data = snap.data();
+  const amOwner = data.ownerUid === uid;
+  const otherMembers = (data.members || []).filter(m => m !== uid);
+
+  if (amOwner && otherMembers.length === 0) {
+    // Last person — confirm and delete the share doc entirely
+    if (!confirm('You are the only member. Stop sharing this list entirely?')) return;
+    closeModal('modal-share-list');
+    await deleteDoc(doc(db, 'shared_lists', _shareModalShareId)).catch(e => console.warn(e));
+  } else if (amOwner) {
+    // Transfer ownership to first other member
+    const newOwnerName = data.memberNames?.[otherMembers[0]] || 'the next member';
+    if (!confirm('Leave and transfer ownership to ' + newOwnerName + '? Your local copy will remain.')) return;
+    closeModal('modal-share-list');
     await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
-      members: arrayRemove(uid)
-    });
-  } catch(e) { console.warn('Leave error', e); }
-  // Clean up local meta and unsubscribe — keep the list items intact
+      ownerUid: otherMembers[0],
+      members: arrayRemove(uid),
+    }).catch(e => console.warn('Transfer error', e));
+  } else {
+    // Regular member leaving
+    if (!confirm('Leave this shared list? Your local copy will remain but changes will no longer sync.')) return;
+    closeModal('modal-share-list');
+    await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
+      members: arrayRemove(uid),
+    }).catch(e => console.warn('Leave error', e));
+  }
+
+  // Clean up local meta and unsubscribe — keep list items intact
   if (state.sharedListMeta) delete state.sharedListMeta[_shareModalListId];
   if (state.pendingShareLinks) delete state.pendingShareLinks[_shareModalListId];
   if (_shareListUnsubs[_shareModalListId]) {
