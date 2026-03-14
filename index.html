@@ -5011,9 +5011,11 @@ async function _activateSharedList(shareId, fullData) {
   _subscribeSharedList(listId, shareId, targetStoreId);
 
   window._isAcceptingShare = true;
-  saveState(targetStoreId);
+  state.activeStoreId = targetStoreId;
+  state.activeListId[targetStoreId] = listId;
   renderAll();
   switchScreen('list');
+  if (window.persistStore) await window.persistStore(targetStoreId);
   showToast('List ready! 🎉');
   setTimeout(() => { window._isAcceptingShare = false; }, 3000);
 }
@@ -5138,9 +5140,11 @@ async function acceptSharedList() {
 
   // Guard against snapshot callbacks overwriting our new list before save completes
   window._isAcceptingShare = true;
-  saveState(targetStoreId);
+  state.activeStoreId = targetStoreId;
+  state.activeListId[targetStoreId] = listId;
   renderAll();
   switchScreen('list');
+  if (window.persistStore) await window.persistStore(targetStoreId);
   showToast('List added! 🎉');
   setTimeout(() => { window._isAcceptingShare = false; }, 3000);
 }
