@@ -1432,7 +1432,7 @@ async function loadUserData(uid) {
   state.stores = [];
   state.lists  = {};
   state.corrections = {};
-  state.sharedListMeta = state.sharedListMeta || {}; // shareId keyed by listId
+  state.sharedListMeta = {}; // always reset — repopulated from store docs below
 
   if (storeDocs.length === 0) {
     // First time — seed demo store to Firestore
