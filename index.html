@@ -4967,51 +4967,43 @@ async function _loadSharePreview(shareId) {
   try {
     const uid = window._currentUser.uid;
 
-    // Try to read the full doc — succeeds only if already a member
+    // Try full doc first — succeeds if already a member
     let isMember = false, fullData = null;
     try {
       const fullSnap = await getDoc(doc(db, 'shared_lists', shareId));
       if (fullSnap.exists()) { fullData = fullSnap.data(); isMember = fullData.members?.includes(uid); }
-    } catch(_) { /* permission denied — not a member */ }
+    } catch(_) { /* permission denied — not a member yet */ }
 
     if (isMember && fullData) { _activateSharedList(shareId, fullData); return; }
 
-    // Not a member — read only the safe preview subcollection (no items exposed)
+    // Not a member — read preview subcollection (no items)
     const prevSnap = await getDoc(doc(db, 'shared_lists', shareId, 'meta', 'preview'));
     if (!prevSnap.exists()) { showToast('Share link not found or expired'); return; }
     const d = prevSnap.data();
 
-    document.getElementById('accept-share-title').textContent = '"' + d.listName + '"';
+    // Resolve store silently — match by location/chain, or will import on accept
+    const matchedStore = _findMatchingStore(d);
+    const warn = document.getElementById('accept-share-store-warning');
+    document.getElementById('accept-share-title').textContent = '“' + d.listName + '”';
     document.getElementById('accept-share-from').textContent =
       'Shared by ' + (d.ownerDisplayName || 'someone');
 
-    const matchedStore = _findMatchingStore(d);
-    const warn = document.getElementById('accept-share-store-warning');
     if (matchedStore) {
       document.getElementById('accept-share-store').textContent =
         'Will appear in: ' + matchedStore.name;
       warn.style.display = 'none';
-    } else if (d.storeLocationId || d.storeChainId) {
-      document.getElementById('accept-share-store').textContent =
-        'Store: ' + d.storeName;
-      warn.style.display = '';
-      warn.textContent = "You don't have this store yet — " + d.storeName +
-        ' will be added to your account.';
     } else {
       document.getElementById('accept-share-store').textContent =
         'Store: ' + d.storeName;
       warn.style.display = '';
-      warn.innerHTML = 'Which of your stores should this list belong to? ' +
-        '<select id="accept-store-picker" style="margin-top:6px;width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.82rem">' +
-        state.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('') +
-        '<option value="__import__">Import ' + esc(d.storeName) + ' as new store</option>' +
-        '</select>';
+      warn.textContent = d.storeName + ' will be added to your stores.';
     }
 
-    // _shareData holds preview only; full data loaded on accept
-    document.getElementById('modal-accept-share')._shareId = shareId;
-    document.getElementById('modal-accept-share')._shareData = d;
-    document.getElementById('modal-accept-share').classList.add('open');
+    const modal = document.getElementById('modal-accept-share');
+    modal._shareId = shareId;
+    modal._shareData = d;
+    modal._matchedStoreId = matchedStore ? matchedStore.id : null;
+    modal.classList.add('open');
   } catch(e) {
     showToast('Could not load share link');
     console.error(e);
@@ -5032,7 +5024,8 @@ function _findMatchingStore(d) {
 async function acceptSharedList() {
   const modal = document.getElementById('modal-accept-share');
   const shareId = modal._shareId;
-  const previewData = modal._shareData; // preview only — no items
+  const previewData = modal._shareData;
+  const matchedStoreId = modal._matchedStoreId || null;
   modal.classList.remove('open');
   if (!shareId || !previewData) return;
 
@@ -5042,8 +5035,7 @@ async function acceptSharedList() {
 
   showToast('Adding list…');
 
-  // Fetch full doc to get actual items (preview doc has none)
-  // We add ourselves to members first so the read is permitted
+  // Join the share doc first so we have permission to read items
   try {
     await updateDoc(doc(db, 'shared_lists', shareId), {
       members: arrayUnion(uid),
@@ -5051,57 +5043,40 @@ async function acceptSharedList() {
     });
   } catch(e) { showToast('Could not join list'); console.error(e); return; }
 
+  // Fetch full doc — now readable as a member
   let fullData = null;
   try {
     const fullSnap = await getDoc(doc(db, 'shared_lists', shareId));
     if (fullSnap.exists()) fullData = fullSnap.data();
-  } catch(e) { console.warn('Could not read full share doc', e); }
+  } catch(e) { console.warn('Could not read full share doc after joining', e); }
 
-  const d = fullData || previewData; // fall back to preview if read fails
+  if (!fullData) { showToast('Could not load list contents'); return; }
 
-  // Determine target store
-  let targetStoreId = null;
-  const picker = document.getElementById('accept-store-picker');
-  if (picker) {
-    const val = picker.value;
-    if (val === '__import__') {
-      targetStoreId = await _importStoreFromShare(d);
-    } else {
-      targetStoreId = val;
-    }
-  } else {
-    const matched = _findMatchingStore(d);
-    if (matched) {
-      targetStoreId = matched.id;
-    } else {
-      targetStoreId = await _importStoreFromShare(d);
-    }
+  // Determine target store — use matched store, or import the sharer's store
+  let targetStoreId = matchedStoreId;
+  if (!targetStoreId) {
+    targetStoreId = await _importStoreFromShare(fullData);
   }
+  if (!targetStoreId) { showToast('Error setting up store'); return; }
 
-  if (!targetStoreId) { showToast('Error finding store'); return; }
-
-  // Add list to local state
+  // Add list to local state with actual items from full doc
   migrateListsIfNeeded(targetStoreId);
   const listId = 'list-' + Date.now() + '-shared';
   const lists = getLists(targetStoreId);
   lists.lists[listId] = {
-    id: listId, name: d.listName, items: d.items || [],
+    id: listId, name: fullData.listName, items: fullData.items || [],
     createdAt: Date.now(), lastOpened: Date.now()
   };
   state.activeListId[targetStoreId] = listId;
   state.activeStoreId = targetStoreId;
 
-  // Record meta
+  // Record meta and subscribe real-time
   if (!state.sharedListMeta) state.sharedListMeta = {};
-  state.sharedListMeta[listId] = { shareId, ownerUid: d.ownerUid };
+  state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
   _saveSharedMeta(targetStoreId);
-
-  // (member join already done above before fetching full doc)
-
-  // Subscribe real-time
   _subscribeSharedList(listId, shareId, targetStoreId);
 
-  // Save to Firestore
+  // Save and render
   saveState(targetStoreId);
   renderAll();
   showToast('List added! 🎉');
