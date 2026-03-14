@@ -5153,18 +5153,25 @@ async function _importStoreFromShare(d) {
   const { db, doc, setDoc, serverTimestamp } = window._fb;
   const uid = window._currentUser.uid;
   const storeId = 'store-' + Date.now();
+  const _importedAisles = d.storeAisles || [];
   const newStore = {
     ownerUid: uid,
     name: d.storeName,
     color: '#4ade80',
-    aisles: d.storeAisles || [],
+    aisles: _importedAisles,
     library_chain_id:    d.storeChainId    || null,
     library_location_id: d.storeLocationId || null,
+    // Snapshot the imported aisles so the diff pipeline can compute
+    // Bob's future edits relative to this baseline
+    library_aisles_snapshot: d.storeChainId || d.storeLocationId
+      ? _importedAisles.map(a => ({ name: a.name, keywords: [...(a.keywords||[])] }))
+      : null,
     createdAt: serverTimestamp(),
     list: [], corrections: {}
   };
   await setDoc(doc(db, 'stores', storeId), newStore);
-  state.stores.push({ ...newStore, id: storeId });
+  state.stores.push({ ...newStore, id: storeId,
+    library_aisles_snapshot: newStore.library_aisles_snapshot });
   // Don't migrate yet — acceptSharedList will populate the first list
   state.lists[storeId] = { lists: {} };
   state.corrections[storeId] = {};
