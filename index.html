@@ -1255,6 +1255,22 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 
+<!-- Filtered Items Review Modal -->
+<div class="modal-overlay" id="modal-filtered-items" onclick="closeModal('modal-filtered-items')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:360px">
+    <div class="modal-handle"></div>
+    <div id="filtered-items-header" style="margin-bottom:16px">
+      <div class="modal-title" style="font-size:1rem;margin-bottom:4px" id="filtered-items-title"></div>
+      <p class="text-muted" style="font-size:.8rem;margin:0" id="filtered-items-subtitle"></p>
+    </div>
+    <div id="filtered-items-list" style="max-height:40vh;overflow-y:auto;margin-bottom:16px"></div>
+    <button class="btn btn-primary btn-full" id="filtered-add-btn"
+      style="margin-bottom:8px;display:none" onclick="addFilteredItems()">Add selected</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)"
+      onclick="closeModal('modal-filtered-items')">Dismiss</button>
+  </div>
+</div>
+
 <!-- Share List Modal -->
 <div class="modal-overlay" id="modal-share-list" onclick="closeModal('modal-share-list')">
   <div class="modal" onclick="event.stopPropagation()">
@@ -7348,15 +7364,18 @@ async function processListInput(){
   if(uploadedImageB64){
     showProcessing('Reading your list with Gemini…');
     try {
-      const names=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
+      const {items: names, filtered: filteredNames}=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
       uploadedImageB64=null; uploadedImageType=null;
       resetUploadZone();
-      if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
+      if(!names.length && !filteredNames.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
+      if(!names.length && filteredNames.length){ hideProcessing(); renderListScreen(); showFilteredReviewModal(0, filteredNames, store); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
       const results=classifyItems(names,store);
       _applyItems(applyCorr(results,store));
       await window.persistStore(store.id);
-      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
+      hideProcessing(); renderListScreen();
+      if(filteredNames.length) { showFilteredReviewModal(names.length, filteredNames, store); }
+      else { showToast(`${names.length} items from photo organised ✓`); }
     } catch(err){
       hideProcessing(); console.error(err);
       showToast('Could not read image: '+(err.message||'unknown error'));
@@ -7392,8 +7411,8 @@ async function handleEditMergeUpload(e){
         r.onerror=()=>rej(new Error('Read failed'));
         r.readAsDataURL(f);
       });
-      const names=await parseImageWithGemini(b64,'image/jpeg');
-      if(!names.length){ hideProcessing(); showToast('No items found in photo'); return; }
+      const {items: names, filtered: filteredNames}=await parseImageWithGemini(b64,'image/jpeg');
+      if(!names.length && !filteredNames.length){ hideProcessing(); showToast('No items found in photo'); return; }
       showProcessing(`Found ${names.length} items — merging…`);
       const newItems=applyCorr(classifyItems(names,store),store);
       const existing=getActiveListItems(store.id);
@@ -7403,7 +7422,8 @@ async function handleEditMergeUpload(e){
       await window.persistStore(store.id);
       hideProcessing();
       openEditList();
-      showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
+      if(filteredNames.length) { showFilteredReviewModal(toAdd.length, filteredNames, store); }
+      else { showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`); }
     } catch(err){
       hideProcessing(); showToast('Could not read image: '+(err.message||'unknown error'));
     }
@@ -7457,7 +7477,69 @@ async function parseImageWithGemini(b64, mimeType){
     throw new Error(err?.error||`Server error ${res.status}`);
   }
   const data=await res.json();
-  return Array.isArray(data.items)?data.items.filter(Boolean):[];
+  return {
+    items:    Array.isArray(data.items)    ? data.items.filter(Boolean)    : [],
+    filtered: Array.isArray(data.filtered) ? data.filtered.filter(Boolean) : []
+  };
+}
+
+let _filteredReviewStore = null;
+let _filteredReviewItems = [];
+
+function showFilteredReviewModal(groceryCount, filteredItems, store) {
+  _filteredReviewStore = store;
+  _filteredReviewItems = filteredItems;
+
+  const title = document.getElementById('filtered-items-title');
+  const subtitle = document.getElementById('filtered-items-subtitle');
+  const list = document.getElementById('filtered-items-list');
+  const addBtn = document.getElementById('filtered-add-btn');
+
+  if (groceryCount > 0) {
+    title.textContent = groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list';
+    subtitle.textContent = filteredItems.length + ' non-grocery item' +
+      (filteredItems.length !== 1 ? 's were' : ' was') + ' filtered out. Review?';
+  } else {
+    title.textContent = filteredItems.length + ' item' +
+      (filteredItems.length !== 1 ? 's were' : ' was') + ' filtered as non-grocery';
+    subtitle.textContent = 'Tap items to add them to your list anyway.';
+  }
+
+  list.innerHTML = filteredItems.map((item, i) => `
+    <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;
+      border-bottom:1px solid var(--border);cursor:pointer;font-size:.88rem">
+      <input type="checkbox" data-idx="${i}"
+        style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0"
+        onchange="_updateFilteredAddBtn()">
+      <span>${esc(item)}</span>
+    </label>`).join('');
+
+  addBtn.style.display = 'none';
+  openModal('modal-filtered-items');
+}
+
+function _updateFilteredAddBtn() {
+  const checked = document.querySelectorAll('#filtered-items-list input[type=checkbox]:checked');
+  const btn = document.getElementById('filtered-add-btn');
+  btn.style.display = checked.length ? '' : 'none';
+  btn.textContent = 'Add ' + checked.length + ' item' + (checked.length !== 1 ? 's' : '');
+}
+
+function addFilteredItems() {
+  const store = _filteredReviewStore;
+  if (!store) return;
+  const checked = document.querySelectorAll('#filtered-items-list input[type=checkbox]:checked');
+  const names = Array.from(checked).map(cb => _filteredReviewItems[parseInt(cb.dataset.idx)]).filter(Boolean);
+  if (!names.length) return;
+  const newItems = applyCorr(classifyItems(names, store), store);
+  const existing = getActiveListItems(store.id);
+  const existingNames = new Set(existing.map(i => i.name.toLowerCase().trim()));
+  const toAdd = newItems.filter(i => !existingNames.has(i.name.toLowerCase().trim()));
+  setActiveListItems(store.id, [...existing, ...toAdd]);
+  window.persistStore(store.id);
+  closeModal('modal-filtered-items');
+  renderListScreen();
+  showToast(toAdd.length + ' item' + (toAdd.length !== 1 ? 's' : '') + ' added ✓');
 }
 
 function classifyItems(items,store){
