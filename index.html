@@ -4807,6 +4807,16 @@ async function openShareList() {
   const uid  = window._currentUser?.uid;
   const name = window._currentUser?.displayName || window._currentUser?.email || 'Someone';
 
+  // Check if this is a shared list the current user doesn't own
+  const existingMeta = state.sharedListMeta?.[_listContextId]
+                    || state.pendingShareLinks?.[_listContextId];
+  if (existingMeta && existingMeta.ownerUid !== uid) {
+    // Member trying to share — open the manage modal instead
+    _renderShareModal(existingMeta.shareId);
+    openModal('modal-share-list');
+    return;
+  }
+
   document.getElementById('share-list-subtitle').textContent =
     '"' + list.name + '" · ' + store.name;
 
@@ -5423,7 +5433,7 @@ function renderListScreen(){
     const lid = getActiveListId(store.id);
     const lname = lid && getLists(store.id)?.lists[lid]?.name;
     const _isShared = lid && state.sharedListMeta?.[lid];
-    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + (_isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px" title="Shared list">🔗</span>' : '') + done + '/' + total + ' ✓';
+    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + (_isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px;cursor:pointer" title="Manage sharing" onclick="topbarShareList()">🔗</span>' : '') + done + '/' + total + ' ✓';
   }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
