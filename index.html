@@ -7495,6 +7495,8 @@ let _filteredReviewStore = null;
 let _filteredReviewItems = [];
 
 function showFilteredReviewModal(groceryCount, filteredItems, store) {
+  // Dismiss keyboard before showing modal so it doesn't obscure the summary
+  if (document.activeElement) document.activeElement.blur();
   _filteredReviewStore = store;
   _filteredReviewItems = filteredItems;
 
