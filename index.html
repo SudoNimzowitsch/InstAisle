@@ -5060,7 +5060,11 @@ async function acceptSharedList() {
   if (!targetStoreId) { showToast('Error setting up store'); return; }
 
   // Add list to local state with actual items from full doc
-  migrateListsIfNeeded(targetStoreId);
+  // Initialise lists structure if not present — don't use migrateListsIfNeeded
+  // which would create an unwanted default 'My List'
+  if (!state.lists[targetStoreId] || Array.isArray(state.lists[targetStoreId])) {
+    state.lists[targetStoreId] = { lists: {} };
+  }
   const listId = 'list-' + Date.now() + '-shared';
   const lists = getLists(targetStoreId);
   lists.lists[listId] = {
@@ -5076,10 +5080,12 @@ async function acceptSharedList() {
   _saveSharedMeta(targetStoreId);
   _subscribeSharedList(listId, shareId, targetStoreId);
 
-  // Save and render
+  // Guard against snapshot callbacks overwriting our new list before save completes
+  window._isAcceptingShare = true;
   saveState(targetStoreId);
   renderAll();
   showToast('List added! 🎉');
+  setTimeout(() => { window._isAcceptingShare = false; }, 3000);
 }
 
 async function _importStoreFromShare(d) {
@@ -5098,13 +5104,13 @@ async function _importStoreFromShare(d) {
   };
   await setDoc(doc(db, 'stores', storeId), newStore);
   state.stores.push({ ...newStore, id: storeId });
-  state.lists[storeId] = {};
+  // Don't migrate yet — acceptSharedList will populate the first list
+  state.lists[storeId] = { lists: {} };
   state.corrections[storeId] = {};
-  migrateListsIfNeeded(storeId);
   // subscribe store
   window._storeUnsubs.push(
     window._fb.onSnapshot(window._fb.doc(db, 'stores', storeId), (snap) => {
-      if (!snap.exists() || window._isSaving) return;
+      if (!snap.exists() || window._isSaving || window._isAcceptingShare) return;
       const data = snap.data();
       const idx = state.stores.findIndex(s => s.id === storeId);
       if (idx !== -1) {
