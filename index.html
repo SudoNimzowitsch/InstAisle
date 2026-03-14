@@ -2539,10 +2539,8 @@ window.setSyncDot = setSyncDot;
 
 // Signal that the Firebase module is fully loaded
 window._fbReady = true;
-// Check for ?share= URL param now that Firebase is ready
-setTimeout(() => {
-  if (window.checkShareParam) checkShareParam();
-}, 200);
+// Stash any ?share= param so it's ready when auth completes
+if (window.checkShareParam) checkShareParam();
 
 // ── Browser back/forward navigation ──────────────────────────────────────
 // ── Browser back/forward navigation ──────────────────────────────────────
@@ -4951,15 +4949,10 @@ function checkShareParam() {
   const params = new URLSearchParams(window.location.search);
   const shareId = params.get('share');
   if (!shareId) return;
-  // Clean URL immediately
+  // Always stash — _loadSharePreview is called after loadUserData completes
+  _pendingShareId = shareId;
+  // Clean URL now that we've safely stashed it
   window.history.replaceState({}, '', window.location.pathname);
-  if (window._currentUser) {
-    // Defer until after any in-flight loadUserData
-    setTimeout(() => _loadSharePreview(shareId), 500);
-  } else {
-    // Auth not ready yet — stash and handle after login
-    _pendingShareId = shareId;
-  }
 }
 
 async function _loadSharePreview(shareId) {
