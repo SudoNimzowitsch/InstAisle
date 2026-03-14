@@ -2539,8 +2539,15 @@ window.setSyncDot = setSyncDot;
 
 // Signal that the Firebase module is fully loaded
 window._fbReady = true;
-// Stash any ?share= param so it's ready when auth completes
-if (window.checkShareParam) checkShareParam();
+// Stash ?share= param directly here — checkShareParam (global script)
+// may not be parsed yet at this point
+(function() {
+  const _sp = new URLSearchParams(window.location.search).get('share');
+  if (_sp) {
+    window._pendingShareId = _sp;
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
 
 // ── Browser back/forward navigation ──────────────────────────────────────
 // ── Browser back/forward navigation ──────────────────────────────────────
@@ -4946,12 +4953,11 @@ async function _saveSharedMeta(storeId) {
 
 // ── Check URL for ?share= param on load ──────────────────────────────────────
 function checkShareParam() {
+  // Already handled in module script on page load — this is a no-op fallback
   const params = new URLSearchParams(window.location.search);
   const shareId = params.get('share');
   if (!shareId) return;
-  // Always stash — _loadSharePreview is called after loadUserData completes
   _pendingShareId = shareId;
-  // Clean URL now that we've safely stashed it
   window.history.replaceState({}, '', window.location.pathname);
 }
 
@@ -8126,7 +8132,7 @@ boot();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/InstAisle/sw.js').catch(()=>{});
+    navigator.serviceWorker.register('/InstAisle/sw.js', { updateViaCache: 'none' }).catch(()=>{});
   });
 }
 
