@@ -5031,6 +5031,16 @@ async function copyShareLink() {
 function _subscribeSharedList(listId, shareId, storeId) {
   if (_shareListUnsubs[listId]) return; // already subscribed
   const { db, doc, onSnapshot } = window._fb;
+  const _onSnapErr = (err) => {
+    // Permission denied — user was removed or share deleted; clean up silently
+    if (err.code === 'permission-denied') {
+      if (state.sharedListMeta) delete state.sharedListMeta[listId];
+      if (state.pendingShareLinks) delete state.pendingShareLinks[listId];
+      if (_shareListUnsubs[listId]) { _shareListUnsubs[listId](); delete _shareListUnsubs[listId]; }
+      _saveSharedMeta(storeId);
+      renderAll();
+    }
+  };
   const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
     const lists = getLists(storeId);
 
@@ -5071,7 +5081,7 @@ function _subscribeSharedList(listId, shareId, storeId) {
       lists.lists[listId].items = data.items || [];
       renderListScreen();
     }
-  });
+  }, _onSnapErr);
   _shareListUnsubs[listId] = unsub;
 }
 
