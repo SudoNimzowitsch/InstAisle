@@ -1259,14 +1259,22 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="modal-overlay" id="modal-filtered-items" onclick="closeModal('modal-filtered-items')">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:360px">
     <div class="modal-handle"></div>
-    <div id="filtered-items-header" style="margin-bottom:16px">
-      <div class="modal-title" style="font-size:1rem;margin-bottom:4px" id="filtered-items-title"></div>
-      <p class="text-muted" style="font-size:.8rem;margin:0" id="filtered-items-subtitle"></p>
+
+    <!-- Stage 1: compact summary (shown first) -->
+    <div id="filtered-stage-summary">
+      <div style="font-size:.95rem;font-weight:600;margin-bottom:10px" id="filtered-summary-added"></div>
+      <div style="font-size:.95rem;font-weight:600" id="filtered-summary-filtered"></div>
     </div>
-    <div id="filtered-items-list" style="max-height:40vh;overflow-y:auto;margin-bottom:16px"></div>
-    <button class="btn btn-primary btn-full" id="filtered-add-btn"
-      style="margin-bottom:8px;display:none" onclick="addFilteredItems()">Add selected</button>
-    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)"
+
+    <!-- Stage 2: checklist (hidden until Review tapped) -->
+    <div id="filtered-stage-checklist" style="display:none">
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:12px" id="filtered-checklist-label"></div>
+      <div id="filtered-items-list" style="max-height:45vh;overflow-y:auto;margin-bottom:16px"></div>
+      <button class="btn btn-primary btn-full" id="filtered-add-btn"
+        style="margin-bottom:8px;display:none" onclick="addFilteredItems()">Add selected</button>
+    </div>
+
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted);margin-top:12px"
       onclick="closeModal('modal-filtered-items')">Dismiss</button>
   </div>
 </div>
@@ -7490,32 +7498,51 @@ function showFilteredReviewModal(groceryCount, filteredItems, store) {
   _filteredReviewStore = store;
   _filteredReviewItems = filteredItems;
 
-  const title = document.getElementById('filtered-items-title');
-  const subtitle = document.getElementById('filtered-items-subtitle');
-  const list = document.getElementById('filtered-items-list');
-  const addBtn = document.getElementById('filtered-add-btn');
+  // Reset to stage 1
+  document.getElementById('filtered-stage-summary').style.display = '';
+  document.getElementById('filtered-stage-checklist').style.display = 'none';
+  document.getElementById('filtered-add-btn').style.display = 'none';
 
+  // Stage 1 — added line
+  const addedEl = document.getElementById('filtered-summary-added');
   if (groceryCount > 0) {
-    title.textContent = groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list';
-    subtitle.textContent = filteredItems.length + ' non-grocery item' +
-      (filteredItems.length !== 1 ? 's were' : ' was') + ' filtered out. Review?';
+    addedEl.style.display = '';
+    addedEl.textContent = groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list';
   } else {
-    title.textContent = filteredItems.length + ' item' +
-      (filteredItems.length !== 1 ? 's were' : ' was') + ' filtered as non-grocery';
-    subtitle.textContent = 'Tap items to add them to your list anyway.';
+    addedEl.style.display = 'none';
   }
 
-  list.innerHTML = filteredItems.map((item, i) => `
-    <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;
-      border-bottom:1px solid var(--border);cursor:pointer;font-size:.88rem">
-      <input type="checkbox" data-idx="${i}"
-        style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0"
-        onchange="_updateFilteredAddBtn()">
-      <span>${esc(item)}</span>
-    </label>`).join('');
+  // Stage 1 — filtered line with preview + green Review? link
+  const preview = filteredItems.slice(0, 2).join(', ')
+    + (filteredItems.length > 2 ? '…' : '');
+  const filteredEl = document.getElementById('filtered-summary-filtered');
+  filteredEl.innerHTML =
+    filteredItems.length + ' non-grocery item' + (filteredItems.length !== 1 ? 's' : '') +
+    ' filtered (' + esc(preview) + ') ' +
+    '<span style="color:var(--green);cursor:pointer;text-decoration:underline" ' +
+    'onclick="event.stopPropagation();_showFilteredChecklist()">Review?</span>';
 
-  addBtn.style.display = 'none';
   openModal('modal-filtered-items');
+}
+
+function _showFilteredChecklist() {
+  // Transition to stage 2
+  document.getElementById('filtered-stage-summary').style.display = 'none';
+  const checklist = document.getElementById('filtered-stage-checklist');
+  checklist.style.display = '';
+
+  document.getElementById('filtered-checklist-label').textContent =
+    'Check items to add them to your list:';
+
+  document.getElementById('filtered-items-list').innerHTML =
+    _filteredReviewItems.map((item, i) => `
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;
+        border-bottom:1px solid var(--border);cursor:pointer;font-size:.88rem">
+        <input type="checkbox" data-idx="${i}"
+          style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0"
+          onchange="_updateFilteredAddBtn()">
+        <span>${esc(item)}</span>
+      </label>`).join('');
 }
 
 function _updateFilteredAddBtn() {
