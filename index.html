@@ -4795,13 +4795,13 @@ let _pendingShareId  = null; // shareId from URL ?share= param, waiting for auth
 
 // ── Open share sheet for the context list ────────────────────────────────────
 async function openShareList() {
-  const storeId = state.activeStoreId;
+  const storeId = _listPickerStoreId || state.activeStoreId;
   if (!storeId || !_listContextId) return;
   closeModal('modal-list-context');
 
   const lists  = getLists(storeId);
   const list   = lists?.lists[_listContextId];
-  const store  = getActiveStore();
+  const store  = state.stores.find(s => s.id === storeId);
   if (!list || !store) return;
 
   const uid  = window._currentUser?.uid;
