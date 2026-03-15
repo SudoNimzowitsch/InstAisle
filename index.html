@@ -1294,7 +1294,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title" id="list-context-name" style="font-size:1rem;margin-bottom:16px"></div>
-    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openShareList()">🔗 Share list</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" id="ctx-share-btn" onclick="openShareList()">🔗 Share list</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="renameListPrompt()">✏️ Rename</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('move')">→ Move to store</button>
     <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="openListTransfer('copy')">⧉ Copy to store</button>
@@ -5713,7 +5713,7 @@ function renderListPicker(storeId) {
       data-listid="${l.id}"
       data-storeid="${storeId}">
       <div style="flex:1">
-        <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}</div>
+        <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}${state.sharedListMeta?.[l.id] ? '<span style="font-size:.7rem;color:var(--muted);margin-left:5px" title="Shared list">🔗</span>' : ''}</div>
         <div style="font-size:.72rem;color:var(--muted)">${l.items.length} item${l.items.length!==1?'s':''}</div>
       </div>
       ${l.id===activeId?'<span style="color:var(--green);font-size:.72rem">Active</span>':''}
@@ -5785,6 +5785,12 @@ function dismissListContext() {
 function openListContext(storeId, listId) {
   _listPickerStoreId = storeId;
   _listContextId = listId;
+  // Update share button label based on whether this list is already shared
+  const _ctxShareBtn = document.getElementById('ctx-share-btn');
+  if (_ctxShareBtn) {
+    const _isSharedCtx = state.sharedListMeta?.[listId] || state.pendingShareLinks?.[listId];
+    _ctxShareBtn.textContent = _isSharedCtx ? '🔗 Manage sharing' : '🔗 Share list';
+  }
   const lists = getLists(storeId);
   const list = lists && lists.lists[listId];
   if (!list) return;
