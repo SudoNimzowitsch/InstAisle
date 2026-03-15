@@ -7541,8 +7541,7 @@ async function handleEditMergeUpload(e){
       setActiveListItems(store.id, [...existing, ...toAdd]);
       await window.persistStore(store.id);
       hideProcessing();
-      openEditList();
-      if (document.activeElement) document.activeElement.blur();
+      openEditList(true);
       showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
     } catch(err){
       hideProcessing(); showToast('Could not read image: '+(err.message||'unknown error'));
@@ -7696,13 +7695,13 @@ function clearList(){
 
 // ── Edit List ─────────────────────────────────────────────────────────────────────────
 
-function openEditList() {
+function openEditList(suppressFocus) {
   const store = getActiveStore();
   if (!store) return;
   renderEditListItems();
   document.getElementById('edit-list-new-item').value = '';
   openModal('modal-edit-list');
-  setTimeout(() => document.getElementById('edit-list-new-item').focus(), 300);
+  if (!suppressFocus) setTimeout(() => document.getElementById('edit-list-new-item').focus(), 300);
 }
 
 function renderEditListItems() {
