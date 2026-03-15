@@ -1107,7 +1107,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="store-modal-scroll">
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
-      <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+      <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
     </div>
   </div>
 </div>
@@ -6560,6 +6560,12 @@ async function addStoreFromLibrary() {
   tempAisles = aisles;
   _storeSnapshot = null;
   renderStoreModal();
+  const _saveBtnL = document.getElementById('store-save-btn');
+  if (_saveBtnL) _saveBtnL.style.display = '';
+  // Remove any lingering auto-save handler
+  const _nameInpL = document.getElementById('store-name-input');
+  _nameInpL._autoSaveHandler && _nameInpL.removeEventListener('input', _nameInpL._autoSaveHandler);
+  _nameInpL._autoSaveHandler = null;
   openModal('modal-store');
 }
 // ══════════════════════════════════════════════════════════════════════════
@@ -6570,6 +6576,12 @@ function openNewStore(){
   pendingLibraryMeta=null;
   document.getElementById('store-modal-title').textContent='New Store';
   document.getElementById('store-name-input').value='';
+  const _saveBtnN = document.getElementById('store-save-btn');
+  if (_saveBtnN) _saveBtnN.style.display = '';
+  // Remove any lingering auto-save handler from a previous edit session
+  const _nameInp = document.getElementById('store-name-input');
+  _nameInp._autoSaveHandler && _nameInp.removeEventListener('input', _nameInp._autoSaveHandler);
+  _nameInp._autoSaveHandler = null;
   tempColor=STORE_COLORS[state.stores.length%STORE_COLORS.length];
   tempAisles=[
     {name:'Produce',           keywords:['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','fruit','vegetable']},
@@ -6605,7 +6617,11 @@ function hasUnsavedStoreChanges() {
 }
 
 function maybeCloseStoreModal() {
-  if (hasUnsavedStoreChanges()) {
+  if (state.editingStoreId) {
+    // Editing: auto-save any pending changes then close cleanly
+    _autoSaveStoreNow();
+    closeModal('modal-store');
+  } else if (hasUnsavedStoreChanges()) {
     document.getElementById('modal-unsaved-changes').classList.add('open');
   } else {
     closeModal('modal-store');
@@ -6637,9 +6653,17 @@ function editStore(id){
   document.getElementById('store-modal-title').textContent='Edit Store';
   document.getElementById('store-name-input').value=store.name;
   tempColor=store.color;
-  tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]}));
+  tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords],keyword_scores:{...(a.keyword_scores||{})}}));
   _storeSnapshot = { name:store.name, color:store.color, aisles:store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]})) };
   renderStoreModal();
+  // Hide save button — edits auto-save
+  const saveBtn = document.getElementById('store-save-btn');
+  if (saveBtn) saveBtn.style.display = 'none';
+  // Wire auto-save on name input
+  const nameInput = document.getElementById('store-name-input');
+  nameInput._autoSaveHandler && nameInput.removeEventListener('input', nameInput._autoSaveHandler);
+  nameInput._autoSaveHandler = () => _autoSaveStore();
+  nameInput.addEventListener('input', nameInput._autoSaveHandler);
   openModal('modal-store');
 }
 
@@ -6656,6 +6680,7 @@ function pickColor(c){
   document.getElementById('store-color-picker').innerHTML=STORE_COLORS.map(col=>
     `<div class="color-opt ${col===c?'selected':''}" style="background:${col}" onclick="pickColor('${col}')"></div>`
   ).join('');
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 // ── AISLE ROWS with fixed chip deletion + bulk keyword upload + image scan ──
@@ -6681,7 +6706,8 @@ function renderAisleRows(){
               style="flex:1;font-size:.84rem;font-weight:500;background:transparent;border:none;
                      border-bottom:1px solid var(--border);color:var(--text);padding:0 2px;
                      outline:none;min-width:0"
-              onclick="_aisleNameClick(event,${i})">`
+              onclick="_aisleNameClick(event,${i})"
+              oninput="if(state.editingStoreId) _autoSaveStore()">`
           : `<span class="aisle-row-name${aisle.name.trim()?'':' empty'}">${_dn}</span>`
         }
         ${_kwc>0?`<span class="aisle-kw-count">${_kwc} kw</span>`:''}
@@ -6840,6 +6866,7 @@ function addKw(i){
   inp.value='';
   refreshChips(i);
   inp.focus();
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 function addBulkKw(i){
@@ -6852,11 +6879,13 @@ function addBulkKw(i){
   ta.value='';
   refreshChips(i);
   showToast(`${added} keyword${added!==1?'s':''} added`);
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 function removeKw(i,kw){
   tempAisles[i].keywords=tempAisles[i].keywords.filter(k=>k!==kw);
   refreshChips(i);
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 // ── AISLE IMAGE SCANNING ──
@@ -6955,6 +6984,7 @@ function acceptScanKws(i){
   if(panel) panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
   showToast(`${added} keyword${added!==1?'s':''} added from photo ✓`);
   switchKwTab(i,'bulk');
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 function discardScan(i){
@@ -7096,6 +7126,7 @@ function importTemplate(tplIdx) {
   if (toggle) { toggle.textContent = '－'; }
 
   showToast(`Imported ${added.length} keywords from "${tpl.name}"`);
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 function addAisleRow(){
@@ -7104,6 +7135,7 @@ function addAisleRow(){
   _expandedAisles.add(tempAisles.length); // will be the new index
   tempAisles.push({name:'',keywords:[]});
   renderAisleRows();
+  if (state.editingStoreId) _autoSaveStore();
   const scrollEl = document.querySelector('.store-modal-scroll');
   if (scrollEl) setTimeout(() => {
     scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' });
@@ -7126,6 +7158,7 @@ function confirmRemoveAisle(){
   _pendingRemoveAisleIdx = null;
   renumberAisleNames();
   renderAisleRows();
+  if (state.editingStoreId) _autoSaveStore();
 }
 function cancelRemoveAisle(){
   document.getElementById('modal-remove-aisle').classList.remove('open');
@@ -7331,6 +7364,7 @@ function initAisleDrag(){
         _aisleTouchSrcIdx = null;
         expandAislesAfterDrag();
         renderAisleRows();
+        if (state.editingStoreId) _autoSaveStore();
       };
 
       card.addEventListener('touchmove', onTM, {passive:false});
@@ -7480,6 +7514,7 @@ function onAisleDragEnd(e){
 
   aisleDragSrcIdx=null;
   expandAislesAfterDrag();
+  if (state.editingStoreId) _autoSaveStore();
 }
 
 // Auto-renumber aisle names that match the pattern "Aisle N" or "Aisle N – …"
@@ -7493,6 +7528,39 @@ function renumberAisleNames(){
       aisle.name=`Aisle ${i+1}${suffix}`;
     }
   });
+}
+
+// ── Auto-save helpers for store edit mode ────────────────────────────────────
+let _autoSaveTimer = null;
+
+function _autoSaveStore() {
+  // Debounce: wait 800ms after last change before saving
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(_autoSaveStoreNow, 800);
+}
+
+function _autoSaveStoreNow() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = null;
+  if (!state.editingStoreId) return;
+  syncNames();
+  const name = document.getElementById('store-name-input')?.value.trim();
+  if (!name || !tempAisles.length) return; // invalid state — don't save
+  const store = state.stores.find(s => s.id === state.editingStoreId);
+  if (!store) return;
+  const aisles = tempAisles.map(a => ({
+    name: a.name, keywords: [...a.keywords],
+    keyword_scores: { ...(a.keyword_scores || {}) }
+  }));
+  store.name = name; store.color = tempColor; store.aisles = aisles;
+  // Re-classify existing list items if any
+  if (getActiveListItems(store.id)?.length) {
+    setActiveListItems(store.id, getActiveListItems(store.id).map(item => ({
+      ...item, aisleIndex: rematch(item.name, store)
+    })));
+  }
+  renderAll();
+  if (window.persistStore) window.persistStore(store.id);
 }
 
 async function saveStore(){
