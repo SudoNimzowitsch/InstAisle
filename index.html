@@ -5555,12 +5555,35 @@ function resubscribeSharedLists() {
       if (owningStore) _subscribeSharedList(listId, shareId, owningStore.id);
     });
   }
-  // Also resubscribe pending shares (generated but not yet accepted)
-  // so the owner gets notified when someone joins
+  // For pending shares: do a one-time check to see if anyone has already
+  // accepted while we were offline, then subscribe normally
   if (state.pendingShareLinks) {
-    Object.entries(state.pendingShareLinks).forEach(([listId, { shareId, storeId }]) => {
+    Object.entries(state.pendingShareLinks).forEach(async ([listId, { shareId, storeId }]) => {
       const sid = storeId || state.stores.find(s => getLists(s.id)?.lists[listId])?.id;
-      if (sid) _subscribeSharedList(listId, shareId, sid);
+      if (!sid) return;
+      try {
+        const { db, doc, getDoc } = window._fb;
+        const snap = await getDoc(doc(db, 'shared_lists', shareId));
+        if (!snap.exists()) {
+          // Doc gone — clean up
+          delete state.pendingShareLinks[listId];
+          _saveSharedMeta(sid);
+          return;
+        }
+        const members = snap.data().members || [];
+        if (members.length > 1) {
+          // Already accepted while offline — promote immediately
+          if (!state.sharedListMeta) state.sharedListMeta = {};
+          state.sharedListMeta[listId] = { shareId, ownerUid: snap.data().ownerUid };
+          delete state.pendingShareLinks[listId];
+          _saveSharedMeta(sid);
+          renderAll();
+        }
+        // Now subscribe for future changes
+        _subscribeSharedList(listId, shareId, sid);
+      } catch(e) {
+        console.warn('[share] pending check error', e.message);
+      }
     });
   }
 }
