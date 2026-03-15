@@ -1470,7 +1470,8 @@ async function loadUserData(uid) {
   state.stores = [];
   state.lists  = {};
   state.corrections = {};
-  state.sharedListMeta = {}; // always reset — repopulated from store docs below
+  state.sharedListMeta = {};    // always reset — repopulated from store docs below
+  state.pendingShareLinks = {}; // always reset — repopulated from store docs below
 
   if (storeDocs.length === 0) {
     // First time — seed demo store to Firestore
@@ -5216,6 +5217,8 @@ function _subscribeSharedList(listId, shareId, storeId) {
     }
   };
   const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
+    // Don't process snapshots until stores are loaded
+    if (!state.stores.length) return;
     const lists = getLists(storeId);
 
     // Doc deleted (owner transferred then last member left, or doc purged)
