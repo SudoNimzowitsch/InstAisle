@@ -1255,29 +1255,6 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 
-<!-- Filtered Items Review Modal -->
-<div class="modal-overlay" id="modal-filtered-items" onclick="closeModal('modal-filtered-items')">
-  <div class="modal" onclick="event.stopPropagation()" style="max-width:360px">
-    <div class="modal-handle"></div>
-
-    <!-- Stage 1: compact summary (shown first) -->
-    <div id="filtered-stage-summary">
-      <div style="font-size:.95rem;font-weight:600;margin-bottom:10px" id="filtered-summary-added"></div>
-      <div style="font-size:.95rem;font-weight:600" id="filtered-summary-filtered"></div>
-    </div>
-
-    <!-- Stage 2: checklist (hidden until Review tapped) -->
-    <div id="filtered-stage-checklist" style="display:none">
-      <div style="font-size:.85rem;color:var(--muted);margin-bottom:12px" id="filtered-checklist-label"></div>
-      <div id="filtered-items-list" style="max-height:45vh;overflow-y:auto;margin-bottom:16px"></div>
-      <button class="btn btn-primary btn-full" id="filtered-add-btn"
-        style="margin-bottom:8px;display:none" onclick="addFilteredItems()">Add selected</button>
-    </div>
-
-    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted);margin-top:12px"
-      onclick="closeModal('modal-filtered-items')">Dismiss</button>
-  </div>
-</div>
 
 <!-- Share List Modal -->
 <div class="modal-overlay" id="modal-share-list" onclick="closeModal('modal-share-list')">
@@ -7510,18 +7487,15 @@ async function processListInput(){
   if(uploadedImageB64){
     showProcessing('Reading your list with Gemini…');
     try {
-      const {items: names, filtered: filteredNames}=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
+      const names=await parseImageWithGemini(uploadedImageB64, uploadedImageType||'image/jpeg');
       uploadedImageB64=null; uploadedImageType=null;
       resetUploadZone();
-      if(!names.length && !filteredNames.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
-      if(!names.length && filteredNames.length){ hideProcessing(); renderListScreen(); showFilteredReviewModal(0, filteredNames, store); return; }
+      if(!names.length){ hideProcessing(); showToast('No items found — try a clearer photo'); return; }
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
       const results=classifyItems(names,store);
       _applyItems(applyCorr(results,store));
       await window.persistStore(store.id);
-      hideProcessing(); renderListScreen();
-      if(filteredNames.length) { showFilteredReviewModal(names.length, filteredNames, store); }
-      else { showToast(`${names.length} items from photo organised ✓`); }
+      hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
       hideProcessing(); console.error(err);
       showToast('Could not read image: '+(err.message||'unknown error'));
@@ -7557,8 +7531,8 @@ async function handleEditMergeUpload(e){
         r.onerror=()=>rej(new Error('Read failed'));
         r.readAsDataURL(f);
       });
-      const {items: names, filtered: filteredNames}=await parseImageWithGemini(b64,'image/jpeg');
-      if(!names.length && !filteredNames.length){ hideProcessing(); showToast('No items found in photo'); return; }
+      const names=await parseImageWithGemini(b64,'image/jpeg');
+      if(!names.length){ hideProcessing(); showToast('No items found in photo'); return; }
       showProcessing(`Found ${names.length} items — merging…`);
       const newItems=applyCorr(classifyItems(names,store),store);
       const existing=getActiveListItems(store.id);
@@ -7567,14 +7541,8 @@ async function handleEditMergeUpload(e){
       setActiveListItems(store.id, [...existing, ...toAdd]);
       await window.persistStore(store.id);
       hideProcessing();
-      if(filteredNames.length) {
-        // Show filtered review modal first; edit list opens after dismiss/add
-        renderListScreen();
-        showFilteredReviewModal(toAdd.length, filteredNames, store);
-      } else {
-        openEditList();
-        showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
-      }
+      openEditList();
+      showToast(`${toAdd.length} new item${toAdd.length!==1?'s':''} merged ✓`);
     } catch(err){
       hideProcessing(); showToast('Could not read image: '+(err.message||'unknown error'));
     }
@@ -7628,99 +7596,9 @@ async function parseImageWithGemini(b64, mimeType){
     throw new Error(err?.error||`Server error ${res.status}`);
   }
   const data=await res.json();
-  return {
-    items:    Array.isArray(data.items)    ? data.items.filter(Boolean)    : [],
-    filtered: Array.isArray(data.filtered) ? data.filtered.filter(Boolean) : []
-  };
+  return Array.isArray(data.items) ? data.items.filter(Boolean) : [];
 }
 
-let _filteredReviewStore = null;
-let _filteredReviewItems = [];
-
-function showFilteredReviewModal(groceryCount, filteredItems, store) {
-  // Close any open modal (e.g. edit list) and dismiss keyboard first,
-  // then wait for keyboard animation to finish before showing modal
-  if (document.activeElement) document.activeElement.blur();
-  const editListModal = document.getElementById('modal-edit-list');
-  if (editListModal?.classList.contains('open')) {
-    editListModal.classList.remove('open');
-  }
-  // Defer opening to give keyboard time to collapse (~300ms)
-  setTimeout(() => _showFilteredReviewModal(groceryCount, filteredItems, store), 350);
-}
-
-function _showFilteredReviewModal(groceryCount, filteredItems, store) {
-  _filteredReviewStore = store;
-  _filteredReviewItems = filteredItems;
-
-  // Reset to stage 1
-  document.getElementById('filtered-stage-summary').style.display = '';
-  document.getElementById('filtered-stage-checklist').style.display = 'none';
-  document.getElementById('filtered-add-btn').style.display = 'none';
-
-  // Stage 1 — added line
-  const addedEl = document.getElementById('filtered-summary-added');
-  addedEl.style.display = groceryCount > 0 ? '' : 'none';
-  addedEl.textContent = groceryCount > 0
-    ? groceryCount + ' item' + (groceryCount !== 1 ? 's' : '') + ' added to your list'
-    : '';
-
-  // Stage 1 — filtered line with preview + green Review? link
-  const preview = filteredItems.slice(0, 2).join(', ')
-    + (filteredItems.length > 2 ? '…' : '');
-  const filteredEl = document.getElementById('filtered-summary-filtered');
-  filteredEl.innerHTML =
-    filteredItems.length + ' non-grocery item' + (filteredItems.length !== 1 ? 's' : '') +
-    ' filtered (' + esc(preview) + ') ' +
-    '<span style="color:var(--green);cursor:pointer;text-decoration:underline" ' +
-    'onclick="event.stopPropagation();_showFilteredChecklist()">Review?</span>';
-
-  openModal('modal-filtered-items');
-}
-
-function _showFilteredChecklist() {
-  // Transition to stage 2
-  document.getElementById('filtered-stage-summary').style.display = 'none';
-  const checklist = document.getElementById('filtered-stage-checklist');
-  checklist.style.display = '';
-
-  document.getElementById('filtered-checklist-label').textContent =
-    'Check items to add them to your list:';
-
-  document.getElementById('filtered-items-list').innerHTML =
-    _filteredReviewItems.map((item, i) => `
-      <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;
-        border-bottom:1px solid var(--border);cursor:pointer;font-size:.88rem">
-        <input type="checkbox" data-idx="${i}"
-          style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0"
-          onchange="_updateFilteredAddBtn()">
-        <span>${esc(item)}</span>
-      </label>`).join('');
-}
-
-function _updateFilteredAddBtn() {
-  const checked = document.querySelectorAll('#filtered-items-list input[type=checkbox]:checked');
-  const btn = document.getElementById('filtered-add-btn');
-  btn.style.display = checked.length ? '' : 'none';
-  btn.textContent = 'Add ' + checked.length + ' item' + (checked.length !== 1 ? 's' : '');
-}
-
-function addFilteredItems() {
-  const store = _filteredReviewStore;
-  if (!store) return;
-  const checked = document.querySelectorAll('#filtered-items-list input[type=checkbox]:checked');
-  const names = Array.from(checked).map(cb => _filteredReviewItems[parseInt(cb.dataset.idx)]).filter(Boolean);
-  if (!names.length) return;
-  const newItems = applyCorr(classifyItems(names, store), store);
-  const existing = getActiveListItems(store.id);
-  const existingNames = new Set(existing.map(i => i.name.toLowerCase().trim()));
-  const toAdd = newItems.filter(i => !existingNames.has(i.name.toLowerCase().trim()));
-  setActiveListItems(store.id, [...existing, ...toAdd]);
-  window.persistStore(store.id);
-  closeModal('modal-filtered-items');
-  renderListScreen();
-  showToast(toAdd.length + ' item' + (toAdd.length !== 1 ? 's' : '') + ' added ✓');
-}
 
 function classifyItems(items,store){
   return items.map(name=>({
