@@ -4832,7 +4832,8 @@ let _pendingShareId  = null; // shareId from URL ?share= param, waiting for auth
 async function openShareList() {
   const storeId = _listPickerStoreId || state.activeStoreId;
   if (!storeId || !_listContextId) return;
-  closeModal('modal-list-context');
+  // Close context modal directly — avoid history.back() race
+  document.getElementById('modal-list-context')?.classList.remove('open');
 
   const lists  = getLists(storeId);
   const list   = lists?.lists[_listContextId];
