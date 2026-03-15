@@ -5177,9 +5177,7 @@ async function confirmBootMember() {
 async function copyShareLink() {
   const link = document.getElementById('share-link-input').value;
   const prologue = document.getElementById('share-link-prologue')?.textContent || '';
-  const fullText = prologue ? prologue + '
-
-' + link : link;
+  const fullText = prologue ? prologue + '\n\n' + link : link;
   try {
     await navigator.clipboard.writeText(fullText);
     showToast('Link copied!');
