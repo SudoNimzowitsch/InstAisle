@@ -1527,7 +1527,16 @@ async function loadUserData(uid) {
           library_location_id: data.library_location_id || null,
           library_chain_id: data.library_chain_id || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
-        if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
+        // Only update lists from snapshot if lists_v2 is present and valid
+        // Never regress to flat legacy array — that would clobber activeListId
+        if (!window._isSaving) {
+          if (data.lists_v2 && typeof data.lists_v2 === 'object' && !Array.isArray(data.lists_v2)) {
+            state.lists[d.id] = data.lists_v2;
+          } else if (!state.lists[d.id] || Array.isArray(state.lists[d.id])) {
+            // Only fall back to legacy if we don't already have a migrated structure
+            state.lists[d.id] = data.lists_v2 || data.list || [];
+          }
+        }
         state.corrections[d.id] = data.corrections || {};
         renderAll();
         setSyncDot('ok');
@@ -1881,11 +1890,10 @@ window.persistStore = async function(storeId) {
     }
     const updatePayload = {
       name: store.name, color: store.color, aisles: store.aisles,
-      // lists_v2: new multi-list structure
+      // lists_v2: new multi-list structure — always migrate before saving
       lists_v2: (() => {
-        const raw = state.lists[storeId];
-        if (!raw || Array.isArray(raw)) return null;
-        return raw;
+        migrateListsIfNeeded(storeId);
+        return state.lists[storeId];
       })(),
       // list: legacy flat array — kept for rollback safety
       list: getActiveListItems(storeId),
