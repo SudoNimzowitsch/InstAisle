@@ -5051,10 +5051,10 @@ function _subscribeSharedList(listId, shareId, storeId) {
     }
 
     if (!lists || !lists.lists[listId]) return;
-    // Sync items if remote differs (avoid echo of own writes)
+    // Sync items if remote differs (avoid echo of own writes or in-progress saves)
     const remote = JSON.stringify(data.items || []);
     const local  = JSON.stringify(lists.lists[listId].items || []);
-    if (remote !== local && !window._isSharingWrite) {
+    if (remote !== local && !window._isSharingWrite && !window._isSaving) {
       lists.lists[listId].items = data.items || [];
       renderListScreen();
     }
