@@ -1470,8 +1470,7 @@ async function loadUserData(uid) {
   state.stores = [];
   state.lists  = {};
   state.corrections = {};
-  state.sharedListMeta = {};    // always reset — repopulated from store docs below
-  state.pendingShareLinks = {}; // always reset — repopulated from store docs below
+  state.sharedListMeta = {}; // always reset — repopulated from store docs below
 
   if (storeDocs.length === 0) {
     // First time — seed demo store to Firestore
@@ -1493,10 +1492,6 @@ async function loadUserData(uid) {
     state.corrections[snap.id] = d.corrections || {};
     // Merge sharedListMeta from Firestore
     if (d.sharedListMeta) Object.assign(state.sharedListMeta, d.sharedListMeta);
-    if (d.pendingShareLinks) {
-      if (!state.pendingShareLinks) state.pendingShareLinks = {};
-      Object.assign(state.pendingShareLinks, d.pendingShareLinks);
-    }
   });
 
   if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
@@ -1527,16 +1522,7 @@ async function loadUserData(uid) {
           library_location_id: data.library_location_id || null,
           library_chain_id: data.library_chain_id || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
-        // Only update lists from snapshot if lists_v2 is present and valid
-        // Never regress to flat legacy array — that would clobber activeListId
-        if (!window._isSaving) {
-          if (data.lists_v2 && typeof data.lists_v2 === 'object' && !Array.isArray(data.lists_v2)) {
-            state.lists[d.id] = data.lists_v2;
-          } else if (!state.lists[d.id] || Array.isArray(state.lists[d.id])) {
-            // Only fall back to legacy if we don't already have a migrated structure
-            state.lists[d.id] = data.lists_v2 || data.list || [];
-          }
-        }
+        if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
         setSyncDot('ok');
@@ -1890,10 +1876,11 @@ window.persistStore = async function(storeId) {
     }
     const updatePayload = {
       name: store.name, color: store.color, aisles: store.aisles,
-      // lists_v2: new multi-list structure — always migrate before saving
+      // lists_v2: new multi-list structure
       lists_v2: (() => {
-        migrateListsIfNeeded(storeId);
-        return state.lists[storeId];
+        const raw = state.lists[storeId];
+        if (!raw || Array.isArray(raw)) return null;
+        return raw;
       })(),
       // list: legacy flat array — kept for rollback safety
       list: getActiveListItems(storeId),
@@ -4998,8 +4985,6 @@ async function openShareList() {
     // Track pending share (not yet accepted by anyone else)
     if (!state.pendingShareLinks) state.pendingShareLinks = {};
     state.pendingShareLinks[_listContextId] = { shareId, ownerUid: uid, storeId };
-    // Persist so the subscription survives a page reload
-    _saveSharedMeta(storeId);
 
     // Subscribe — will mark as shared once members.length > 1
     _subscribeSharedList(_listContextId, shareId, storeId);
@@ -5225,8 +5210,6 @@ function _subscribeSharedList(listId, shareId, storeId) {
     }
   };
   const unsub = onSnapshot(doc(db, 'shared_lists', shareId), (snap) => {
-    // Don't process snapshots until stores are loaded
-    if (!state.stores.length) return;
     const lists = getLists(storeId);
 
     // Doc deleted (owner transferred then last member left, or doc purged)
@@ -5291,17 +5274,9 @@ async function syncSharedListWrite(storeId, listId) {
 async function _saveSharedMeta(storeId) {
   if (!window._currentUser) return;
   const { db, doc, updateDoc } = window._fb;
-  // Filter pendingShareLinks to only those belonging to this store
-  const storePending = {};
-  if (state.pendingShareLinks) {
-    Object.entries(state.pendingShareLinks).forEach(([lid, meta]) => {
-      if (meta.storeId === storeId) storePending[lid] = meta;
-    });
-  }
   try {
     await updateDoc(doc(db, 'stores', storeId), {
-      sharedListMeta:   state.sharedListMeta || {},
-      pendingShareLinks: storePending,
+      sharedListMeta: state.sharedListMeta || {}
     });
   } catch(e) { console.warn('sharedMeta save error', e); }
 }
@@ -5556,44 +5531,13 @@ function declineSharedList() {
 
 // ── Resubscribe shared lists on app load / auth ───────────────────────────────
 function resubscribeSharedLists() {
-  // Subscribe to confirmed shared lists
-  if (state.sharedListMeta) {
-    Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
-      const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
-      if (owningStore) _subscribeSharedList(listId, shareId, owningStore.id);
-    });
-  }
-  // For pending shares: do a one-time check to see if anyone has already
-  // accepted while we were offline, then subscribe normally
-  if (state.pendingShareLinks) {
-    Object.entries(state.pendingShareLinks).forEach(async ([listId, { shareId, storeId }]) => {
-      const sid = storeId || state.stores.find(s => getLists(s.id)?.lists[listId])?.id;
-      if (!sid) return;
-      try {
-        const { db, doc, getDoc } = window._fb;
-        const snap = await getDoc(doc(db, 'shared_lists', shareId));
-        if (!snap.exists()) {
-          // Doc gone — clean up
-          delete state.pendingShareLinks[listId];
-          _saveSharedMeta(sid);
-          return;
-        }
-        const members = snap.data().members || [];
-        if (members.length > 1) {
-          // Already accepted while offline — promote immediately
-          if (!state.sharedListMeta) state.sharedListMeta = {};
-          state.sharedListMeta[listId] = { shareId, ownerUid: snap.data().ownerUid };
-          delete state.pendingShareLinks[listId];
-          _saveSharedMeta(sid);
-          renderAll();
-        }
-        // Now subscribe for future changes
-        _subscribeSharedList(listId, shareId, sid);
-      } catch(e) {
-        console.warn('[share] pending check error', e.message);
-      }
-    });
-  }
+  if (!state.sharedListMeta) return;
+  Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
+    const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+    if (owningStore) {
+      _subscribeSharedList(listId, shareId, owningStore.id);
+    }
+  });
 }
 
 
