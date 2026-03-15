@@ -6812,7 +6812,7 @@ function toggleKwSection(i) {
 }
 
 function renderChips(i){
-  return tempAisles[i].keywords.map(k=>
+  return [...tempAisles[i].keywords].sort((a,b)=>a.localeCompare(b)).map(k=>
     `<div class="chip" data-kw="${esc(k)}">${esc(k)}<span class="chip-x" title="Remove">×</span></div>`
   ).join('');
 }
@@ -7520,12 +7520,15 @@ async function saveStore(){
     };
     state.stores.push(newStore);
     state.lists[id]=[]; migrateListsIfNeeded(id); state.corrections[id]={};
-    if(!state.activeStoreId) state.activeStoreId=id;
+    state.activeStoreId=id;
+    // Switch to the new store's empty list immediately
+    const _newListId = Object.keys(state.lists[id].lists)[0];
+    if (_newListId) state.activeListId[id] = _newListId;
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
     if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
   }
-  closeModal('modal-store'); renderAll(); showToast('Store saved ✓');
+  closeModal('modal-store'); renderAll(); switchScreen('list'); showToast('Store saved ✓');
   if (window._storeIsGenericDefault) {
     window._storeIsGenericDefault = false;
     setTimeout(() => openModal('modal-generic-warning'), 300);
@@ -7858,15 +7861,20 @@ function applyKeywordVote(store, norm, prevAisleIndex, newAisleIndex) {
 }
 
 function kwMatch(norm,aisles){
+  // Score = sum of keyword_scores for all matching keywords in this aisle.
+  // String length is added as a small fractional tiebreaker so that more
+  // specific keywords (e.g. "greek yogurt" vs "yogurt") win within the same
+  // aisle, without ever overriding the vote-score difference between aisles.
+  const DEFAULT_KW_SCORE = 2;
   let best=0,bestIdx=null;
   aisles.forEach((a,i)=>{
     const scores = a.keyword_scores || {};
     let sc=0;
     a.keywords.forEach(k=>{
-      // Skip keywords voted out (score <= 0)
-      const ks = scores[k.toLowerCase()] ?? 2;
-      if(ks <= 0) return;
-      if(norm.includes(k.toLowerCase())) sc+=k.length;
+      const kl = k.toLowerCase();
+      const ks = scores[kl] ?? DEFAULT_KW_SCORE;
+      if(ks <= 0) return; // voted out — skip
+      if(norm.includes(kl)) sc += ks + k.length * 0.001; // score drives, length breaks ties
     });
     if(sc>best){ best=sc; bestIdx=i; }
   });
