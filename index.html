@@ -1320,9 +1320,12 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="modal-handle"></div>
     <div class="modal-title" style="font-size:1rem;margin-bottom:4px">Share List</div>
     <p class="text-muted" style="font-size:.82rem;margin-bottom:16px" id="share-list-subtitle"></p>
-    <div id="share-link-box" style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-      <input id="share-link-input" readonly style="flex:1;font-size:.75rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);overflow:hidden;text-overflow:ellipsis">
-      <button class="btn btn-primary" style="flex-shrink:0;padding:8px 14px" onclick="copyShareLink()">Copy</button>
+    <div id="share-link-box" style="margin-bottom:16px">
+      <p id="share-link-prologue" style="font-size:.82rem;color:var(--muted);margin-bottom:10px;line-height:1.5"></p>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="share-link-input" readonly style="flex:1;font-size:.75rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);overflow:hidden;text-overflow:ellipsis">
+        <button class="btn btn-primary" style="flex-shrink:0;padding:8px 14px" onclick="copyShareLink()">Copy</button>
+      </div>
     </div>
     <div id="share-members-section" style="margin-bottom:16px;display:none">
       <div style="font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Shared with</div>
@@ -1489,6 +1492,10 @@ async function loadUserData(uid) {
     state.corrections[snap.id] = d.corrections || {};
     // Merge sharedListMeta from Firestore
     if (d.sharedListMeta) Object.assign(state.sharedListMeta, d.sharedListMeta);
+    if (d.pendingShareLinks) {
+      if (!state.pendingShareLinks) state.pendingShareLinks = {};
+      Object.assign(state.pendingShareLinks, d.pendingShareLinks);
+    }
   });
 
   if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
@@ -4982,6 +4989,8 @@ async function openShareList() {
     // Track pending share (not yet accepted by anyone else)
     if (!state.pendingShareLinks) state.pendingShareLinks = {};
     state.pendingShareLinks[_listContextId] = { shareId, ownerUid: uid, storeId };
+    // Persist so the subscription survives a page reload
+    _saveSharedMeta(storeId);
 
     // Subscribe — will mark as shared once members.length > 1
     _subscribeSharedList(_listContextId, shareId, storeId);
@@ -5025,6 +5034,10 @@ function _renderShareModal(shareId) {
 
   const link = window.location.origin + '/?share=' + shareId;
   document.getElementById('share-link-input').value = link;
+  // Populate prologue with inviter's name
+  const _myName = window._currentUser?.displayName || window._currentUser?.email?.split('@')[0] || 'Someone';
+  const _prologueEl = document.getElementById('share-link-prologue');
+  if (_prologueEl) _prologueEl.textContent = _myName + ' is inviting you to join a shared list:';
 
   const { db, doc, getDoc } = window._fb;
   const myUid = window._currentUser?.uid;
@@ -5168,14 +5181,23 @@ async function confirmBootMember() {
 }
 
 async function copyShareLink() {
-  const val = document.getElementById('share-link-input').value;
+  const link = document.getElementById('share-link-input').value;
+  const prologue = document.getElementById('share-link-prologue')?.textContent || '';
+  const fullText = prologue ? prologue + '
+
+' + link : link;
   try {
-    await navigator.clipboard.writeText(val);
+    await navigator.clipboard.writeText(fullText);
     showToast('Link copied!');
   } catch(e) {
-    // fallback — select text
-    document.getElementById('share-link-input').select();
-    showToast('Link ready — copy manually');
+    // fallback — copy link only
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast('Link copied!');
+    } catch(e2) {
+      document.getElementById('share-link-input').select();
+      showToast('Link ready — copy manually');
+    }
   }
 }
 
@@ -5258,9 +5280,17 @@ async function syncSharedListWrite(storeId, listId) {
 async function _saveSharedMeta(storeId) {
   if (!window._currentUser) return;
   const { db, doc, updateDoc } = window._fb;
+  // Filter pendingShareLinks to only those belonging to this store
+  const storePending = {};
+  if (state.pendingShareLinks) {
+    Object.entries(state.pendingShareLinks).forEach(([lid, meta]) => {
+      if (meta.storeId === storeId) storePending[lid] = meta;
+    });
+  }
   try {
     await updateDoc(doc(db, 'stores', storeId), {
-      sharedListMeta: state.sharedListMeta || {}
+      sharedListMeta:   state.sharedListMeta || {},
+      pendingShareLinks: storePending,
     });
   } catch(e) { console.warn('sharedMeta save error', e); }
 }
@@ -5515,14 +5545,21 @@ function declineSharedList() {
 
 // ── Resubscribe shared lists on app load / auth ───────────────────────────────
 function resubscribeSharedLists() {
-  if (!state.sharedListMeta) return;
-  Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
-    // Find the store that actually contains this list
-    const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
-    if (owningStore) {
-      _subscribeSharedList(listId, shareId, owningStore.id);
-    }
-  });
+  // Subscribe to confirmed shared lists
+  if (state.sharedListMeta) {
+    Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
+      const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+      if (owningStore) _subscribeSharedList(listId, shareId, owningStore.id);
+    });
+  }
+  // Also resubscribe pending shares (generated but not yet accepted)
+  // so the owner gets notified when someone joins
+  if (state.pendingShareLinks) {
+    Object.entries(state.pendingShareLinks).forEach(([listId, { shareId, storeId }]) => {
+      const sid = storeId || state.stores.find(s => getLists(s.id)?.lists[listId])?.id;
+      if (sid) _subscribeSharedList(listId, shareId, sid);
+    });
+  }
 }
 
 
