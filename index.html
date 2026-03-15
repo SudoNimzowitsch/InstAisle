@@ -1480,7 +1480,9 @@ async function loadUserData(uid) {
     state.stores.push({
       id: snap.id, name: d.name, color: d.color, aisles: d.aisles || [],
       ownerUid: d.ownerUid,
-      
+      library_location_id:      d.library_location_id      || null,
+      library_chain_id:         d.library_chain_id         || null,
+      library_aisles_snapshot:  d.library_aisles_snapshot  || null,
     });
     // Prefer new multi-list format; fall back to legacy flat array
     state.lists[snap.id] = d.lists_v2 || d.list || [];
@@ -1562,7 +1564,10 @@ async function seedDemoStore(uid) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [] };
+          aisles: data.aisles || [],
+          library_location_id:     data.library_location_id     || null,
+          library_chain_id:        data.library_chain_id        || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -2364,12 +2369,7 @@ window.contributeToLibrary = async function(store) {
     }
   }
 
-  // ── Persist updated contributor list ──────────────────────────────────
-  if (isNewContributor) {
-    try {
-      await updateDoc(locRef, { distinct_contributor_uids: updatedContributors });
-    } catch(e) { console.warn('[library] failed to update contributor list:', e.message); }
-  }
+  // (contributor list tracking removed — was never implemented)
 
   // ── Apply immediate updates to library ────────────────────────────────
   if (Object.keys(immediateUpdates).length) {
@@ -2466,7 +2466,10 @@ window.createStoreInFirestore = async function(storeData) {
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
-          aisles: data.aisles || [] };
+          aisles: data.aisles || [],
+          library_location_id:     data.library_location_id     || null,
+          library_chain_id:        data.library_chain_id        || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -5494,7 +5497,10 @@ async function _importStoreFromShare(d) {
       const idx = state.stores.findIndex(s => s.id === storeId);
       if (idx !== -1) {
         state.stores[idx] = { ...state.stores[idx], name: data.name,
-          color: data.color, aisles: data.aisles || [] };
+          color: data.color, aisles: data.aisles || [],
+          library_location_id:     data.library_location_id     || null,
+          library_chain_id:        data.library_chain_id        || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[storeId] = data.lists_v2 || data.list || [];
         renderAll();
       }
