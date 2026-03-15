@@ -2089,6 +2089,84 @@ async function resolveIndexConflict(choice) {
 window.maybeShowIndexConflictPrompt = maybeShowIndexConflictPrompt;
 window.resolveIndexConflict = resolveIndexConflict;
 
+
+// ── Keyword vote: called when user moves an item between aisles ───────────────
+// srcAisleName = name of aisle item came from (null = uncategorized)
+// destAisleName = name of aisle item moved to (null = uncategorized)
+// keyword = normalised item name
+window.recordKeywordVote = async function(locId, srcAisleName, destAisleName, keyword) {
+  if (!locId) return;
+  if (!window._currentUser) return;
+  const { db, doc, getDoc, updateDoc, setDoc, serverTimestamp } = window._fb;
+  const DEFAULT_SCORE = 2;
+  const MIN_SCORE = 0;
+
+  try {
+    const locRef = doc(db, 'store_locations', sanitizeLocId(locId));
+    const snap = await getDoc(locRef);
+    if (!snap.exists()) return; // no library doc yet — contribution flow will create it
+
+    const data = snap.data();
+    const aisles = (data.aisles || []).map(a => ({ ...a, keyword_scores: { ...(a.keyword_scores || {}) } }));
+
+    let changed = false;
+
+    // Helper: find aisle index by name
+    const findAisle = name => name ? aisles.findIndex(a =>
+      a.name.toLowerCase().trim() === name.toLowerCase().trim()) : -1;
+
+    // ── Add keyword to dest aisle (if not uncategorized) ─────────────────────
+    if (destAisleName !== null) {
+      const destIdx = findAisle(destAisleName);
+      if (destIdx >= 0) {
+        const aisle = aisles[destIdx];
+        const kws = aisle.keywords || [];
+        const scores = aisle.keyword_scores || {};
+        const existing = kws.find(k => k.toLowerCase() === keyword);
+        if (!existing) {
+          // New keyword — add it with score 1
+          aisles[destIdx].keywords = [...kws, keyword];
+          aisles[destIdx].keyword_scores = { ...scores, [keyword]: 1 };
+        } else {
+          // Already exists — increment score
+          const cur = scores[keyword] ?? DEFAULT_SCORE;
+          aisles[destIdx].keyword_scores = { ...scores, [keyword]: cur + 1 };
+        }
+        changed = true;
+      }
+    }
+
+    // ── Decrement keyword score on src aisle (if not uncategorized) ───────────
+    if (srcAisleName !== null) {
+      const srcIdx = findAisle(srcAisleName);
+      if (srcIdx >= 0) {
+        const aisle = aisles[srcIdx];
+        const kws = aisle.keywords || [];
+        const scores = aisle.keyword_scores || {};
+        const existingKw = kws.find(k => k.toLowerCase() === keyword);
+        if (existingKw) {
+          const cur = scores[existingKw] ?? DEFAULT_SCORE;
+          const next = cur - 1;
+          if (next <= MIN_SCORE) {
+            // Prune lazily — mark score 0, filter out on next library load
+            aisles[srcIdx].keyword_scores = { ...scores, [existingKw]: 0 };
+          } else {
+            aisles[srcIdx].keyword_scores = { ...scores, [existingKw]: next };
+          }
+          changed = true;
+        }
+      }
+    }
+
+    if (!changed) return;
+
+    await updateDoc(locRef, { aisles, last_updated_ts: serverTimestamp() });
+    console.log('[library] keyword vote recorded:', keyword, srcAisleName, '→', destAisleName);
+  } catch(e) {
+    console.warn('[library] recordKeywordVote error:', e.message);
+  }
+};
+
 window.contributeToLibrary = async function(store) {
   const locId = store.library_location_id;
   console.log('[library] contributeToLibrary called. locId:', locId, '| user:', window._currentUser?.uid, '| store:', store.name);
@@ -2115,7 +2193,12 @@ window.contributeToLibrary = async function(store) {
 
   const locData    = locSnap.data();
   const dataStatus = locData.data_status || 'none';
-  const libAisles  = locData.aisles || null;
+  // Filter out keywords voted out (score 0) before processing
+  const rawLibAisles = locData.aisles || null;
+  const libAisles = rawLibAisles ? rawLibAisles.map(a => ({
+    ...a,
+    keywords: (a.keywords || []).filter(k => (a.keyword_scores?.[k.toLowerCase()] ?? 2) > 0)
+  })) : null;
   console.log('[library] data_status:', dataStatus, '| has aisles:', !!libAisles);
 
   // ── CASE 1: No real data — donate full aisle set immediately ─────────
@@ -7722,10 +7805,63 @@ function applyCorr(items,store){
   });
 }
 
+
+// ── applyKeywordVote: called on every item move ───────────────────────────────
+// Updates local store.aisles keywords and fires upstream vote
+function applyKeywordVote(store, norm, prevAisleIndex, newAisleIndex) {
+  // Nothing to do if same aisle
+  if (prevAisleIndex === newAisleIndex) return;
+
+  const srcAisle  = (prevAisleIndex != null && store.aisles[prevAisleIndex]) ? store.aisles[prevAisleIndex] : null;
+  const destAisle = (newAisleIndex  != null && store.aisles[newAisleIndex])  ? store.aisles[newAisleIndex]  : null;
+
+  // ── Update local store keywords immediately ──────────────────────────────
+  if (destAisle) {
+    const kws = destAisle.keywords || (destAisle.keywords = []);
+    const scores = destAisle.keyword_scores || (destAisle.keyword_scores = {});
+    const existing = kws.find(k => k.toLowerCase() === norm);
+    if (!existing) {
+      kws.push(norm);
+      scores[norm] = 1;
+    } else {
+      scores[norm] = (scores[norm] ?? 2) + 1;
+    }
+  }
+
+  if (srcAisle) {
+    const kws = srcAisle.keywords || [];
+    const scores = srcAisle.keyword_scores || (srcAisle.keyword_scores = {});
+    const existingKw = kws.find(k => k.toLowerCase() === norm);
+    if (existingKw) {
+      const cur = scores[existingKw] ?? 2;
+      // Decrement score but keep keyword in array — pruning is lazy (on next library load)
+      // kwMatch already ignores keywords with score <= 0
+      scores[existingKw] = Math.max(0, cur - 1);
+    }
+  }
+
+  // ── Fire upstream vote (fire-and-forget) ────────────────────────────────
+  if (store.library_location_id && window.recordKeywordVote) {
+    window.recordKeywordVote(
+      store.library_location_id,
+      srcAisle  ? srcAisle.name  : null,
+      destAisle ? destAisle.name : null,
+      norm
+    ).catch(e => console.warn('[vote] upstream error', e));
+  }
+}
+
 function kwMatch(norm,aisles){
   let best=0,bestIdx=null;
   aisles.forEach((a,i)=>{
-    let sc=0; a.keywords.forEach(k=>{ if(norm.includes(k.toLowerCase())) sc+=k.length; });
+    const scores = a.keyword_scores || {};
+    let sc=0;
+    a.keywords.forEach(k=>{
+      // Skip keywords voted out (score <= 0)
+      const ks = scores[k.toLowerCase()] ?? 2;
+      if(ks <= 0) return;
+      if(norm.includes(k.toLowerCase())) sc+=k.length;
+    });
     if(sc>best){ best=sc; bestIdx=i; }
   });
   return bestIdx;
@@ -7941,10 +8077,13 @@ function moveToAisle(aisleIndex){
   const store=getActiveStore();
   const _al4 = getActiveListItems(store.id); const item = _al4[moveItemIndex];
   const norm=normalise(item.name);
+  const prevAisleIndex = item.aisleIndex;
   if(!state.corrections[store.id]) state.corrections[store.id]={};
   if(aisleIndex===null) delete state.corrections[store.id][norm];
   else state.corrections[store.id][norm]=aisleIndex;
   item.aisleIndex=aisleIndex;
+  // Update local keywords + vote upstream
+  applyKeywordVote(store, norm, prevAisleIndex, aisleIndex);
   closeModal('modal-move-item'); renderListScreen(); showToast('Correction saved ✓');
   persistActiveStore();
 }
@@ -8236,13 +8375,14 @@ function reorderItems(srcIdx, targetIdx, targetAisleKey, before=true){
   const items=getActiveListItems(store.id);
   const moved=items[srcIdx];
   const targetAisle=targetAisleKey==='unmatched'?null:+targetAisleKey;
+  const _prevAisle=moved.aisleIndex;
   moved.aisleIndex=targetAisle;
   items.splice(srcIdx,1);
   // Recalculate targetIdx after splice
   const adjustedTarget=srcIdx<targetIdx?targetIdx-1:targetIdx;
   const insertAt=before?adjustedTarget:adjustedTarget+1;
   items.splice(Math.max(0,insertAt),0,moved);
-  saveCorr(moved,targetAisle,store);
+  saveCorr(moved,targetAisle,store,_prevAisle);
   renderListScreen();
   persistActiveStore();
 }
@@ -8252,19 +8392,21 @@ function moveToEndOfAisle(srcIdx, aisleKey){
   const items=getActiveListItems(store.id);
   const moved=items[srcIdx];
   const targetAisle=aisleKey==='unmatched'?null:+aisleKey;
+  const _prevAisleEnd=moved.aisleIndex;
   moved.aisleIndex=targetAisle;
   items.splice(srcIdx,1);
   items.push(moved);
-  saveCorr(moved,targetAisle,store);
+  saveCorr(moved,targetAisle,store,_prevAisleEnd);
   renderListScreen();
   persistActiveStore();
 }
 
-function saveCorr(item,aisleIndex,store){
+function saveCorr(item,aisleIndex,store,prevAisleIndex){
   const norm=normalise(item.name);
   if(!state.corrections[store.id]) state.corrections[store.id]={};
   if(aisleIndex===null) delete state.corrections[store.id][norm];
   else state.corrections[store.id][norm]=aisleIndex;
+  applyKeywordVote(store, norm, prevAisleIndex, aisleIndex);
 }
 
 // ══════════════════════════════
