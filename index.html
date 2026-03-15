@@ -884,6 +884,64 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+
+<!-- Uncheck All Confirm -->
+<div class="modal-overlay" id="modal-uncheck-all" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Uncheck All?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem" id="uncheck-all-msg"></p>
+    <button class="btn btn-primary btn-full" onclick="confirmUncheckAll()" style="margin-bottom:8px">Uncheck all</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-uncheck-all').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Clear Checked Confirm -->
+<div class="modal-overlay" id="modal-clear-checked" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Clear Checked Items?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem" id="clear-checked-msg"></p>
+    <button class="btn btn-danger btn-full" onclick="confirmClearChecked()" style="margin-bottom:8px">Clear checked</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-clear-checked').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Delete List Confirm -->
+<div class="modal-overlay" id="modal-delete-list" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Delete List?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem">
+      Delete <strong id="delete-list-name"></strong>? This cannot be undone.
+    </p>
+    <button class="btn btn-danger btn-full" onclick="confirmDeleteList()" style="margin-bottom:8px">Delete list</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-delete-list').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Leave Shared List Confirm -->
+<div class="modal-overlay" id="modal-leave-share" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem" id="leave-share-title">Leave Shared List?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem" id="leave-share-msg"></p>
+    <button class="btn btn-danger btn-full" onclick="confirmLeaveShare()" style="margin-bottom:8px" id="leave-share-confirm-btn">Leave</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-leave-share').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Boot Member Confirm -->
+<div class="modal-overlay" id="modal-boot-member" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Remove Member?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem" id="boot-member-msg"></p>
+    <button class="btn btn-danger btn-full" onclick="confirmBootMember()" style="margin-bottom:8px">Remove</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-boot-member').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()" style="z-index:150">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
     <div class="modal-handle"></div>
@@ -4940,24 +4998,45 @@ async function leaveSharedList() {
   const amOwner = data.ownerUid === uid;
   const otherMembers = (data.members || []).filter(m => m !== uid);
 
+  // Store context for confirm callback
+  window._leaveShareContext = { amOwner, otherMembers, data };
+
   if (amOwner && otherMembers.length === 0) {
-    // Last person — confirm and delete the share doc entirely
-    if (!confirm('You are the only member. Stop sharing this list entirely?')) return;
-    closeModal('modal-share-list');
-    await deleteDoc(doc(db, 'shared_lists', _shareModalShareId)).catch(e => console.warn(e));
+    document.getElementById('leave-share-title').textContent = 'Stop Sharing?';
+    document.getElementById('leave-share-msg').textContent = 'You are the only member. This will stop sharing the list entirely. Your local copy will remain.';
+    document.getElementById('leave-share-confirm-btn').textContent = 'Stop sharing';
   } else if (amOwner) {
-    // Transfer ownership to first other member
     const newOwnerName = data.memberNames?.[otherMembers[0]] || 'the next member';
-    if (!confirm('Leave and transfer ownership to ' + newOwnerName + '? Your local copy will remain.')) return;
-    closeModal('modal-share-list');
+    document.getElementById('leave-share-title').textContent = 'Leave & Transfer Ownership?';
+    document.getElementById('leave-share-msg').textContent = 'Ownership will transfer to ' + newOwnerName + '. Your local copy will remain but changes will no longer sync.';
+    document.getElementById('leave-share-confirm-btn').textContent = 'Leave & transfer';
+  } else {
+    document.getElementById('leave-share-title').textContent = 'Leave Shared List?';
+    document.getElementById('leave-share-msg').textContent = 'Your local copy will remain but changes will no longer sync.';
+    document.getElementById('leave-share-confirm-btn').textContent = 'Leave list';
+  }
+  document.getElementById('modal-leave-share').classList.add('open');
+  return; // actual leave happens in confirmLeaveShare
+
+  // (cleanup called from confirmLeaveShare)
+}
+
+async function confirmLeaveShare() {
+  document.getElementById('modal-leave-share').classList.remove('open');
+  closeModal('modal-share-list');
+  const { db, doc, updateDoc, deleteDoc, arrayRemove } = window._fb;
+  const uid = window._currentUser.uid;
+  const ctx = window._leaveShareContext;
+  if (!ctx) return;
+
+  if (ctx.amOwner && ctx.otherMembers.length === 0) {
+    await deleteDoc(doc(db, 'shared_lists', _shareModalShareId)).catch(e => console.warn(e));
+  } else if (ctx.amOwner) {
     await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
-      ownerUid: otherMembers[0],
+      ownerUid: ctx.otherMembers[0],
       members: arrayRemove(uid),
     }).catch(e => console.warn('Transfer error', e));
   } else {
-    // Regular member leaving
-    if (!confirm('Leave this shared list? Your local copy will remain but changes will no longer sync.')) return;
-    closeModal('modal-share-list');
     await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
       members: arrayRemove(uid),
     }).catch(e => console.warn('Leave error', e));
@@ -4975,16 +5054,25 @@ async function leaveSharedList() {
   showToast('Left shared list — your copy is still here');
 }
 
-async function bootShareMember(memberUid, memberName) {
+function bootShareMember(memberUid, memberName) {
   if (!_shareModalShareId) return;
-  if (!confirm('Remove ' + memberName + ' from this shared list? They will keep their local copy but can no longer sync changes.')) return;
+  window._bootMemberUid = memberUid;
+  window._bootMemberName = memberName;
+  document.getElementById('boot-member-msg').textContent =
+    'Remove ' + memberName + ' from this shared list? They will keep their local copy but can no longer sync changes.';
+  document.getElementById('modal-boot-member').classList.add('open');
+}
+async function confirmBootMember() {
+  document.getElementById('modal-boot-member').classList.remove('open');
+  const memberUid = window._bootMemberUid;
+  const memberName = window._bootMemberName;
+  if (!_shareModalShareId || !memberUid) return;
   const { db, doc, updateDoc, arrayRemove } = window._fb;
   try {
     await updateDoc(doc(db, 'shared_lists', _shareModalShareId), {
       members: arrayRemove(memberUid)
     });
     showToast(memberName + ' removed');
-    // Re-render the modal to reflect the change
     _renderShareModal(_shareModalShareId);
   } catch(e) {
     showToast('Could not remove member');
@@ -5728,7 +5816,15 @@ function deleteActiveContextList() {
   if (listCount <= 1) { showToast("Can't delete the only list"); return; }
   const list = lists.lists[_listContextId];
   if (!list) return;
-  if (!confirm('Delete "' + list.name + '"? This cannot be undone.')) return;
+  document.getElementById('delete-list-name').textContent = '"' + list.name + '"';
+  document.getElementById('modal-delete-list').classList.add('open');
+}
+function confirmDeleteList() {
+  document.getElementById('modal-delete-list').classList.remove('open');
+  const lists = getLists(_listPickerStoreId);
+  if (!lists) return;
+  const list = lists.lists[_listContextId];
+  if (!list) return;
 
   // Handle shared list cleanup before removing locally
   const shareMeta = state.sharedListMeta?.[_listContextId]
@@ -7669,9 +7765,15 @@ function uncheckAll(){
   const _ua = getActiveListItems(store.id);
   const checked=_ua.filter(i=>i.checked).length;
   if(!checked){ showToast('No checked items'); return; }
-  if(!confirm(`Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`)) return;
+  document.getElementById('uncheck-all-msg').textContent =
+    `Uncheck all ${checked} checked item${checked!==1?'s':''}? They will reappear on your list.`;
+  document.getElementById('modal-uncheck-all').classList.add('open');
+}
+function confirmUncheckAll(){
+  document.getElementById('modal-uncheck-all').classList.remove('open');
+  const store=getActiveStore();
+  const _ua = getActiveListItems(store.id);
   _ua.forEach(i=>{ i.checked=false; }); setActiveListItems(store.id,_ua);
-  // Reset session tracking for this store so suggestions fire fresh
   if (state._aislesFirstCheckDone) delete state._aislesFirstCheckDone[store.id];
   renderListScreen();
   persistActiveStore();
@@ -7682,17 +7784,19 @@ function clearChecked(){
   const _cc = getActiveListItems(store.id);
   const checked=_cc.filter(i=>i.checked).length;
   if(!checked){ showToast('No checked items'); return; }
-  if(!confirm(`Remove ${checked} checked item${checked!==1?'s':''} from your list? This cannot be undone.`)) return;
+  document.getElementById('clear-checked-msg').textContent =
+    `Remove ${checked} checked item${checked!==1?'s':''} from your list? This cannot be undone.`;
+  document.getElementById('modal-clear-checked').classList.add('open');
+}
+function confirmClearChecked(){
+  document.getElementById('modal-clear-checked').classList.remove('open');
+  const store=getActiveStore();
+  const _cc = getActiveListItems(store.id);
   setActiveListItems(store.id, _cc.filter(i=>!i.checked));
   renderListScreen(); showToast('Checked items removed');
   persistActiveStore();
 }
-function clearList(){
-  if(!confirm('Clear the entire list?')) return;
-  const _cs=getActiveStore(); setActiveListItems(_cs.id,[]);
-  renderListScreen();
-  persistActiveStore();
-}
+
 
 // ── Edit List ─────────────────────────────────────────────────────────────────────────
 
