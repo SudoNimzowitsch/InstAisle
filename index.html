@@ -951,6 +951,19 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Duplicate Store Modal -->
+<div class="modal-overlay" id="modal-duplicate-store" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:4px;font-size:1.4rem">🏪</div>
+    <div class="modal-title" style="text-align:center;font-size:1rem;margin-bottom:8px">Already in your stores</div>
+    <p class="text-muted" style="text-align:center;font-size:.85rem;margin-bottom:20px" id="duplicate-store-msg"></p>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="_duplicateStoreReplace()">Replace with library version</button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:8px" onclick="_duplicateStoreOpen()">Open existing store</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="document.getElementById('modal-duplicate-store').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
 <!-- Rename List Modal -->
 <div class="modal-overlay" id="modal-rename-list" style="z-index:200">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
@@ -1527,7 +1540,8 @@ async function loadUserData(uid) {
   if (window.resubscribeSharedLists) resubscribeSharedLists();
 
   // Preload store locations + user GPS in background so nearby tab opens instantly
-  loadStoreLocations().catch(() => {}); // silent — stores.json may not exist yet
+  // Also use stores.json to backfill library_location_id on old stores that lack it
+  loadStoreLocations().then(() => _backfillLibraryLocationIds()).catch(() => {});
   if (window.loadUserDoc) window.loadUserDoc(); // load prefs (suggestions toggle etc.)
   preloadUserLocation();                // silent — fires GPS early, result cached
 
@@ -1907,7 +1921,11 @@ window.persistStore = async function(storeId) {
       })(),
       // list: legacy flat array — kept for rollback safety
       list: getActiveListItems(storeId),
-      corrections: state.corrections[storeId] || {}
+      corrections: state.corrections[storeId] || {},
+      // Always persist library provenance — backfills stores created before this field existed
+      library_location_id:     store.library_location_id     || null,
+      library_chain_id:        store.library_chain_id        || null,
+      library_aisles_snapshot: store.library_aisles_snapshot || null,
     };
     if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
     await updateDoc(doc(db, 'stores', storeId), updatePayload);
@@ -5438,26 +5456,45 @@ async function _loadSharePreview(shareId) {
   }
 }
 
+// ── Backfill library_location_id on stores that predate the field ─────────────
+// Runs once after stores.json is loaded. Finds stores that have a library_chain_id
+// but no library_location_id, then matches them by name against known locations.
+async function _backfillLibraryLocationIds() {
+  const storeData = _storeLocationCache; // populated by loadStoreLocations
+  if (!storeData || !storeData.length) return;
+  const { db, doc, updateDoc } = window._fb;
+  let anyFixed = false;
+  for (const store of state.stores) {
+    if (store.library_location_id || !store.library_chain_id) continue;
+    // Find a location in stores.json that matches this chain and store name
+    const match = storeData.find(s =>
+      s.chain_id === store.library_chain_id &&
+      s.name.toLowerCase().trim() === store.name.toLowerCase().trim()
+    );
+    if (!match) continue;
+    const locId = sanitizeLocId(match.osm_id);
+    store.library_location_id = locId;
+    anyFixed = true;
+    // Write back to Firestore silently
+    updateDoc(doc(db, 'stores', store.id), { library_location_id: locId })
+      .catch(e => console.warn('[backfill] failed for', store.name, e));
+    console.log('[backfill] fixed library_location_id for', store.name, '->', locId);
+  }
+  if (anyFixed) renderAll();
+}
+
 function _findMatchingStore(d) {
-  console.log('[match] incoming storeLocationId:', d.storeLocationId, '| storeChainId:', d.storeChainId);
-  console.log('[match] Kurt stores:', state.stores.map(s => ({
-    id: s.id, name: s.name,
-    library_location_id: s.library_location_id,
-    library_chain_id: s.library_chain_id
-  })));
   if (!d.storeLocationId && !d.storeChainId) return null;
 
   // Location ID takes priority — identifies a specific physical store
   if (d.storeLocationId) {
     const byLoc = state.stores.find(s => s.library_location_id === d.storeLocationId);
-    console.log('[match] location match result:', byLoc?.name || 'none');
     if (byLoc) return byLoc;
   }
 
   // Chain ID only — share came from a chain-level template (no specific location)
   if (d.storeChainId && !d.storeLocationId) {
     const byChain = state.stores.find(s => s.library_chain_id === d.storeChainId);
-    console.log('[match] chain match result:', byChain?.name || 'none');
     if (byChain) return byChain;
   }
 
@@ -6598,9 +6635,60 @@ function toggleLibAisle(idx) {
   chevron.textContent   = open ? '＋' : '－';
 }
 
+function _duplicateStoreOpen() {
+  const modal = document.getElementById('modal-duplicate-store');
+  const storeId = modal._existingStoreId;
+  modal.classList.remove('open');
+  closeModal('modal-library');
+  if (storeId) {
+    state.activeStoreId = storeId;
+    renderAll();
+    switchScreen('list');
+  }
+}
+
+function _duplicateStoreReplace() {
+  const modal = document.getElementById('modal-duplicate-store');
+  const storeId = modal._existingStoreId;
+  const chain   = modal._chainRef;
+  modal.classList.remove('open');
+  if (!storeId || !chain) return;
+  // Swap aisles on the existing store with the library version, keep lists/corrections
+  const store = state.stores.find(s => s.id === storeId);
+  if (!store) return;
+  const aisles = chain.aisles?.length
+    ? chain.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }))
+    : store.aisles;
+  store.aisles = aisles;
+  store.library_aisles_snapshot = aisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+  if (chain._placeId) store.library_location_id = sanitizeLocId(chain._placeId);
+  if (chain.id)       store.library_chain_id    = chain.id;
+  if (window.persistStore) window.persistStore(storeId);
+  closeModal('modal-library');
+  state.activeStoreId = storeId;
+  renderAll();
+  switchScreen('list');
+  showToast('Store updated from library ✓');
+}
+
 async function addStoreFromLibrary() {
   if (!_libSelectedChain) return;
   const chain = _libSelectedChain;
+
+  // Check for duplicate — user already has a store from this exact library location
+  const _dupLocId = chain._placeId ? sanitizeLocId(chain._placeId) : null;
+  const _dupExisting = _dupLocId
+    ? state.stores.find(s => s.library_location_id === _dupLocId)
+    : chain.id ? state.stores.find(s => s.library_chain_id === chain.id && !s.library_location_id) : null;
+  if (_dupExisting) {
+    const modal = document.getElementById('modal-duplicate-store');
+    document.getElementById('duplicate-store-msg').textContent =
+      'You already have "' + _dupExisting.name + '". Replace it with the latest library version, or just open it?';
+    modal._existingStoreId = _dupExisting.id;
+    modal._chainRef = chain;
+    modal.classList.add('open');
+    return;
+  }
 
   const storeName  = chain._placeName || chain.name;
   const storeColor = chain.color || STORE_COLORS[state.stores.length % STORE_COLORS.length];
