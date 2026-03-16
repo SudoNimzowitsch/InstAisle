@@ -951,6 +951,20 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Rename List Modal -->
+<div class="modal-overlay" id="modal-rename-list" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Rename List</div>
+    <div class="input-wrap" style="margin-bottom:16px">
+      <input class="input" id="rename-list-input" placeholder="List name"
+        onkeydown="if(event.key==='Enter') confirmRenameList()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="confirmRenameList()" style="margin-bottom:8px">Rename</button>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-rename-list').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-delete-confirm" onclick="cancelDelete()" style="z-index:150">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
     <div class="modal-handle"></div>
@@ -5936,11 +5950,22 @@ function renameListPrompt() {
   const lists = getLists(_listPickerStoreId);
   const list = lists && lists.lists[_listContextId];
   if (!list) return;
-  const name = prompt('Rename list:', list.name);
-  if (!name || !name.trim()) return;
-  list.name = name.trim();
+  const input = document.getElementById('rename-list-input');
+  input.value = list.name;
   const ctxEl = document.getElementById('modal-list-context');
   if (ctxEl) ctxEl.classList.remove('open');
+  document.getElementById('modal-rename-list').classList.add('open');
+  setTimeout(() => { input.focus(); input.select(); }, 150);
+}
+function confirmRenameList() {
+  const input = document.getElementById('rename-list-input');
+  const name = input.value.trim();
+  if (!name) return;
+  const lists = getLists(_listPickerStoreId);
+  const list = lists && lists.lists[_listContextId];
+  if (!list) return;
+  list.name = name;
+  document.getElementById('modal-rename-list').classList.remove('open');
   if (window.persistStore) window.persistStore(_listPickerStoreId);
   renderListPicker(_listPickerStoreId);
   openModal('modal-list-picker');
