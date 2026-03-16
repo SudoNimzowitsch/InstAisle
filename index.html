@@ -8098,11 +8098,30 @@ function applyKeywordVote(store, norm, prevAisleIndex, newAisleIndex) {
 }
 
 function kwMatch(norm,aisles){
-  // Score = sum of keyword_scores for all matching keywords in this aisle.
-  // String length is added as a small fractional tiebreaker so that more
-  // specific keywords (e.g. "greek yogurt" vs "yogurt") win within the same
-  // aisle, without ever overriding the vote-score difference between aisles.
+  // Match quality = match_length / max(keyword_length, query_length)
+  // Exact match = 1.0; partial word boundary match < 1.0.
+  // Votes (ks) scale quality — equal quality defers to votes.
+  // Matching requires word boundaries so "oil" won't match "foil".
+  // Plural tolerance: also tries stripping a trailing 's' from either side.
   const DEFAULT_KW_SCORE = 2;
+
+  function wbMatch(needle, haystack) {
+    // Returns true if needle appears in haystack at word boundaries
+    const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(haystack);
+  }
+
+  function matchLen(q, k) {
+    if (wbMatch(k, q)) return k.length;
+    if (wbMatch(q, k)) return q.length;
+    // Plural tolerance: try stripping 'es' before 's' so "matches"→"match" works
+    if (k.endsWith('es') && k.length > 3 && wbMatch(k.slice(0,-2), q)) return k.length - 2;
+    if (q.endsWith('es') && q.length > 3 && wbMatch(q.slice(0,-2), k)) return q.length - 2;
+    if (k.endsWith('s') && wbMatch(k.slice(0,-1), q)) return k.length - 1;
+    if (q.endsWith('s') && wbMatch(q.slice(0,-1), k)) return q.length - 1;
+    return 0;
+  }
+
   let best=0,bestIdx=null;
   aisles.forEach((a,i)=>{
     const scores = a.keyword_scores || {};
@@ -8110,8 +8129,12 @@ function kwMatch(norm,aisles){
     a.keywords.forEach(k=>{
       const kl = k.toLowerCase();
       const ks = scores[kl] ?? DEFAULT_KW_SCORE;
-      if(ks <= 0) return; // voted out — skip
-      if(norm.includes(kl)) sc += ks + k.length * 0.001; // score drives, length breaks ties
+      if(ks <= 0) return;
+      const ml = matchLen(norm, kl);
+      if(ml > 0){
+        const quality = ml / Math.max(kl.length, norm.length);
+        sc += ks * quality;
+      }
     });
     if(sc>best){ best=sc; bestIdx=i; }
   });
