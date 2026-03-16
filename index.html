@@ -1898,6 +1898,23 @@ window.persistStore = async function(storeId) {
     if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
     await updateDoc(doc(db, 'stores', storeId), updatePayload);
     setSyncDot('ok');
+    // Sync to shared list doc if this list is shared
+    const _activeLid = (() => {
+      const raw = state.lists[storeId];
+      if (!raw || Array.isArray(raw)) return null;
+      return state.activeListId[storeId] || null;
+    })();
+    if (_activeLid) {
+      const _sharedMeta = state.sharedListMeta?.[_activeLid]
+                       || state.pendingShareLinks?.[_activeLid];
+      if (_sharedMeta) {
+        const _sharedItems = state.lists[storeId]?.lists?.[_activeLid]?.items || [];
+        window._isSharingWrite = true;
+        updateDoc(doc(db, 'shared_lists', _sharedMeta.shareId), { items: _sharedItems })
+          .catch(e => console.warn('[share] sync error', e))
+          .finally(() => setTimeout(() => { window._isSharingWrite = false; }, 800));
+      }
+    }
     // Contribute changes to library (non-blocking, best-effort)
     if (window.contributeToLibrary) {
       console.log('[library] triggering contribution for store:', store.name, '| library_location_id:', store.library_location_id);
@@ -8626,11 +8643,7 @@ function hexRgba(hex,a){
 function persistActiveStore() {
   if (window.persistStore && state.activeStoreId) {
     window.persistStore(state.activeStoreId);
-    // Sync to shared list doc if this list is shared
-    const lid = getActiveListId(state.activeStoreId);
-    if (lid && window.syncSharedListWrite) {
-      syncSharedListWrite(state.activeStoreId, lid);
-    }
+    // Shared list sync is now handled inside persistStore
   }
 }
 
