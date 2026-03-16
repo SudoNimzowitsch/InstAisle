@@ -1899,16 +1899,17 @@ window.persistStore = async function(storeId) {
     await updateDoc(doc(db, 'stores', storeId), updatePayload);
     setSyncDot('ok');
     // Sync to shared list doc if this list is shared
+    const _st = window.state; // state is a let in global script — not auto-global
     const _activeLid = (() => {
-      const raw = state.lists[storeId];
+      const raw = _st?.lists?.[storeId];
       if (!raw || Array.isArray(raw)) return null;
-      return state.activeListId[storeId] || null;
+      return _st?.activeListId?.[storeId] || null;
     })();
     if (_activeLid) {
-      const _sharedMeta = state.sharedListMeta?.[_activeLid]
-                       || state.pendingShareLinks?.[_activeLid];
+      const _sharedMeta = _st?.sharedListMeta?.[_activeLid]
+                       || _st?.pendingShareLinks?.[_activeLid];
       if (_sharedMeta) {
-        const _sharedItems = state.lists[storeId]?.lists?.[_activeLid]?.items || [];
+        const _sharedItems = _st?.lists?.[storeId]?.lists?.[_activeLid]?.items || [];
         window._isSharingWrite = true;
         updateDoc(doc(db, 'shared_lists', _sharedMeta.shareId), { items: _sharedItems })
           .catch(e => console.warn('[share] sync error', e))
@@ -4889,6 +4890,7 @@ let state = {
   _historyCache: null,      // loaded once on login, array of history entries
   _dismissedCache: null,    // loaded once on login, Set of normalised item names
 };
+window.state = state; // expose to module script (let is not auto-global)
 let tempAisles = [];
 let _storeSnapshot = null; // snapshot of state when modal-store opened
 let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
