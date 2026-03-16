@@ -5439,14 +5439,29 @@ async function _loadSharePreview(shareId) {
 }
 
 function _findMatchingStore(d) {
+  console.log('[match] incoming storeLocationId:', d.storeLocationId, '| storeChainId:', d.storeChainId);
+  console.log('[match] Kurt stores:', state.stores.map(s => ({
+    id: s.id, name: s.name,
+    library_location_id: s.library_location_id,
+    library_chain_id: s.library_chain_id
+  })));
   if (!d.storeLocationId && !d.storeChainId) return null;
-  return state.stores.find(s => {
-    if (d.storeLocationId && s.library_location_id)
-      return s.library_location_id === d.storeLocationId;
-    if (d.storeChainId && s.library_chain_id)
-      return s.library_chain_id === d.storeChainId && !d.storeLocationId;
-    return false;
-  }) || null;
+
+  // Location ID takes priority — identifies a specific physical store
+  if (d.storeLocationId) {
+    const byLoc = state.stores.find(s => s.library_location_id === d.storeLocationId);
+    console.log('[match] location match result:', byLoc?.name || 'none');
+    if (byLoc) return byLoc;
+  }
+
+  // Chain ID only — share came from a chain-level template (no specific location)
+  if (d.storeChainId && !d.storeLocationId) {
+    const byChain = state.stores.find(s => s.library_chain_id === d.storeChainId);
+    console.log('[match] chain match result:', byChain?.name || 'none');
+    if (byChain) return byChain;
+  }
+
+  return null;
 }
 
 async function acceptSharedList() {
