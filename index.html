@@ -7776,7 +7776,7 @@ async function saveStore(){
 
 function rematch(itemName,store){
   const corr=state.corrections[store.id]||{};
-  const norm=normalise(itemName);
+  const norm=normalise(normalizeGroceryInput(itemName));
   if(corr[norm]!==undefined) return corr[norm];
   return kwMatch(norm,store.aisles);
 }
@@ -8036,7 +8036,7 @@ async function parseImageWithGemini(b64, mimeType){
 function classifyItems(items,store){
   return items.map(name=>({
     name,
-    aisleIndex: kwMatch(normalise(name),store.aisles),
+    aisleIndex: kwMatch(normalise(normalizeGroceryInput(name)),store.aisles),
     aiClassified: false,
     checked: false
   }));
@@ -8142,6 +8142,149 @@ function kwMatch(norm,aisles){
 }
 
 function normalise(s){ return s.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
+
+// ── Grocery abbreviation normalizer ─────────────────────────────────────────
+// Expands common abbreviations before keyword matching so "shrd chz" finds
+// the dairy aisle even without a photo upload.
+// Keys are sorted longest-first at runtime so multi-word entries like
+// "crm chz" fire before their components ("chz") would.
+const _GROCERY_ABBREVS = {
+  // ── Multi-word entries ───────────────────────────────────────────────────
+  'grnd bf':'ground beef','grnd trk':'ground turkey','grnd chk':'ground chicken',
+  'grnd pork':'ground pork',
+  'deli trky':'deli turkey','deli ham':'deli ham',
+  'chk brst':'chicken breast','chk thgh':'chicken thigh',
+  'chix stk':'chicken stock','rot chk':'rotisserie chicken',
+  'crm chz':'cream cheese','ctg chz':'cottage cheese',
+  'sour crm':'sour cream','whpd crm':'whipped cream','hv crm':'heavy cream',
+  'hlf hlf':'half and half','half half':'half and half','1/2 1/2':'half and half',
+  'grk yog':'greek yogurt',
+  'mnty jck':'monterey jack','pep jck':'pepper jack','parm reg':'parmesan reggiano',
+  'alm mlk':'almond milk','soy mlk':'soy milk','oat mlk':'oat milk',
+  'coc mlk':'coconut milk','lf mlk':'low fat milk','ff mlk':'fat free milk',
+  'wh mlk':'whole milk','2% mlk':'2 percent milk','1% mlk':'1 percent milk',
+  'eng muff':'english muffin','eng muf':'english muffin',
+  'flr trt':'flour tortilla','crn trt':'corn tortilla',
+  'hb buns':'hamburger buns','hd buns':'hot dog buns',
+  'ht dog':'hot dog',
+  'r pot':'red potato','sw pot':'sweet potato',
+  'y on':'yellow onion','r on':'red onion','gr on':'green onion',
+  'gr pep':'green pepper','rd pep':'red pepper','ylw pep':'yellow pepper',
+  'tom paste':'tomato paste','tom sauce':'tomato sauce','tom sau':'tomato sauce',
+  'grn bns':'green beans','gr bns':'green beans','sw corn':'sweet corn',
+  'brus spr':'brussels sprouts','bruss spr':'brussels sprouts',
+  'blk bns':'black beans','blk beans':'black beans','pinto bns':'pinto beans',
+  'chk peas':'chickpeas','cannd tom':'canned tomatoes',
+  'veg oil':'vegetable oil','can oil':'canola oil','cn oil':'canola oil',
+  'ses oil':'sesame oil',
+  'red vin':'red wine vinegar','ap vin':'apple cider vinegar',
+  'hot s':'hot sauce',
+  'itl drs':'italian dressing','cesr drs':'caesar dressing',
+  'van ext':'vanilla extract',
+  'dk choc':'dark chocolate','wht choc':'white chocolate',
+  'br rce':'brown rice','wht rce':'white rice',
+  'stl oats':'steel cut oats','inst oats':'instant oats',
+  'ap flr':'all purpose flour','br flr':'bread flour',
+  'brn sgr':'brown sugar','pwdr sgr':'powdered sugar',
+  'veg brth':'vegetable broth','chk brth':'chicken broth','bf brth':'beef broth',
+  'tom soup':'tomato soup','chk nood':'chicken noodle','clam chd':'clam chowder',
+  'frz veg':'frozen vegetables','frz piz':'frozen pizza','frz fr':'frozen fries',
+  'frz chk':'frozen chicken','frz brk':'frozen breakfast','frz berr':'frozen berries',
+  'tort chps':'tortilla chips','grnla br':'granola bar',
+  'alm btr':'almond butter','cas btr':'cashew butter',
+  'mac n chz':'macaroni and cheese','mac n cheese':'macaroni and cheese',
+  'chk sal':'chicken salad','egg sal':'egg salad','tun sal':'tuna salad',
+  'ice t':'iced tea','spkl w':'sparkling water',
+  'blk b':'blackberry',
+  // ── Single-word entries ──────────────────────────────────────────────────
+  // Fraction
+  '1/2':'half',
+  // Protein
+  'chkn':'chicken','chx':'chicken','chk':'chicken','chix':'chicken',
+  'trk':'turkey','trky':'turkey','turk':'turkey',
+  'bf':'beef','bef':'beef',
+  'prk':'pork','stk':'steak','bcn':'bacon','saus':'sausage',
+  'brst':'breast','thgh':'thigh','drmstk':'drumstick','tndr':'tenderloin',
+  'salm':'salmon','shrmp':'shrimp','tun':'tuna',
+  // Dairy
+  'chz':'cheese','chse':'cheese',
+  'moz':'mozzarella','mozz':'mozzarella',
+  'parm':'parmesan','cheddr':'cheddar','chdr':'cheddar',
+  'swiss':'swiss cheese','ric':'ricotta',
+  'butr':'butter','marg':'margarine','yog':'yogurt',
+  // Milk
+  'mlk':'milk',
+  // Bread
+  'brd':'bread','ww':'whole wheat','wg':'whole grain',
+  'sd':'sourdough','ry':'rye','bagl':'bagel','trt':'tortilla','brio':'brioche',
+  'htdg':'hot dog',
+  // Produce
+  'tom':'tomato','tmto':'tomato','pot':'potato',
+  'scall':'scallion','cuke':'cucumber','cuk':'cucumber',
+  'zucc':'zucchini','broc':'broccoli','cauli':'cauliflower',
+  'mshrm':'mushroom','mshr':'mushroom','pepr':'pepper','jal':'jalapeno',
+  'avo':'avocado','lett':'lettuce','rom':'romaine','iceb':'iceberg',
+  'spin':'spinach','cil':'cilantro','pars':'parsley',
+  'gar':'garlic','garl':'garlic','ging':'ginger','cel':'celery',
+  'aspar':'asparagus','asp':'asparagus','artich':'artichoke','eggpl':'eggplant',
+  'crn':'corn','lntls':'lentils','lent':'lentils','chkpeas':'chickpeas',
+  // Fruit
+  'appl':'apple','bnna':'banana','ban':'banana',
+  'strawb':'strawberry','blub':'blueberry','rasb':'raspberry',
+  'grps':'grapes','pnpl':'pineapple','mngo':'mango',
+  'cant':'cantaloupe','wmln':'watermelon',
+  'lem':'lemon','lme':'lime','orng':'orange','tng':'tangerine','grpf':'grapefruit',
+  // Pantry
+  'evoo':'olive oil','oo':'olive oil',
+  'bals':'balsamic vinegar',
+  'soy':'soy sauce','ter':'teriyaki sauce','bbq':'barbecue sauce',
+  'ketch':'ketchup','mayo':'mayonnaise','dij':'dijon mustard','srch':'sriracha',
+  'ranch':'ranch dressing','van':'vanilla','choc':'chocolate',
+  'bp':'baking powder','bs':'baking soda',
+  // Nuts
+  'alm':'almonds','csws':'cashews','wlnts':'walnuts','pnts':'peanuts',
+  // Grains
+  'rce':'rice','qs':'quinoa','cous':'couscous','oats':'oats',
+  'flr':'flour','sgr':'sugar','brth':'broth',
+  // Snacks
+  'chps':'chips','pretz':'pretzels','popc':'popcorn','crckrs':'crackers',
+  'grnla':'granola','pb':'peanut butter',
+  // Drinks
+  'oj':'orange juice','aj':'apple juice','gj':'grape juice','pj':'pineapple juice',
+  'seltz':'seltzer','h2o':'water','bev':'beverage',
+  // Pasta / grains
+  'spagh':'spaghetti','spg':'spaghetti','psta':'pasta',
+  'noodl':'noodles','noodls':'noodles','mac':'macaroni','ram':'ramen',
+  'ling':'linguine','fetuc':'fettuccine','penn':'penne',
+  // Prep descriptors — expand so "shredded" can still match keywords
+  'shrd':'shredded','slcd':'sliced','chpd':'chopped','mincd':'minced',
+  'whl':'whole','halv':'halved','crmb':'crumbled','juln':'julienne','grnd':'ground',
+  // Size / quantity — map to empty string to strip
+  'lg':'','lrg':'','sm':'','xl':'','xxl':'','reg':'',
+  'fam':'','jbo':'jumbo','pk':'','ct':'','lb':'','oz':'',
+  'gal':'','qt':'','pt':'',
+  // Health / diet labels
+  'ff':'fat free','lf':'low fat','rf':'reduced fat','sf':'sugar free',
+  'ns':'no sugar','gf':'gluten free','df':'dairy free',
+  'nat':'natural','lt':'light',
+};
+
+function normalizeGroceryInput(raw) {
+  const keys = Object.keys(_GROCERY_ABBREVS).sort((a,b) => b.length - a.length);
+  function _pass(s) {
+    for (const abbr of keys) {
+      const expansion = _GROCERY_ABBREVS[abbr];
+      const esc = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])', 'g');
+      s = expansion === '' ? s.replace(re, ' ') : s.replace(re, expansion);
+    }
+    return s.replace(/\s+/g, ' ').trim();
+  }
+  // Two passes so combinations like "chkn brst" fully expand
+  // ("brst" may not be reached until after "chkn" expands in pass 1)
+  return _pass(_pass(raw.toLowerCase().trim()));
+}
+
 
 // ══════════════════════════════
 // ITEM ACTIONS
