@@ -324,6 +324,16 @@ textarea.input{resize:vertical;min-height:90px;}
 .aisle-check:active{opacity:1;}
 .aisle-check.all-done{background:currentColor;}
 .aisle-check.all-done::after{content:'✓';font-size:.6rem;color:#0a1a12;font-weight:900;}
+.aisle-collapsed-row{
+  display:flex;align-items:center;gap:10px;padding:6px 12px 10px;
+  cursor:pointer;opacity:.55;
+}
+.aisle-collapsed-names{
+  font-size:.78rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.aisle-collapsed-expand{
+  font-size:.65rem;opacity:.6;flex-shrink:0;
+}
 .drop-zone{
   min-height:8px;border-radius:8px;transition:all .2s;margin-top:4px;
 }
@@ -4936,6 +4946,8 @@ let _storeSnapshot = null; // snapshot of state when modal-store opened
 let pendingLibraryMeta = null; // {chain_id, aisles_snapshot} set when creating from library
 let tempColor = STORE_COLORS[0];
 let moveItemIndex = null;
+let _aisleExpandedOverride = {}; // {storeId_aisleKey: true} — user tapped to re-expand
+let _aisleCollapseTimers  = {}; // pending collapse timers
 
 // drag state
 let dragSrcIdx = null, dragSrcAisle = null;
@@ -5776,44 +5788,64 @@ function renderListScreen(){
     const color=isUM?'#fbbf24':AISLE_COLORS[+key%AISLE_COLORS.length];
     const aisle=!isUM?store.aisles[+key]:null;
     const aisleName=isUM?'? Unmatched Items':(aisle?aisle.name:`Aisle ${+key+1}`);
-    const unchecked=gItems.filter(i=>!i.checked).length;
+    const unchecked=gItems.filter(i=>!i.checked&&!i.isSuggested).length;
+    const realItems=gItems.filter(i=>!i.isSuggested);
+    const allChecked=realItems.length>0&&realItems.every(i=>i.checked);
+    const storeKey=store.id+'_'+key;
+    // Collapse if all checked AND user hasn't manually re-expanded
+    const isCollapsed=allChecked&&!_aisleExpandedOverride[storeKey];
 
     html+=`<div class="aisle-group">
       <div class="aisle-group-header" style="background:${hexRgba(color,.12)};color:${color}">
-        ${isUM?'':`<div class="aisle-check ${unchecked===0?'all-done':''}" onclick="toggleAisleCheck('${key}')" title="Check all in aisle"></div>`}
+        <div class="aisle-check ${allChecked?'all-done':''}" onclick="toggleAisleCheck('${key}')" title="Check all in aisle"></div>
         ${isUM?'⚠':'🛒'} ${esc(aisleName)}
-        <span class="aisle-count">${unchecked} left</span>
-      </div>
-      <div class="items-container" data-aisle-key="${key}">`;
+        <span class="aisle-count">${unchecked?unchecked+' left':'✓ done'}</span>
+      </div>`;
 
-    gItems.forEach(item=>{
-      const bgBadge=hexRgba(color,.18);
-      const aiDot=item.aiClassified?`<span class="ai-dot" title="AI classified">✦</span>`:'';
-      if (item.isSuggested) {
-        html+=`<div class="list-item suggested"
-            data-item-idx="${item.idx}" data-aisle-key="${key}">
-          <span class="suggested-label">Suggested</span>
-          <div class="item-name" style="flex:1;cursor:pointer" onclick="window.acceptSuggestion(${item.idx})">${esc(item.name)}</div>
-          <button class="dismiss-suggestion" onclick="window.dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
-        </div>`;
-      } else {
-        html+=`<div class="list-item ${item.checked?'checked':''}"
-            data-item-idx="${item.idx}" data-aisle-key="${key}">
-          <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
-            ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
-          </div>
-          <div class="item-name">${esc(item.name)} ${aiDot}</div>
-          <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
-            ${isUM?'?':`A${+key+1}`}
-          </div>
-        </div>`;
-      }
-    });
+    if(isCollapsed){
+      // Collapsed summary row — tap to expand
+      const names=realItems.map(i=>esc(i.name)).join(', ');
+      html+=`<div class="items-container" data-aisle-key="${key}">
+        <div class="aisle-collapsed-row" onclick="expandAisle('${key}','${store.id}')">
+          <div class="aisle-check all-done" style="color:${color}"></div>
+          <div class="aisle-collapsed-names" style="color:${color}">${names}</div>
+          <div class="aisle-collapsed-expand" style="color:${color}">tap to expand</div>
+        </div>
+      </div>`;
+    } else {
+      html+=`<div class="items-container" data-aisle-key="${key}">`;
+      gItems.forEach(item=>{
+        const bgBadge=hexRgba(color,.18);
+        const aiDot=item.aiClassified?`<span class="ai-dot" title="AI classified">✦</span>`:'';
+        if(item.isSuggested){
+          html+=`<div class="list-item suggested"
+              data-item-idx="${item.idx}" data-aisle-key="${key}">
+            <span class="suggested-label">Suggested</span>
+            <div class="item-name" style="flex:1;cursor:pointer" onclick="window.acceptSuggestion(${item.idx})">${esc(item.name)}</div>
+            <button class="dismiss-suggestion" onclick="window.dismissSuggestion(${item.idx})" title="Dismiss">✕</button>
+          </div>`;
+        } else {
+          html+=`<div class="list-item ${item.checked?'checked':''}"
+              data-item-idx="${item.idx}" data-aisle-key="${key}">
+            <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
+              ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
+            </div>
+            <div class="item-name">${esc(item.name)} ${aiDot}</div>
+            <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
+              ${isUM?'?':`A${+key+1}`}
+            </div>
+          </div>`;
+        }
+      });
+      html+=`</div>`; // close items-container
+    }
 
-    // Drop zone at bottom of each aisle group
-    html+=`<div class="drop-zone" data-aisle-key="${key}"
+    // Drop zone at bottom of each aisle group (only when expanded)
+    if(!isCollapsed){
+      html+=`<div class="drop-zone" data-aisle-key="${key}"
         ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event,'${key}')"></div>`;
-    html+=`</div></div>`;
+    }
+    html+=`</div>`; // close aisle-group
   });
 
   cont.innerHTML=html;
@@ -8298,6 +8330,11 @@ function normalizeGroceryInput(raw) {
 // ══════════════════════════════
 // ITEM ACTIONS
 // ══════════════════════════════
+function expandAisle(aisleKey, storeId) {
+  _aisleExpandedOverride[storeId + '_' + aisleKey] = true;
+  renderListScreen();
+}
+
 function toggleAisleCheck(aisleKey) {
   const store = getActiveStore();
   if (!store) return;
@@ -8313,6 +8350,23 @@ function toggleAisleCheck(aisleKey) {
   aisleItems.forEach(i => { i.checked = !allChecked; });
   renderListScreen();
   persistActiveStore();
+}
+
+function _scheduleCollapseIfDone(store, aisleKey) {
+  const storeKey = store.id + '_' + aisleKey;
+  clearTimeout(_aisleCollapseTimers[storeKey]);
+  _aisleCollapseTimers[storeKey] = setTimeout(() => {
+    const items = getActiveListItems(store.id);
+    const aisleItems = items.filter(i => {
+      if (i.isSuggested) return false;
+      const k = (i.aisleIndex === null || i.aisleIndex === undefined) ? 'unmatched' : String(i.aisleIndex);
+      return k === String(aisleKey);
+    });
+    if (aisleItems.length && aisleItems.every(i => i.checked)) {
+      delete _aisleExpandedOverride[storeKey];
+      renderListScreen();
+    }
+  }, 800);
 }
 
 function toggleCheck(idx){
@@ -8343,6 +8397,17 @@ function toggleCheck(idx){
     if (checkedCount === 1) window.maybeSuggest(store, aisleKey);
   }
 
+  // Schedule aisle collapse if this check completed the aisle
+  if (item.checked) {
+    const aisleKey = item.aisleIndex === null || item.aisleIndex === undefined
+      ? 'unmatched' : String(item.aisleIndex);
+    _scheduleCollapseIfDone(store, aisleKey);
+  } else {
+    // Item unchecked — clear any pending collapse and ensure aisle stays expanded
+    const storeKey = store.id + '_' + (item.aisleIndex === null || item.aisleIndex === undefined ? 'unmatched' : String(item.aisleIndex));
+    clearTimeout(_aisleCollapseTimers[storeKey]);
+    _aisleExpandedOverride[storeKey] = true;
+  }
   renderListScreen();
   persistActiveStore();
 }
@@ -8361,6 +8426,8 @@ function confirmUncheckAll(){
   const _ua = getActiveListItems(store.id);
   _ua.forEach(i=>{ i.checked=false; }); setActiveListItems(store.id,_ua);
   if (state._aislesFirstCheckDone) delete state._aislesFirstCheckDone[store.id];
+  // Clear all collapse state so aisles re-expand fresh
+  Object.keys(_aisleExpandedOverride).forEach(k=>{ if(k.startsWith(store.id)) delete _aisleExpandedOverride[k]; });
   renderListScreen();
   persistActiveStore();
   showToast('All items unchecked ✓');
