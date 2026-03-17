@@ -6029,6 +6029,15 @@ function boot() {
   _initStoreSwipe();
 }
 
+function _updateStoreArrows() {
+  const onList = document.getElementById('screen-list')?.classList.contains('active');
+  const show = onList && _isV2() && state.stores.length > 1;
+  const p = document.getElementById('store-prev-btn');
+  const n = document.getElementById('store-next-btn');
+  if (p) p.style.display = show ? 'flex' : 'none';
+  if (n) n.style.display = show ? 'flex' : 'none';
+}
+
 // ── Swipe left/right on list screen to cycle stores (V2 only) ────────────────
 function cycleNextStore() { _cycleStore(1); }
 function cyclePrevStore() { _cycleStore(-1); }
@@ -6173,8 +6182,8 @@ function renderListScreen(){
   const _showArrows = _isV2() && state.stores.length > 1;
   const _prevBtn = document.getElementById('store-prev-btn');
   const _nextBtn = document.getElementById('store-next-btn');
-  if (_prevBtn) _prevBtn.style.display = _showArrows ? '' : 'none';
-  if (_nextBtn) _nextBtn.style.display = _showArrows ? '' : 'none';
+  if (_prevBtn) _prevBtn.style.display = _showArrows ? 'flex' : 'none';
+  if (_nextBtn) _nextBtn.style.display = _showArrows ? 'flex' : 'none';
 
   // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
   // on page load, so a new check in that aisle still fires suggestions.
@@ -8655,7 +8664,9 @@ async function parseImageWithGemini(b64, mimeType){
 function classifyItems(items,store){
   return items.map(name=>({
     name,
-    aisleIndex: kwMatch(normalise(normalizeGroceryInput(name)),store.aisles),
+    // V1: store aisleIndex on item; V2: computed at render time via getAisleIndex
+    ...(_isV2() ? {} : { aisleIndex: kwMatch(normalise(normalizeGroceryInput(name)),store.aisles) }),
+    corrections: _isV2() ? {} : undefined,
     aiClassified: false,
     checked: false
   }));
@@ -8919,11 +8930,11 @@ function toggleAisleCheck(aisleKey) {
   const items = getActiveListItems(store.id);
   const aisleItems = items.filter(i => {
     if (i.isSuggested) return false;
-    const k = (i.aisleIndex === null || i.aisleIndex === undefined) ? 'unmatched' : String(i.aisleIndex);
+    const ai = getAisleIndex(i, store.id);
+    const k = (ai === null || ai === undefined) ? 'unmatched' : String(ai);
     return k === String(aisleKey);
   });
   if (!aisleItems.length) return;
-  // If all checked → uncheck all; otherwise → check all unchecked
   const allChecked = aisleItems.every(i => i.checked);
   aisleItems.forEach(i => { i.checked = !allChecked; });
   renderListScreen();
@@ -8937,7 +8948,8 @@ function _scheduleCollapseIfDone(store, aisleKey) {
     const items = getActiveListItems(store.id);
     const aisleItems = items.filter(i => {
       if (i.isSuggested) return false;
-      const k = (i.aisleIndex === null || i.aisleIndex === undefined) ? 'unmatched' : String(i.aisleIndex);
+      const ai = getAisleIndex(i, store.id);
+      const k = (ai === null || ai === undefined) ? 'unmatched' : String(ai);
       return k === String(aisleKey);
     });
     if (aisleItems.length && aisleItems.every(i => i.checked)) {
