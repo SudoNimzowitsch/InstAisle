@@ -1505,9 +1505,33 @@ function updateUserUI(user) {
 window._storeUnsubs = [];
 
 async function loadUserData(uid) {
-  const { db, doc, collection, onSnapshot, query, where, getDocs } = window._fb;
+  const { db, doc, collection, onSnapshot, query, where, getDocs, getDoc } = window._fb;
   setSyncDot('syncing');
 
+  // ── Feature flag: check whether to use new list architecture ──────────────
+  let _useNewLists = false;
+  try {
+    const flagSnap = await getDoc(doc(db, 'config', 'app'));
+    if (flagSnap.exists()) {
+      // Per-user flag takes priority over global flag
+      const userFlagSnap = await getDoc(doc(db, 'users', uid));
+      if (userFlagSnap.exists() && userFlagSnap.data().useNewListStructure !== undefined) {
+        _useNewLists = userFlagSnap.data().useNewListStructure;
+      } else {
+        _useNewLists = flagSnap.data().useNewListStructure === true;
+      }
+    }
+  } catch(e) {
+    console.warn('[config] could not read feature flag, defaulting to legacy', e.message);
+  }
+  window._useNewListStructure = _useNewLists;
+
+  if (_useNewLists) {
+    await _loadUserDataV2(uid);
+    return;
+  }
+
+  // ── Legacy path (useNewListStructure: false) ───────────────────────────────
   // Load stores the user owns or is a member of
   const storesRef = collection(db, 'stores');
 
@@ -1584,6 +1608,212 @@ async function loadUserData(uid) {
       }
     })
   );
+}
+
+// ── New architecture data loader (useNewListStructure: true) ─────────────────
+async function _loadUserDataV2(uid) {
+  const { db, doc, collection, onSnapshot, query, where, getDocs, getDoc, setDoc, serverTimestamp } = window._fb;
+
+  // ── 1. Load stores (unchanged from legacy) ────────────────────────────────
+  const storesRef = collection(db, 'stores');
+  const ownedQ    = query(storesRef, where('ownerUid', '==', uid));
+  const ownedSnap = await getDocs(ownedQ);
+  const storeDocs = [...ownedSnap.docs];
+
+  state.stores      = [];
+  state.corrections = {};
+  state.sharedListMeta   = {};
+  state.pendingShareLinks = {};
+
+  if (storeDocs.length === 0) {
+    await seedDemoStore(uid);
+    return;
+  }
+
+  storeDocs.forEach(snap => {
+    const d = snap.data();
+    state.stores.push({
+      id: snap.id, name: d.name, color: d.color, aisles: d.aisles || [],
+      ownerUid: d.ownerUid,
+      library_location_id:     d.library_location_id     || null,
+      library_chain_id:        d.library_chain_id        || null,
+      library_aisles_snapshot: d.library_aisles_snapshot || null,
+    });
+    // Corrections are now per-item but keep legacy store corrections as fallback
+    state.corrections[snap.id] = d.corrections || {};
+  });
+
+  if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
+    state.activeStoreId = state.stores[0]?.id || null;
+  }
+
+  // ── 2. Load lists from new top-level collection ───────────────────────────
+  const listsQ    = query(collection(db, 'lists'), where('ownerUid', '==', uid));
+  const listsSnap = await getDocs(listsQ);
+
+  state.lists = {}; // flat map: { listId: { id, name, items, preferredStoreId, ... } }
+
+  if (listsSnap.empty) {
+    // No lists yet — run migration from legacy lists_v2 on store docs
+    await _migrateLists(uid, storeDocs);
+  } else {
+    listsSnap.forEach(snap => {
+      const d = snap.data();
+      state.lists[snap.id] = { ...d, id: snap.id };
+      // Merge sharedListMeta
+      if (d.sharedListMeta) {
+        Object.assign(state.sharedListMeta, d.sharedListMeta);
+      }
+    });
+  }
+
+  // Set active list — prefer last opened list for active store
+  if (!state.activeListId || !state.lists[state.activeListId]) {
+    const listsForStore = Object.values(state.lists)
+      .filter(l => l.preferredStoreId === state.activeStoreId)
+      .sort((a, b) => (b.lastOpened || 0) - (a.lastOpened || 0));
+    state.activeListId = listsForStore[0]?.id || Object.keys(state.lists)[0] || null;
+  }
+
+  renderAll();
+  setSyncDot('ok');
+  if (window.resubscribeSharedLists) resubscribeSharedLists();
+  loadStoreLocations().then(() => _backfillLibraryLocationIds()).catch(() => {});
+  if (window.loadUserDoc) window.loadUserDoc();
+  preloadUserLocation();
+
+  // ── 3. Real-time listeners for store docs (aisles/name/color only) ─────────
+  window._storeUnsubs.forEach(fn => fn());
+  window._storeUnsubs = storeDocs.map(snap =>
+    onSnapshot(doc(db, 'stores', snap.id), (d) => {
+      if (!d.exists() || window._isSaving) return;
+      const data = d.data();
+      const idx = state.stores.findIndex(s => s.id === d.id);
+      if (idx !== -1) {
+        state.stores[idx] = { ...state.stores[idx],
+          name: data.name, color: data.color, aisles: data.aisles || [],
+          library_location_id:     data.library_location_id     || null,
+          library_chain_id:        data.library_chain_id        || null,
+          library_aisles_snapshot: data.library_aisles_snapshot || null,
+        };
+        state.corrections[d.id] = data.corrections || {};
+        renderAll();
+        setSyncDot('ok');
+      }
+    })
+  );
+
+  // ── 4. Real-time listeners for list docs ──────────────────────────────────
+  window._listUnsubs = window._listUnsubs || [];
+  window._listUnsubs.forEach(fn => fn());
+  window._listUnsubs = [];
+  Object.keys(state.lists).forEach(listId => {
+    _subscribeListDoc(listId);
+  });
+}
+
+// ── Subscribe to a single list doc for real-time updates ─────────────────────
+function _subscribeListDoc(listId) {
+  if (!window._listUnsubs) window._listUnsubs = [];
+  const { db, doc, onSnapshot } = window._fb;
+  const unsub = onSnapshot(doc(db, 'lists', listId), (snap) => {
+    if (!snap.exists() || window._isSaving) return;
+    const data = snap.data();
+    // Don't overwrite local state if we just wrote (echo prevention)
+    if (window._isSharingWrite) return;
+    if (state.lists[listId]) {
+      state.lists[listId] = { ...state.lists[listId], ...data, id: listId };
+      renderAll();
+    }
+  });
+  window._listUnsubs.push(unsub);
+}
+
+// ── Migrate legacy lists_v2 from store docs to new lists collection ───────────
+// Idempotent — checks for existing docs before writing.
+async function _migrateLists(uid, storeDocs) {
+  const { db, doc, setDoc, serverTimestamp, getDoc } = window._fb;
+  console.log('[migration] starting list migration for', uid);
+
+  for (const storeSnap of storeDocs) {
+    const storeData = storeSnap.data();
+    const storeId   = storeSnap.id;
+    const listsV2   = storeData.lists_v2;
+
+    if (!listsV2 || !listsV2.lists) {
+      // Legacy flat array — create a single default list
+      const items = (Array.isArray(storeData.list) ? storeData.list : [])
+        .map(item => ({ ...item, corrections: {} }));
+      const listId = 'list-migrated-' + storeId;
+      const existing = await getDoc(doc(db, 'lists', listId)).catch(() => null);
+      if (!existing?.exists()) {
+        await setDoc(doc(db, 'lists', listId), {
+          ownerUid:           uid,
+          name:               'My List',
+          items,
+          preferredStoreId:   storeId,
+          migratedFromStoreId: storeId,
+          createdAt:          serverTimestamp(),
+          lastOpened:         storeData.lastOpened || Date.now(),
+        });
+        state.lists[listId] = { id: listId, name: 'My List', items,
+          preferredStoreId: storeId, migratedFromStoreId: storeId };
+        console.log('[migration] migrated legacy flat list from store', storeId);
+      }
+      continue;
+    }
+
+    // Migrate each list in lists_v2
+    for (const [listId, listData] of Object.entries(listsV2.lists)) {
+      const existing = await getDoc(doc(db, 'lists', listId)).catch(() => null);
+      if (existing?.exists()) {
+        // Already migrated — just load into state
+        state.lists[listId] = { ...existing.data(), id: listId };
+        console.log('[migration] list already migrated:', listId);
+        continue;
+      }
+
+      // Strip aisleIndex — will be recomputed at render time
+      // Move any store-level corrections that match this item into item.corrections
+      const storeLevelCorr = storeData.corrections || {};
+      const items = (listData.items || []).map(item => {
+        const norm = item.name?.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+        const corrections = {};
+        if (norm && storeLevelCorr[norm] !== undefined) {
+          corrections[storeId] = storeLevelCorr[norm];
+        }
+        const { aisleIndex, ...rest } = item; // strip aisleIndex
+        return { ...rest, corrections };
+      });
+
+      await setDoc(doc(db, 'lists', listId), {
+        ownerUid:            uid,
+        name:                listData.name || 'My List',
+        items,
+        preferredStoreId:    storeId,
+        migratedFromStoreId: storeId,
+        createdAt:           listData.createdAt || serverTimestamp(),
+        lastOpened:          listData.lastOpened || Date.now(),
+      });
+
+      state.lists[listId] = {
+        id: listId, name: listData.name || 'My List', items,
+        preferredStoreId: storeId, migratedFromStoreId: storeId,
+      };
+      console.log('[migration] migrated list:', listId, 'from store:', storeId);
+    }
+  }
+
+  // Set active list after migration
+  const allLists = Object.values(state.lists);
+  if (allLists.length > 0) {
+    const forActiveStore = allLists
+      .filter(l => l.preferredStoreId === state.activeStoreId)
+      .sort((a, b) => (b.lastOpened || 0) - (a.lastOpened || 0));
+    state.activeListId = forActiveStore[0]?.id || allLists[0].id;
+  }
+
+  console.log('[migration] complete. lists:', Object.keys(state.lists).length);
 }
 
 async function seedDemoStore(uid) {
