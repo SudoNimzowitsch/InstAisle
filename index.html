@@ -68,6 +68,17 @@ body{
 
 /* SCREENS */
 .screens{flex:1;overflow:hidden;position:relative;}
+.store-cycle-btn{
+  position:fixed;top:50%;transform:translateY(-50%);
+  width:28px;height:56px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;display:none;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1.2rem;color:var(--muted);z-index:10;
+  opacity:.7;transition:opacity .15s;user-select:none;
+}
+.store-cycle-btn:hover{opacity:1;}
+#store-prev-btn{left:2px;}
+#store-next-btn{right:2px;}
 .screen{
   position:absolute;inset:0;overflow-y:auto;
   padding:16px 20px 100px;display:none;animation:slideIn .25s ease;
@@ -1040,6 +1051,8 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- SCREENS -->
 <div class="screens">
+  <button class="store-cycle-btn" id="store-prev-btn" onclick="cyclePrevStore()" title="Previous store">‹</button>
+  <button class="store-cycle-btn" id="store-next-btn" onclick="cycleNextStore()" title="Next store">›</button>
   <div class="screen active" id="screen-list"><div id="list-content"></div></div>
 
 </div>
@@ -6017,6 +6030,25 @@ function boot() {
 }
 
 // ── Swipe left/right on list screen to cycle stores (V2 only) ────────────────
+function cycleNextStore() { _cycleStore(1); }
+function cyclePrevStore() { _cycleStore(-1); }
+function _cycleStore(dir) {
+  if (!_isV2()) return;
+  const stores = state.stores;
+  if (stores.length < 2) return;
+  const curIdx = stores.findIndex(s => s.id === state.activeStoreId);
+  const nextIdx = (curIdx + dir + stores.length) % stores.length;
+  const nextStore = stores[nextIdx];
+  state.activeStoreId = nextStore.id;
+  const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+  if (lid && state.lists[lid]) {
+    state.lists[lid].preferredStoreId = nextStore.id;
+    if (window.persistList) window.persistList(lid);
+  }
+  renderAll();
+  showToast(nextStore.name);
+}
+
 function _initStoreSwipe() {
   const screen = document.getElementById('screen-list');
   if (!screen) return;
@@ -6137,6 +6169,12 @@ function renderListScreen(){
   if (tb) tb.classList.add('visible');
   const _shareBtn = document.getElementById('topbar-share-btn');
   if (_shareBtn) _shareBtn.style.display = '';
+  // Show store cycle arrows only in V2 mode with multiple stores
+  const _showArrows = _isV2() && state.stores.length > 1;
+  const _prevBtn = document.getElementById('store-prev-btn');
+  const _nextBtn = document.getElementById('store-next-btn');
+  if (_prevBtn) _prevBtn.style.display = _showArrows ? '' : 'none';
+  if (_nextBtn) _nextBtn.style.display = _showArrows ? '' : 'none';
 
   // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
   // on page load, so a new check in that aisle still fires suggestions.
@@ -9105,6 +9143,9 @@ function openMoveItem(idx){
   moveItemIndex=idx;
   document.getElementById('move-item-name').textContent=item.name;
   const opts=document.getElementById('move-aisle-options');
+  // Resolve current aisle BEFORE building the list so isAct highlights correctly
+  const _itemAi=getAisleIndex(item,store.id);
+  const isUM=_itemAi===null||_itemAi===undefined;
   opts.innerHTML=store.aisles.map((aisle,ai)=>{
     const color=AISLE_COLORS[ai%AISLE_COLORS.length];
     const isAct=_itemAi===ai;
@@ -9116,8 +9157,6 @@ function openMoveItem(idx){
       </div>
     </div>`;
   }).join('');
-  const _itemAi=getAisleIndex(item,store.id);
-  const isUM=_itemAi===null||_itemAi===undefined;
   opts.innerHTML+=`<div class="card" style="cursor:pointer;border-color:${isUM?'var(--amber)':'var(--border)'};margin-bottom:8px" onclick="moveToAisle(null)">
     <div style="display:flex;align-items:center;gap:10px">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
