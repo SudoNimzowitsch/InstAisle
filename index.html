@@ -2789,6 +2789,45 @@ window.createStoreInFirestore = async function(storeData) {
   return storeData.id;
 };
 
+// ── persistList: save a list doc to Firestore (V2 mode) ──────────────────────
+window.persistList = async function(listId) {
+  if (!window._currentUser || !window._useNewListStructure) return;
+  const listDoc = state.lists[listId];
+  if (!listDoc) return;
+  const { db, doc, setDoc } = window._fb;
+  window._isSaving = true;
+  setSyncDot('syncing');
+  try {
+    await setDoc(doc(db, 'lists', listId), {
+      ownerUid:        listDoc.ownerUid || window._currentUser.uid,
+      name:            listDoc.name,
+      items:           listDoc.items || [],
+      preferredStoreId: listDoc.preferredStoreId || null,
+      migratedFromStoreId: listDoc.migratedFromStoreId || null,
+      createdAt:       listDoc.createdAt || Date.now(),
+      lastOpened:      listDoc.lastOpened || Date.now(),
+      sharedListMeta:  listDoc.sharedListMeta || null,
+    }, { merge: true });
+    setSyncDot('ok');
+
+    // Sync to shared_lists doc if this list is shared
+    const _st = window.state;
+    const _sharedMeta = _st?.sharedListMeta?.[listId] || _st?.pendingShareLinks?.[listId];
+    if (_sharedMeta) {
+      const { updateDoc } = window._fb;
+      window._isSharingWrite = true;
+      updateDoc(doc(db, 'shared_lists', _sharedMeta.shareId), { items: listDoc.items || [] })
+        .catch(e => console.warn('[share] sync error', e))
+        .finally(() => setTimeout(() => { window._isSharingWrite = false; }, 800));
+    }
+  } catch(e) {
+    console.error('[persistList] error', e);
+    setSyncDot('error');
+  } finally {
+    setTimeout(() => { window._isSaving = false; }, 1500);
+  }
+};
+
 window.deleteStoreFromFirestore = async function(storeId) {
   if (!window._currentUser) return;
   const { db, doc, deleteDoc } = window._fb;
@@ -5972,12 +6011,15 @@ function renderListScreen(){
   <path d="M10 14 Q11.5 13.5 13 14 Q14 14.4 15 14" stroke-width="1.2"/>
 </svg></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap <strong>＋</strong> to add items or paste a shopping list.</div></div>`; const _tb2=document.getElementById('list-toolbar'); if(_tb2) _tb2.classList.remove('visible'); const _sb2=document.getElementById('topbar-share-btn'); if(_sb2) _sb2.style.display='none'; return; }
 
-  // group
+  // group — in V2 mode resolve aisleIndex at render time from corrections/kwMatch
+  const _rsStoreId = store.id;
+  function _aidx(item) { return getAisleIndex(item, _rsStoreId); }
   const groups={};
   items.forEach((item,idx)=>{
-    const key=(item.aisleIndex!==null&&item.aisleIndex!==undefined)?item.aisleIndex:'unmatched';
+    const ai=_aidx(item);
+    const key=(ai!==null&&ai!==undefined)?ai:'unmatched';
     if(!groups[key]) groups[key]=[];
-    groups[key].push({...item,idx});
+    groups[key].push({...item,idx,_resolvedAisle:ai});
   });
   const keys=Object.keys(groups).filter(k=>k!=='unmatched').sort((a,b)=>+a-+b);
   if(groups['unmatched']) keys.push('unmatched');
@@ -6003,8 +6045,8 @@ function renderListScreen(){
     state._aislesFirstCheckDone[store.id] = new Set();
     items.forEach(function(item) {
       if (item.checked && !item.isSuggested) {
-        var ak = (item.aisleIndex !== null && item.aisleIndex !== undefined)
-          ? String(item.aisleIndex) : 'unmatched';
+        var ak = (item._resolvedAisle !== null && item._resolvedAisle !== undefined)
+          ? String(item._resolvedAisle) : 'unmatched';
         state._aislesFirstCheckDone[store.id].add(ak);
       }
     });
@@ -8612,12 +8654,13 @@ function toggleCheck(idx){
 
   if (!wasChecked && item.checked) {
     // Record to purchase history
+    const _itemAisle = getAisleIndex(item, store.id);
     if (window.recordItemChecked)
-      window.recordItemChecked(item.name, store, item.aisleIndex);
+      window.recordItemChecked(item.name, store, _itemAisle);
 
     // Trigger suggestion if this is first check in this aisle
-    var hasAisle = item.aisleIndex !== null && item.aisleIndex !== undefined;
-    var aisleKey = hasAisle ? String(item.aisleIndex) : 'unmatched';
+    var hasAisle = _itemAisle !== null && _itemAisle !== undefined;
+    var aisleKey = hasAisle ? String(_itemAisle) : 'unmatched';
     var aisleItems = _al2.filter(function(i){
       if (i.isSuggested) return false; // don't count suggested items
       if (aisleKey === 'unmatched') return i.aisleIndex === null || i.aisleIndex === undefined;
@@ -8629,12 +8672,13 @@ function toggleCheck(idx){
 
   // Schedule aisle collapse if this check completed the aisle
   if (item.checked) {
-    const aisleKey = item.aisleIndex === null || item.aisleIndex === undefined
-      ? 'unmatched' : String(item.aisleIndex);
+    const _ai2 = getAisleIndex(item, store.id);
+    const aisleKey = _ai2 === null || _ai2 === undefined ? 'unmatched' : String(_ai2);
     _scheduleCollapseIfDone(store, aisleKey);
   } else {
     // Item unchecked — clear any pending collapse and ensure aisle stays expanded
-    const storeKey = store.id + '_' + (item.aisleIndex === null || item.aisleIndex === undefined ? 'unmatched' : String(item.aisleIndex));
+    const _ai3 = getAisleIndex(item, store.id);
+    const storeKey = store.id + '_' + (_ai3 === null || _ai3 === undefined ? 'unmatched' : String(_ai3));
     clearTimeout(_aisleCollapseTimers[storeKey]);
     _aisleExpandedOverride[storeKey] = true;
   }
@@ -8706,7 +8750,8 @@ function renderEditListItems() {
 
   const groups = {};
   items.forEach((item, idx) => {
-    const key = (item.aisleIndex !== null && item.aisleIndex !== undefined) ? item.aisleIndex : 'unmatched';
+    const _rai = getAisleIndex(item, store.id);
+  const key = (_rai !== null && _rai !== undefined) ? _rai : 'unmatched';
     if (!groups[key]) groups[key] = [];
     groups[key].push({ ...item, idx });
   });
@@ -8794,7 +8839,7 @@ function openMoveItem(idx){
   const opts=document.getElementById('move-aisle-options');
   opts.innerHTML=store.aisles.map((aisle,ai)=>{
     const color=AISLE_COLORS[ai%AISLE_COLORS.length];
-    const isAct=item.aisleIndex===ai;
+    const isAct=_itemAi===ai;
     return `<div class="card" style="cursor:pointer;border-color:${isAct?color:'var(--border)'};margin-bottom:8px" onclick="moveToAisle(${ai})">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
@@ -8803,7 +8848,8 @@ function openMoveItem(idx){
       </div>
     </div>`;
   }).join('');
-  const isUM=item.aisleIndex===null||item.aisleIndex===undefined;
+  const _itemAi=getAisleIndex(item,store.id);
+  const isUM=_itemAi===null||_itemAi===undefined;
   opts.innerHTML+=`<div class="card" style="cursor:pointer;border-color:${isUM?'var(--amber)':'var(--border)'};margin-bottom:8px" onclick="moveToAisle(null)">
     <div style="display:flex;align-items:center;gap:10px">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
@@ -8817,11 +8863,18 @@ function moveToAisle(aisleIndex){
   const store=getActiveStore();
   const _al4 = getActiveListItems(store.id); const item = _al4[moveItemIndex];
   const norm=normalise(item.name);
-  const prevAisleIndex = item.aisleIndex;
-  if(!state.corrections[store.id]) state.corrections[store.id]={};
-  if(aisleIndex===null) delete state.corrections[store.id][norm];
-  else state.corrections[store.id][norm]=aisleIndex;
-  item.aisleIndex=aisleIndex;
+  const prevAisleIndex = _isV2() ? (item.corrections?.[store.id] ?? null) : item.aisleIndex;
+  if(_isV2()){
+    // V2: write correction onto the item itself
+    if(!item.corrections) item.corrections = {};
+    if(aisleIndex===null) delete item.corrections[store.id];
+    else item.corrections[store.id] = aisleIndex;
+  } else {
+    if(!state.corrections[store.id]) state.corrections[store.id]={};
+    if(aisleIndex===null) delete state.corrections[store.id][norm];
+    else state.corrections[store.id][norm]=aisleIndex;
+    item.aisleIndex=aisleIndex;
+  }
   // Update local keywords + vote upstream
   applyKeywordVote(store, norm, prevAisleIndex, aisleIndex);
   closeModal('modal-move-item'); renderListScreen(); showToast('Correction saved ✓');
@@ -9143,9 +9196,15 @@ function moveToEndOfAisle(srcIdx, aisleKey){
 
 function saveCorr(item,aisleIndex,store,prevAisleIndex){
   const norm=normalise(item.name);
-  if(!state.corrections[store.id]) state.corrections[store.id]={};
-  if(aisleIndex===null) delete state.corrections[store.id][norm];
-  else state.corrections[store.id][norm]=aisleIndex;
+  if(_isV2()){
+    if(!item.corrections) item.corrections = {};
+    if(aisleIndex===null) delete item.corrections[store.id];
+    else item.corrections[store.id] = aisleIndex;
+  } else {
+    if(!state.corrections[store.id]) state.corrections[store.id]={};
+    if(aisleIndex===null) delete state.corrections[store.id][norm];
+    else state.corrections[store.id][norm]=aisleIndex;
+  }
   applyKeywordVote(store, norm, prevAisleIndex, aisleIndex);
 }
 
@@ -9165,32 +9224,80 @@ function hideProcessing(){
 // ══════════════════════════════
 function getActiveStore(){ return state.stores.find(s=>s.id===state.activeStoreId)||null; }
 
-// ── Multi-list helpers ──────────────────────────────────────────────────
+// ── Multi-list helpers ────────────────────────────────────────────────────────
+// V2 mode: state.lists = { listId: { id, name, items, preferredStoreId, ... } }
+//          state.activeListId = 'lid' (single string)
+// V1 mode: state.lists = { storeId: { lists: { lid: {...} } } }
+//          state.activeListId = { storeId: 'lid' }
+// All helpers are transparent to callers — storeId arg is kept for V1 compat.
+
+function _isV2() { return window._useNewListStructure === true; }
+
 function getLists(storeId) {
+  if (_isV2()) {
+    // Return a V1-compatible wrapper so callers that do getLists(id).lists[lid] still work
+    const listsForStore = Object.fromEntries(
+      Object.entries(state.lists).filter(([, l]) => l.preferredStoreId === storeId)
+    );
+    return { lists: listsForStore };
+  }
   const raw = state.lists[storeId];
-  if (!raw || Array.isArray(raw)) return null; // old format — handled by migration
+  if (!raw || Array.isArray(raw)) return null;
   return raw;
 }
 
 function getActiveListId(storeId) {
-  return state.activeListId[storeId] || null;
+  if (_isV2()) return typeof state.activeListId === 'string' ? state.activeListId : null;
+  return (state.activeListId && state.activeListId[storeId]) || null;
 }
 
 function getActiveListItems(storeId) {
+  if (_isV2()) {
+    const lid = getActiveListId(storeId);
+    return (lid && state.lists[lid]) ? state.lists[lid].items : [];
+  }
   const lists = getLists(storeId);
-  if (!lists) return state.lists[storeId] || []; // legacy fallback
+  if (!lists) return state.lists[storeId] || [];
   const lid = getActiveListId(storeId);
   return (lid && lists.lists[lid]) ? lists.lists[lid].items : [];
 }
 
 function setActiveListItems(storeId, items) {
+  if (_isV2()) {
+    const lid = getActiveListId(storeId);
+    if (lid && state.lists[lid]) state.lists[lid].items = items;
+    return;
+  }
   const lists = getLists(storeId);
   if (!lists) { state.lists[storeId] = items; return; }
   const lid = getActiveListId(storeId);
   if (lid && lists.lists[lid]) lists.lists[lid].items = items;
 }
 
+// V2: returns the active list doc object directly
+function getActiveListDoc() {
+  if (!_isV2()) return null;
+  const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+  return lid ? state.lists[lid] : null;
+}
+
+// V2: get aisleIndex for an item in the current store context
+// Checks per-item corrections first, then falls back to kwMatch
+function getAisleIndex(item, storeId) {
+  if (_isV2()) {
+    if (item.corrections && item.corrections[storeId] !== undefined) {
+      return item.corrections[storeId];
+    }
+    const store = state.stores.find(s => s.id === storeId);
+    if (!store) return null;
+    return kwMatch(normalise(normalizeGroceryInput(item.name)), store.aisles);
+  }
+  // V1: aisleIndex is stored on item
+  return item.aisleIndex ?? null;
+}
+
 function migrateListsIfNeeded(storeId) {
+  if (_isV2()) return; // no-op in V2 — lists are managed separately
   const raw = state.lists[storeId];
   if (Array.isArray(raw)) {
     const lid = 'list-' + Date.now();
@@ -9199,17 +9306,14 @@ function migrateListsIfNeeded(storeId) {
     };
     state.activeListId[storeId] = lid;
   } else if (raw && typeof raw === 'object') {
-    // Already migrated — ensure activeListId is set
     if (!state.activeListId[storeId]) {
       const ids = Object.keys(raw.lists || {});
       if (ids.length) {
-        // Pick most recently opened
         const sorted = ids.sort((a,b) => (raw.lists[b].lastOpened||0) - (raw.lists[a].lastOpened||0));
         state.activeListId[storeId] = sorted[0];
       }
     }
   } else {
-    // No list yet — create empty default
     const lid = 'list-' + Date.now();
     state.lists[storeId] = {
       lists: { [lid]: { id: lid, name: 'My List', items: [], createdAt: Date.now(), lastOpened: Date.now() } }
@@ -9219,6 +9323,19 @@ function migrateListsIfNeeded(storeId) {
 }
 
 function createNewList(storeId, name) {
+  if (_isV2()) {
+    const lid = 'list-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    state.lists[lid] = {
+      id: lid, name: name, items: [],
+      preferredStoreId: storeId,
+      ownerUid: window._currentUser?.uid,
+      createdAt: Date.now(), lastOpened: Date.now()
+    };
+    state.activeListId = lid;
+    // Persist to Firestore
+    if (window.persistList) window.persistList(lid);
+    return lid;
+  }
   migrateListsIfNeeded(storeId);
   const lid = 'list-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
   state.lists[storeId].lists[lid] = { id: lid, name: name, items: [], createdAt: Date.now(), lastOpened: Date.now() };
@@ -9227,6 +9344,10 @@ function createNewList(storeId, name) {
 }
 
 function touchListLastOpened(storeId, lid) {
+  if (_isV2()) {
+    if (state.lists[lid]) state.lists[lid].lastOpened = Date.now();
+    return;
+  }
   const lists = getLists(storeId);
   if (lists && lists.lists[lid]) lists.lists[lid].lastOpened = Date.now();
 }
@@ -9260,9 +9381,14 @@ function hexRgba(hex,a){
 // Patch state-mutating functions to persist to Firestore
 // ══════════════════════════════
 function persistActiveStore() {
-  if (window.persistStore && state.activeStoreId) {
-    window.persistStore(state.activeStoreId);
-    // Shared list sync is now handled inside persistStore
+  if (window._useNewListStructure) {
+    // V2: persist the active list doc; store only needs saving for aisle/name/color changes
+    const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+    if (lid && window.persistList) window.persistList(lid);
+  } else {
+    if (window.persistStore && state.activeStoreId) {
+      window.persistStore(state.activeStoreId);
+    }
   }
 }
 
