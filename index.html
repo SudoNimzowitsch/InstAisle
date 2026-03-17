@@ -68,6 +68,14 @@ body{
 
 /* SCREENS */
 .screens{flex:1;overflow:hidden;position:relative;}
+@keyframes slideOutLeft  { from{transform:translateX(0);opacity:1} to{transform:translateX(-40%);opacity:0} }
+@keyframes slideOutRight { from{transform:translateX(0);opacity:1} to{transform:translateX(40%);opacity:0} }
+@keyframes slideInLeft   { from{transform:translateX(40%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes slideInRight  { from{transform:translateX(-40%);opacity:0} to{transform:translateX(0);opacity:1} }
+.store-slide-out-left  { animation:slideOutLeft  .28s ease forwards; pointer-events:none; }
+.store-slide-out-right { animation:slideOutRight .28s ease forwards; pointer-events:none; }
+.store-slide-in-left   { animation:slideInLeft   .28s ease forwards; }
+.store-slide-in-right  { animation:slideInRight  .28s ease forwards; }
 .store-cycle-btn{
   position:fixed;top:50%;transform:translateY(-50%);
   width:28px;height:56px;
@@ -6044,20 +6052,65 @@ function _updateStoreArrows() {
 // ── Swipe left/right on list screen to cycle stores (V2 only) ────────────────
 function cycleNextStore() { _cycleStore(1); }
 function cyclePrevStore() { _cycleStore(-1); }
+
+let _storeSwitchAnimating = false;
+
 function _cycleStore(dir) {
   if (!_isV2()) return;
   const stores = state.stores;
   if (stores.length < 2) return;
+
   const curIdx = stores.findIndex(s => s.id === state.activeStoreId);
   const nextIdx = (curIdx + dir + stores.length) % stores.length;
   const nextStore = stores[nextIdx];
+
+  const listContent = document.getElementById('list-content');
+  if (!listContent || _storeSwitchAnimating) {
+    // Fallback: instant switch if mid-animation or no content el
+    state.activeStoreId = nextStore.id;
+    const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+    if (lid && state.lists[lid]) { state.lists[lid].preferredStoreId = nextStore.id; if (window.persistList) window.persistList(lid); }
+    renderAll(); showToast(nextStore.name); return;
+  }
+
+  _storeSwitchAnimating = true;
+
+  // Snapshot old content into a ghost overlay
+  const ghost = document.createElement('div');
+  ghost.innerHTML = listContent.innerHTML;
+  ghost.style.cssText = listContent.style.cssText;
+  ghost.style.position = 'absolute';
+  ghost.style.inset = '0';
+  ghost.style.padding = getComputedStyle(document.getElementById('screen-list')).padding;
+  ghost.style.overflow = 'hidden';
+  ghost.style.pointerEvents = 'none';
+  ghost.style.zIndex = '2';
+  document.getElementById('screen-list').appendChild(ghost);
+
+  // Switch state and re-render new content
   state.activeStoreId = nextStore.id;
   const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
   if (lid && state.lists[lid]) {
     state.lists[lid].preferredStoreId = nextStore.id;
     if (window.persistList) window.persistList(lid);
   }
-  renderAll();
+  renderListScreen();
+
+  // Animate: ghost slides out, new content slides in
+  const outClass = dir > 0 ? 'store-slide-out-left' : 'store-slide-out-right';
+  const inClass  = dir > 0 ? 'store-slide-in-left'  : 'store-slide-in-right';
+  ghost.classList.add(outClass);
+  listContent.classList.add(inClass);
+
+  const cleanup = () => {
+    ghost.remove();
+    listContent.classList.remove(inClass);
+    _storeSwitchAnimating = false;
+  };
+  ghost.addEventListener('animationend', cleanup, { once: true });
+  // Safety fallback in case animationend doesn't fire
+  setTimeout(cleanup, 400);
+
   showToast(nextStore.name);
 }
 
@@ -6084,19 +6137,8 @@ function _initStoreSwipe() {
     const stores = state.stores;
     if (stores.length < 2) return;
     const curIdx = stores.findIndex(s => s.id === state.activeStoreId);
-    const nextIdx = dx < 0
-      ? (curIdx + 1) % stores.length          // swipe left → next store
-      : (curIdx - 1 + stores.length) % stores.length; // swipe right → prev store
-    const nextStore = stores[nextIdx];
-    state.activeStoreId = nextStore.id;
-    // Update preferredStoreId on active list
-    const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
-    if (lid && state.lists[lid]) {
-      state.lists[lid].preferredStoreId = nextStore.id;
-      if (window.persistList) window.persistList(lid);
-    }
-    renderAll();
-    showToast(nextStore.name);
+    const dir = dx < 0 ? 1 : -1; // swipe left → next (+1), swipe right → prev (-1)
+    _cycleStore(dir);
   }, { passive: true });
 }
 
