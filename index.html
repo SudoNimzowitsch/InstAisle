@@ -6162,6 +6162,16 @@ function renderListScreen(){
   if(groups['unmatched']) keys.push('unmatched');
 
   const total=items.length, done=items.filter(i=>i.checked).length;
+  // Tint list background with store color in V2 mode (subtle signal of active store)
+  const _listScreen = document.getElementById('screen-list');
+  if (_listScreen) {
+    if (_isV2() && store.color) {
+      // Very faint tint — just enough to be perceptible when it changes
+      _listScreen.style.background = hexRgba(store.color, 0.04);
+    } else {
+      _listScreen.style.background = '';
+    }
+  }
   // Update sticky toolbar count
   const tcEl = document.getElementById('list-toolbar-count');
   if (tcEl) {
