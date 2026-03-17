@@ -6165,16 +6165,7 @@ function renderListScreen(){
   if(groups['unmatched']) keys.push('unmatched');
 
   const total=items.length, done=items.filter(i=>i.checked).length;
-  // Tint list background with store color in V2 mode (subtle signal of active store)
-  const _listScreen = document.getElementById('screen-list');
-  if (_listScreen) {
-    if (_isV2() && store.color) {
-      // Very faint tint — just enough to be perceptible when it changes
-      _listScreen.style.background = hexRgba(store.color, 0.15);
-    } else {
-      _listScreen.style.background = '';
-    }
-  }
+
   // Update sticky toolbar count
   const tcEl = document.getElementById('list-toolbar-count');
   if (tcEl) {
@@ -6211,6 +6202,11 @@ function renderListScreen(){
       }
     });
   }
+
+  // In V2, tint item bars with a hint of the store color
+  const _itemBg = (_isV2() && store.color)
+    ? `background:linear-gradient(${hexRgba(store.color,0.10)},${hexRgba(store.color,0.10)}),var(--surface2)`
+    : '';
 
   let html=``;
 
@@ -6258,7 +6254,8 @@ function renderListScreen(){
           </div>`;
         } else {
           html+=`<div class="list-item ${item.checked?'checked':''}"
-              data-item-idx="${item.idx}" data-aisle-key="${key}">
+              data-item-idx="${item.idx}" data-aisle-key="${key}"
+              ${_itemBg?`style="${_itemBg}"`:''}>`; html+=`
             <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
               ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
             </div>
