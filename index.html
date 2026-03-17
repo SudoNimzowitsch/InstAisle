@@ -79,6 +79,9 @@ body{
 .store-cycle-btn:hover{opacity:1;}
 #store-prev-btn{left:2px;}
 #store-next-btn{right:2px;}
+@media (max-width: 768px) {
+  #store-prev-btn, #store-next-btn { display:none !important; }
+}
 .screen{
   position:absolute;inset:0;overflow-y:auto;
   padding:16px 20px 100px;display:none;animation:slideIn .25s ease;
@@ -6167,7 +6170,7 @@ function renderListScreen(){
   if (_listScreen) {
     if (_isV2() && store.color) {
       // Very faint tint — just enough to be perceptible when it changes
-      _listScreen.style.background = hexRgba(store.color, 0.04);
+      _listScreen.style.background = hexRgba(store.color, 0.15);
     } else {
       _listScreen.style.background = '';
     }
