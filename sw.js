@@ -1,7 +1,7 @@
 // InstAisle Service Worker
 // Caches the app shell for offline use and fast loading
 
-const CACHE_NAME = 'instaisle-v118';
+const CACHE_NAME = 'instaisle-v119';
 
 // Core files to cache on install
 const PRECACHE_URLS = [
