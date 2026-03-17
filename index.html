@@ -2159,41 +2159,46 @@ window.persistStore = async function(storeId) {
     if (store.library_chain_id && store.library_aisles_snapshot) {
       aisle_edits = computeAisleEdits(store.library_aisles_snapshot, store.aisles);
     }
+    // In V2 mode the store doc only holds structure — lists live in their own collection
+    const _v2 = window._useNewListStructure === true;
     const updatePayload = {
       name: store.name, color: store.color, aisles: store.aisles,
-      // lists_v2: new multi-list structure
-      lists_v2: (() => {
-        const raw = state.lists[storeId];
-        if (!raw || Array.isArray(raw)) return null;
-        return raw;
-      })(),
-      // list: legacy flat array — kept for rollback safety
-      list: getActiveListItems(storeId),
-      corrections: state.corrections[storeId] || {},
-      // Always persist library provenance — backfills stores created before this field existed
+      // Always persist library provenance
       library_location_id:     store.library_location_id     || null,
       library_chain_id:        store.library_chain_id        || null,
       library_aisles_snapshot: store.library_aisles_snapshot || null,
     };
+    if (!_v2) {
+      // V1 only: persist lists and corrections on the store doc
+      updatePayload.lists_v2 = (() => {
+        const raw = state.lists[storeId];
+        if (!raw || Array.isArray(raw)) return null;
+        return raw;
+      })();
+      updatePayload.list = getActiveListItems(storeId);
+      updatePayload.corrections = state.corrections[storeId] || {};
+    }
     if (aisle_edits !== null) updatePayload.aisle_edits = aisle_edits;
     await updateDoc(doc(db, 'stores', storeId), updatePayload);
     setSyncDot('ok');
-    // Sync to shared list doc if this list is shared
-    const _st = window.state; // state is a let in global script — not auto-global
-    const _activeLid = (() => {
-      const raw = _st?.lists?.[storeId];
-      if (!raw || Array.isArray(raw)) return null;
-      return _st?.activeListId?.[storeId] || null;
-    })();
-    if (_activeLid) {
-      const _sharedMeta = _st?.sharedListMeta?.[_activeLid]
-                       || _st?.pendingShareLinks?.[_activeLid];
-      if (_sharedMeta) {
-        const _sharedItems = _st?.lists?.[storeId]?.lists?.[_activeLid]?.items || [];
-        window._isSharingWrite = true;
-        updateDoc(doc(db, 'shared_lists', _sharedMeta.shareId), { items: _sharedItems })
-          .catch(e => console.warn('[share] sync error', e))
-          .finally(() => setTimeout(() => { window._isSharingWrite = false; }, 800));
+    // V1 only: sync shared list items via store save
+    if (!_v2) {
+      const _st = window.state;
+      const _activeLid = (() => {
+        const raw = _st?.lists?.[storeId];
+        if (!raw || Array.isArray(raw)) return null;
+        return _st?.activeListId?.[storeId] || null;
+      })();
+      if (_activeLid) {
+        const _sharedMeta = _st?.sharedListMeta?.[_activeLid]
+                         || _st?.pendingShareLinks?.[_activeLid];
+        if (_sharedMeta) {
+          const _sharedItems = _st?.lists?.[storeId]?.lists?.[_activeLid]?.items || [];
+          window._isSharingWrite = true;
+          updateDoc(doc(db, 'shared_lists', _sharedMeta.shareId), { items: _sharedItems })
+            .catch(e => console.warn('[share] sync error', e))
+            .finally(() => setTimeout(() => { window._isSharingWrite = false; }, 800));
+        }
       }
     }
     // Contribute changes to library (non-blocking, best-effort)
@@ -2999,7 +3004,9 @@ window.signOut = async function() {
   await fbSignOut(auth);
   // Reset state
   state.stores=[]; state.lists={}; state.corrections={};
-  state.activeStoreId=null; state.activeListId={};
+  state.activeStoreId=null;
+  state.activeListId = _isV2() ? null : {};
+  window._useNewListStructure = false; // reset flag on signout
   closeModal('modal-profile');
   renderAll();
 };
@@ -5604,8 +5611,9 @@ function _subscribeSharedList(listId, shareId, storeId) {
 async function syncSharedListWrite(storeId, listId) {
   const meta = state.sharedListMeta?.[listId] || state.pendingShareLinks?.[listId];
   if (!meta) return;
-  const lists = getLists(storeId);
-  const items = lists?.lists[listId]?.items || [];
+  const items = _isV2()
+    ? (state.lists[listId]?.items || [])
+    : (getLists(storeId)?.lists[listId]?.items || []);
   const { db, doc, updateDoc } = window._fb;
   window._isSharingWrite = true;
   try {
@@ -5618,13 +5626,20 @@ async function syncSharedListWrite(storeId, listId) {
 }
 
 // ── Save sharedListMeta to Firestore store doc ───────────────────────────────
-async function _saveSharedMeta(storeId) {
+async function _saveSharedMeta(storeId, listId) {
   if (!window._currentUser) return;
   const { db, doc, updateDoc } = window._fb;
   try {
-    await updateDoc(doc(db, 'stores', storeId), {
-      sharedListMeta: state.sharedListMeta || {}
-    });
+    if (_isV2() && listId) {
+      // V2: save sharedListMeta on the list doc itself
+      await updateDoc(doc(db, 'lists', listId), {
+        sharedListMeta: { [listId]: state.sharedListMeta?.[listId] || null }
+      });
+    } else {
+      await updateDoc(doc(db, 'stores', storeId), {
+        sharedListMeta: state.sharedListMeta || {}
+      });
+    }
   } catch(e) { console.warn('sharedMeta save error', e); }
 }
 
@@ -5649,12 +5664,15 @@ async function _activateSharedList(shareId, fullData) {
       if (meta.shareId === shareId) {
         // Already set up — just switch to it
         const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+        if (_isV2()) {
+          state.activeListId = listId;
+          state.activeStoreId = state.lists[listId]?.preferredStoreId || state.activeStoreId;
+          renderAll(); switchScreen('list'); return;
+        }
         if (owningStore) {
           state.activeStoreId = owningStore.id;
           state.activeListId[owningStore.id] = listId;
-          renderAll();
-          switchScreen('list');
-          return;
+          renderAll(); switchScreen('list'); return;
         }
       }
     }
@@ -5670,16 +5688,28 @@ async function _activateSharedList(shareId, fullData) {
   }
   if (!targetStoreId) { showToast('Error setting up store'); return; }
 
-  if (!state.lists[targetStoreId] || Array.isArray(state.lists[targetStoreId])) {
-    state.lists[targetStoreId] = { lists: {} };
-  }
   const listId = 'list-' + Date.now() + '-shared';
-  const lists = getLists(targetStoreId);
-  lists.lists[listId] = {
-    id: listId, name: fullData.listName, items: fullData.items || [],
-    createdAt: Date.now(), lastOpened: Date.now()
-  };
-  state.activeListId[targetStoreId] = listId;
+
+  if (_isV2()) {
+    state.lists[listId] = {
+      id: listId, name: fullData.listName,
+      items: (fullData.items || []).map(i => ({ ...i, corrections: i.corrections || {} })),
+      preferredStoreId: targetStoreId,
+      ownerUid: window._currentUser.uid,
+      createdAt: Date.now(), lastOpened: Date.now()
+    };
+    state.activeListId = listId;
+  } else {
+    if (!state.lists[targetStoreId] || Array.isArray(state.lists[targetStoreId])) {
+      state.lists[targetStoreId] = { lists: {} };
+    }
+    const lists = getLists(targetStoreId);
+    lists.lists[listId] = {
+      id: listId, name: fullData.listName, items: fullData.items || [],
+      createdAt: Date.now(), lastOpened: Date.now()
+    };
+    state.activeListId[targetStoreId] = listId;
+  }
   state.activeStoreId = targetStoreId;
 
   if (!state.sharedListMeta) state.sharedListMeta = {};
@@ -5688,11 +5718,13 @@ async function _activateSharedList(shareId, fullData) {
   _subscribeSharedList(listId, shareId, targetStoreId);
 
   window._isAcceptingShare = true;
-  state.activeStoreId = targetStoreId;
-  state.activeListId[targetStoreId] = listId;
   renderAll();
   switchScreen('list');
-  if (window.persistStore) await window.persistStore(targetStoreId);
+  if (_isV2()) {
+    if (window.persistList) await window.persistList(listId);
+  } else {
+    if (window.persistStore) await window.persistStore(targetStoreId);
+  }
   showToast('List ready! 🎉');
   setTimeout(() => { window._isAcceptingShare = false; }, 3000);
 }
@@ -5831,10 +5863,34 @@ async function acceptSharedList() {
   // Add list to local state with actual items from full doc
   // Initialise lists structure if not present — don't use migrateListsIfNeeded
   // which would create an unwanted default 'My List'
+  const listId = 'list-' + Date.now() + '-shared';
+
+  if (_isV2()) {
+    // V2: add to flat lists collection
+    state.lists[listId] = {
+      id: listId, name: fullData.listName,
+      items: (fullData.items || []).map(i => ({ ...i, corrections: i.corrections || {} })),
+      preferredStoreId: targetStoreId,
+      ownerUid: window._currentUser?.uid,
+      createdAt: Date.now(), lastOpened: Date.now()
+    };
+    state.activeListId = listId;
+    state.activeStoreId = targetStoreId;
+    if (!state.sharedListMeta) state.sharedListMeta = {};
+    state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
+    _subscribeSharedList(listId, shareId, targetStoreId);
+    window._isAcceptingShare = true;
+    renderAll(); switchScreen('list');
+    if (window.persistList) await window.persistList(listId);
+    showToast('List added! 🎉');
+    setTimeout(() => { window._isAcceptingShare = false; }, 3000);
+    return;
+  }
+
+  // V1 path
   if (!state.lists[targetStoreId] || Array.isArray(state.lists[targetStoreId])) {
     state.lists[targetStoreId] = { lists: {} };
   }
-  const listId = 'list-' + Date.now() + '-shared';
   const lists = getLists(targetStoreId);
   lists.lists[listId] = {
     id: listId, name: fullData.listName, items: fullData.items || [],
@@ -5842,19 +5898,14 @@ async function acceptSharedList() {
   };
   state.activeListId[targetStoreId] = listId;
   state.activeStoreId = targetStoreId;
-
-  // Record meta and subscribe real-time
   if (!state.sharedListMeta) state.sharedListMeta = {};
   state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
   _saveSharedMeta(targetStoreId);
   _subscribeSharedList(listId, shareId, targetStoreId);
-
-  // Guard against snapshot callbacks overwriting our new list before save completes
   window._isAcceptingShare = true;
   state.activeStoreId = targetStoreId;
   state.activeListId[targetStoreId] = listId;
-  renderAll();
-  switchScreen('list');
+  renderAll(); switchScreen('list');
   if (window.persistStore) await window.persistStore(targetStoreId);
   showToast('List added! 🎉');
   setTimeout(() => { window._isAcceptingShare = false; }, 3000);
@@ -5914,10 +5965,14 @@ function declineSharedList() {
 function resubscribeSharedLists() {
   if (!state.sharedListMeta) return;
   Object.entries(state.sharedListMeta).forEach(([listId, { shareId }]) => {
-    const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
-    if (owningStore) {
-      _subscribeSharedList(listId, shareId, owningStore.id);
+    let storeId;
+    if (_isV2()) {
+      storeId = state.lists[listId]?.preferredStoreId || state.activeStoreId;
+    } else {
+      const owningStore = state.stores.find(s => getLists(s.id)?.lists[listId]);
+      storeId = owningStore?.id;
     }
+    if (storeId) _subscribeSharedList(listId, shareId, storeId);
   });
 }
 
@@ -5958,6 +6013,47 @@ function toggleSuggestionsEnabled() {
 
 function boot() {
   renderAll();
+  _initStoreSwipe();
+}
+
+// ── Swipe left/right on list screen to cycle stores (V2 only) ────────────────
+function _initStoreSwipe() {
+  const screen = document.getElementById('screen-list');
+  if (!screen) return;
+  let _swX = 0, _swY = 0, _swActive = false;
+  screen.addEventListener('touchstart', e => {
+    if (!_isV2()) return;
+    if (e.touches.length !== 1) return;
+    _swX = e.touches[0].clientX;
+    _swY = e.touches[0].clientY;
+    _swActive = true;
+  }, { passive: true });
+  screen.addEventListener('touchend', e => {
+    if (!_swActive || !_isV2()) return;
+    _swActive = false;
+    const dx = e.changedTouches[0].clientX - _swX;
+    const dy = e.changedTouches[0].clientY - _swY;
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    // Don't trigger if user is dragging a list item
+    if (window._dragging) return;
+    const stores = state.stores;
+    if (stores.length < 2) return;
+    const curIdx = stores.findIndex(s => s.id === state.activeStoreId);
+    const nextIdx = dx < 0
+      ? (curIdx + 1) % stores.length          // swipe left → next store
+      : (curIdx - 1 + stores.length) % stores.length; // swipe right → prev store
+    const nextStore = stores[nextIdx];
+    state.activeStoreId = nextStore.id;
+    // Update preferredStoreId on active list
+    const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+    if (lid && state.lists[lid]) {
+      state.lists[lid].preferredStoreId = nextStore.id;
+      if (window.persistList) window.persistList(lid);
+    }
+    renderAll();
+    showToast(nextStore.name);
+  }, { passive: true });
 }
 
 // NAVIGATION
@@ -6028,8 +6124,12 @@ function renderListScreen(){
   // Update sticky toolbar count
   const tcEl = document.getElementById('list-toolbar-count');
   if (tcEl) {
-    const lid = getActiveListId(store.id);
-    const lname = lid && getLists(store.id)?.lists[lid]?.name;
+    const lid = _isV2()
+      ? (typeof state.activeListId === 'string' ? state.activeListId : null)
+      : getActiveListId(store.id);
+    const lname = lid && (_isV2()
+      ? state.lists[lid]?.name
+      : getLists(store.id)?.lists[lid]?.name);
     const _isShared = lid && state.sharedListMeta?.[lid];
     tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + (_isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px;cursor:pointer" title="Manage sharing" onclick="topbarShareList()">🔗</span>' : '') + done + '/' + total + ' ✓';
   }
@@ -6186,10 +6286,22 @@ function openStoreSwitch(){
 }
 
 function setActiveStore(id){
-  // Close store switcher without triggering history.back()
   const swEl = document.getElementById('modal-store-switch');
   if (swEl) swEl.classList.remove('open');
-  // Show list picker for this store
+  if (_isV2()) {
+    // V2: switching store re-classifies current list — no list picker needed
+    state.activeStoreId = id;
+    // Update preferredStoreId on the active list
+    const lid = typeof state.activeListId === 'string' ? state.activeListId : null;
+    if (lid && state.lists[lid]) {
+      state.lists[lid].preferredStoreId = id;
+      if (window.persistList) window.persistList(lid);
+    }
+    renderAll();
+    switchScreen('list');
+    return;
+  }
+  // V1: show list picker for this store
   migrateListsIfNeeded(id);
   _listPickerStoreId = id;
   const store = state.stores.find(s => s.id === id);
@@ -6201,6 +6313,13 @@ function setActiveStore(id){
 function openListPickerForActiveStore() {
   const store = getActiveStore();
   if (!store) return;
+  if (_isV2()) {
+    // V2: show all lists across all stores
+    document.getElementById('list-picker-title').textContent = 'My Lists';
+    renderListPicker(null);
+    openModal('modal-list-picker');
+    return;
+  }
   migrateListsIfNeeded(store.id);
   _listPickerStoreId = store.id;
   document.getElementById('list-picker-title').textContent = store.name;
@@ -6212,6 +6331,39 @@ let _listPickerStoreId = null;
 let _listContextId = null; // which list is being acted on
 
 function renderListPicker(storeId) {
+  if (_isV2()) {
+    // V2: show all lists across all stores, with preferred store as subtitle
+    const allLists = Object.values(state.lists)
+      .sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+    const activeId = typeof state.activeListId === 'string' ? state.activeListId : null;
+    document.getElementById('list-picker-items').innerHTML = allLists.map(l => {
+      const prefStore = state.stores.find(s => s.id === l.preferredStoreId);
+      const storeLabel = prefStore ? prefStore.name : '';
+      const storeColor = prefStore ? prefStore.color : 'var(--muted)';
+      return `<div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;border-color:${l.id===activeId?'var(--green)':'var(--border)'}"
+        onclick="selectList(null,'${l.id}')"
+        oncontextmenu="event.preventDefault();openListContext(null,'${l.id}')"
+        data-listid="${l.id}" data-storeid="">
+        <div style="flex:1">
+          <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}${state.sharedListMeta?.[l.id]?'<span style="font-size:.7rem;color:var(--muted);margin-left:5px" title="Shared list">🔗</span>':''}</div>
+          <div style="font-size:.72rem;color:var(--muted)">${l.items.length} item${l.items.length!==1?'s':''} · <span style="color:${storeColor}">${esc(storeLabel)}</span></div>
+        </div>
+        ${l.id===activeId?'<span style="color:var(--green);font-size:.72rem">Active</span>':''}
+        <button class="btn btn-sm btn-ghost" style="flex-shrink:0;font-size:1.1rem;color:var(--text);padding:4px 10px"
+          onclick="event.stopPropagation();openListContext(null,'${l.id}')">…</button>
+      </div>`;
+    }).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
+    setTimeout(() => {
+      document.querySelectorAll('#list-picker-items [data-listid]').forEach(el => {
+        let timer;
+        el.addEventListener('touchstart', () => { timer = setTimeout(() => openListContext(null, el.dataset.listid), 600); }, {passive:true});
+        el.addEventListener('touchend',   () => clearTimeout(timer), {passive:true});
+        el.addEventListener('touchmove',  () => clearTimeout(timer), {passive:true});
+      });
+    }, 50);
+    return;
+  }
+  // V1 path
   const lists = getLists(storeId);
   if (!lists) return;
   const sorted = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
@@ -6230,8 +6382,6 @@ function renderListPicker(storeId) {
       <button class="btn btn-sm btn-ghost" style="flex-shrink:0;font-size:1.1rem;color:var(--text);padding:4px 10px"
         onclick="event.stopPropagation();openListContext('${storeId}','${l.id}')">…</button>
     </div>`).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
-
-  // Long-press support for touch
   setTimeout(() => {
     document.querySelectorAll('#list-picker-items [data-listid]').forEach(el => {
       let timer;
@@ -6243,6 +6393,21 @@ function renderListPicker(storeId) {
 }
 
 function selectList(storeId, listId) {
+  if (_isV2()) {
+    const listDoc = state.lists[listId];
+    if (!listDoc) return;
+    state.activeListId = listId;
+    // Switch to the list's preferred store
+    if (listDoc.preferredStoreId && state.stores.find(s => s.id === listDoc.preferredStoreId)) {
+      state.activeStoreId = listDoc.preferredStoreId;
+    }
+    touchListLastOpened(null, listId);
+    closeModal('modal-list-picker');
+    renderAll();
+    switchScreen('list');
+    if (window.persistList) window.persistList(listId);
+    return;
+  }
   state.activeStoreId = storeId;
   state.activeListId[storeId] = listId;
   touchListLastOpened(storeId, listId);
@@ -6257,9 +6422,10 @@ let _newListMode = false; // true when opening modal-add-list to create a new li
 function topbarShareList() {
   const store = getActiveStore();
   if (!store) return;
-  const lid = getActiveListId(store.id);
+  const lid = _isV2()
+    ? (typeof state.activeListId === 'string' ? state.activeListId : null)
+    : getActiveListId(store.id);
   if (!lid) return;
-  // Reuse openShareList but set the context list id first
   _listContextId = lid;
   openShareList();
 }
@@ -6288,7 +6454,11 @@ function promptNewList() {
 function dismissListContext() {
   const el = document.getElementById('modal-list-context');
   if (el) el.classList.remove('open');
-  renderListPicker(_listPickerStoreId);
+  if (_isV2()) {
+    renderListPicker(null);
+  } else {
+    renderListPicker(_listPickerStoreId);
+  }
   openModal('modal-list-picker');
 }
 
@@ -6301,8 +6471,9 @@ function openListContext(storeId, listId) {
     const _isSharedCtx = state.sharedListMeta?.[listId] || state.pendingShareLinks?.[listId];
     _ctxShareBtn.textContent = _isSharedCtx ? '🔗 Manage sharing' : '🔗 Share list';
   }
-  const lists = getLists(storeId);
-  const list = lists && lists.lists[listId];
+  const list = _isV2()
+    ? state.lists[listId]
+    : (getLists(storeId)?.lists[listId]);
   if (!list) return;
   document.getElementById('list-context-name').textContent = list.name;
   // Bypass closeModal to avoid history.back() race with openModal
@@ -6312,8 +6483,9 @@ function openListContext(storeId, listId) {
 }
 
 function renameListPrompt() {
-  const lists = getLists(_listPickerStoreId);
-  const list = lists && lists.lists[_listContextId];
+  const list = _isV2()
+    ? state.lists[_listContextId]
+    : getLists(_listPickerStoreId)?.lists[_listContextId];
   if (!list) return;
   const input = document.getElementById('rename-list-input');
   input.value = list.name;
@@ -6326,17 +6498,31 @@ function confirmRenameList() {
   const input = document.getElementById('rename-list-input');
   const name = input.value.trim();
   if (!name) return;
-  const lists = getLists(_listPickerStoreId);
-  const list = lists && lists.lists[_listContextId];
+  const list = _isV2()
+    ? state.lists[_listContextId]
+    : getLists(_listPickerStoreId)?.lists[_listContextId];
   if (!list) return;
   list.name = name;
   document.getElementById('modal-rename-list').classList.remove('open');
-  if (window.persistStore) window.persistStore(_listPickerStoreId);
-  renderListPicker(_listPickerStoreId);
+  if (_isV2()) {
+    if (window.persistList) window.persistList(_listContextId);
+    renderListPicker(null);
+  } else {
+    if (window.persistStore) window.persistStore(_listPickerStoreId);
+    renderListPicker(_listPickerStoreId);
+  }
   openModal('modal-list-picker');
 }
 
 function deleteActiveContextList() {
+  if (_isV2()) {
+    const list = state.lists[_listContextId];
+    if (!list) return;
+    // Allow deleting even the last list in V2
+    document.getElementById('delete-list-name').textContent = '"' + list.name + '"';
+    document.getElementById('modal-delete-list').classList.add('open');
+    return;
+  }
   const lists = getLists(_listPickerStoreId);
   if (!lists) return;
   const listCount = Object.keys(lists.lists).length;
@@ -6348,23 +6534,48 @@ function deleteActiveContextList() {
 }
 function confirmDeleteList() {
   document.getElementById('modal-delete-list').classList.remove('open');
+  const _dctxEl = document.getElementById('modal-list-context');
+  if (_dctxEl) _dctxEl.classList.remove('open');
+
+  if (_isV2()) {
+    const listDoc = state.lists[_listContextId];
+    if (!listDoc) return;
+    // Must have at least one list — but in V2 we allow zero (user can start fresh)
+    const shareMeta = state.sharedListMeta?.[_listContextId]
+                   || state.pendingShareLinks?.[_listContextId];
+    if (shareMeta) _leaveOrTransferSharedList(_listContextId, null, shareMeta);
+    // Remove from Firestore
+    const { db, doc, deleteDoc } = window._fb;
+    deleteDoc(doc(db, 'lists', _listContextId)).catch(e => console.warn('[deleteList]', e));
+    // Unsubscribe snapshot
+    if (window._listUnsubs) {
+      // Find and call the unsub for this list
+      // (we don't track by id currently — TODO: improve)
+    }
+    delete state.lists[_listContextId];
+    // If it was active, switch to another list
+    if (state.activeListId === _listContextId) {
+      const remaining = Object.values(state.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
+      state.activeListId = remaining[0]?.id || null;
+    }
+    renderListPicker(null);
+    openModal('modal-list-picker');
+    return;
+  }
+
+  // V1 path
   const lists = getLists(_listPickerStoreId);
   if (!lists) return;
   const list = lists.lists[_listContextId];
   if (!list) return;
-
-  // Handle shared list cleanup before removing locally
   const shareMeta = state.sharedListMeta?.[_listContextId]
                  || state.pendingShareLinks?.[_listContextId];
   if (shareMeta) _leaveOrTransferSharedList(_listContextId, _listPickerStoreId, shareMeta);
-
   delete lists.lists[_listContextId];
   if (state.activeListId[_listPickerStoreId] === _listContextId) {
     const remaining = Object.values(lists.lists).sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
     state.activeListId[_listPickerStoreId] = remaining[0]?.id || null;
   }
-  const _dctxEl = document.getElementById('modal-list-context');
-  if (_dctxEl) _dctxEl.classList.remove('open');
   if (window.persistStore) window.persistStore(_listPickerStoreId);
   renderListPicker(_listPickerStoreId);
   openModal('modal-list-picker');
@@ -6427,31 +6638,55 @@ function openListTransfer(mode) {
 }
 
 async function executeListTransfer(destStoreId) {
-  const srcStoreId = _listPickerStoreId;
   const listId = _listContextId;
-  const srcLists = getLists(srcStoreId);
-  if (!srcLists || !srcLists.lists[listId]) { closeModal('modal-list-transfer'); return; }
+  closeModal('modal-list-transfer');
 
+  if (_isV2()) {
+    const srcList = state.lists[listId];
+    if (!srcList) return;
+    if (_transferMode === 'copy') {
+      // Copy: create new list with same items, preferred store = dest
+      const newLid = 'list-' + Date.now();
+      state.lists[newLid] = {
+        id: newLid,
+        name: srcList.name + ' (copy)',
+        items: srcList.items.map(i => ({ ...i, corrections: { ...i.corrections } })),
+        preferredStoreId: destStoreId,
+        ownerUid: window._currentUser?.uid,
+        createdAt: Date.now(), lastOpened: Date.now()
+      };
+      state.activeListId = newLid;
+      if (window.persistList) await window.persistList(newLid);
+    } else {
+      // Move: just update preferredStoreId
+      srcList.preferredStoreId = destStoreId;
+      state.activeStoreId = destStoreId;
+      if (window.persistList) await window.persistList(listId);
+    }
+    showToast(_transferMode === 'move' ? 'List moved ✓' : 'List copied ✓');
+    renderAll();
+    return;
+  }
+
+  // V1 path
+  const srcStoreId = _listPickerStoreId;
+  const srcLists = getLists(srcStoreId);
+  if (!srcLists || !srcLists.lists[listId]) return;
   migrateListsIfNeeded(destStoreId);
   const srcList = srcLists.lists[listId];
-
-  // Re-classify items for destination store's aisles
   const destStore = state.stores.find(s => s.id === destStoreId);
-  const reclassified = destStore ? applyCorr(classifyItems(srcList.items.map(i => i.name), destStore), destStore) : [...srcList.items];
-
+  const reclassified = destStore
+    ? applyCorr(classifyItems(srcList.items.map(i => i.name), destStore), destStore)
+    : [...srcList.items];
   const newLid = 'list-' + Date.now();
   state.lists[destStoreId].lists[newLid] = {
     id: newLid,
     name: _transferMode === 'copy' ? srcList.name + ' (copy)' : srcList.name,
-    items: reclassified,
-    createdAt: Date.now(),
-    lastOpened: Date.now()
+    items: reclassified, createdAt: Date.now(), lastOpened: Date.now()
   };
-
   if (_transferMode === 'move') {
     const listCount = Object.keys(srcLists.lists).length;
     if (listCount <= 1) {
-      // Can't delete last list — clear it instead
       srcList.items = [];
     } else {
       delete srcLists.lists[listId];
@@ -6462,9 +6697,7 @@ async function executeListTransfer(destStoreId) {
     }
     if (window.persistStore) window.persistStore(srcStoreId);
   }
-
   state.activeListId[destStoreId] = newLid;
-  closeModal('modal-list-transfer');
   if (window.persistStore) await window.persistStore(destStoreId);
   showToast(_transferMode === 'move' ? 'List moved ✓' : 'List copied ✓');
   renderAll();
@@ -8056,9 +8289,15 @@ async function saveStore(){
     const store=state.stores.find(s=>s.id===state.editingStoreId);
     store.name=name; store.color=tempColor; store.aisles=aisles;
     if(getActiveListItems(store.id)?.length){
-      setActiveListItems(store.id, getActiveListItems(store.id).map(item=>({
-        ...item, aisleIndex: rematch(item.name,store)
-      })));
+      setActiveListItems(store.id, getActiveListItems(store.id).map(item=>{
+        if (_isV2()) {
+          // V2: clear store correction so kwMatch re-runs with new aisles
+          const updated = { ...item };
+          if (updated.corrections) delete updated.corrections[store.id];
+          return updated;
+        }
+        return { ...item, aisleIndex: rematch(item.name, store) };
+      }));
     }
     if(window.persistStore) await window.persistStore(store.id);
   } else {
@@ -8069,11 +8308,17 @@ async function saveStore(){
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
     };
     state.stores.push(newStore);
-    state.lists[id]=[]; migrateListsIfNeeded(id); state.corrections[id]={};
+    if (!_isV2()) { state.lists[id]=[]; migrateListsIfNeeded(id); }
+    state.corrections[id]={};
     state.activeStoreId=id;
     // Switch to the new store's empty list immediately
-    const _newListId = Object.keys(state.lists[id].lists)[0];
-    if (_newListId) state.activeListId[id] = _newListId;
+    if (_isV2()) {
+      const _newListId = Object.keys(state.lists).find(lid => state.lists[lid].preferredStoreId === id);
+      if (_newListId) state.activeListId = _newListId;
+    } else {
+      const _newListId = Object.keys(state.lists[id].lists)[0];
+      if (_newListId) state.activeListId[id] = _newListId;
+    }
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
     if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
@@ -8120,8 +8365,22 @@ async function deleteStore(id){
       }
     }
     state.stores = state.stores.filter(s => s.id !== id);
-    delete state.lists[id]; delete state.corrections[id]; delete state.activeListId[id];
-    if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
+    if (_isV2()) {
+      // V2: lists live independently — just update preferredStoreId for orphaned lists
+      const fallbackStore = state.stores[0]?.id || null;
+      Object.values(state.lists).forEach(l => {
+        if (l.preferredStoreId === id) {
+          l.preferredStoreId = fallbackStore;
+          if (window.persistList) window.persistList(l.id);
+        }
+      });
+      // Switch active store if needed
+      if (state.activeStoreId === id) state.activeStoreId = fallbackStore;
+    } else {
+      delete state.lists[id]; delete state.corrections[id]; delete state.activeListId[id];
+      if (state.activeStoreId === id) state.activeStoreId = state.stores[0]?.id || null;
+    }
+    delete state.corrections[id];
     if (window.deleteStoreFromFirestore) await window.deleteStoreFromFirestore(id);
     renderAll(); showToast('"' + store.name + '" deleted');
   });
@@ -8218,11 +8477,18 @@ async function processListInput(){
     if (isNewList) {
       const nameInput = document.getElementById('list-name-input').value.trim();
       const name = nameInput || 'My List';
-      const lid = createNewList(store.id, name);
-      const lists = getLists(store.id);
-      if (lists && lists.lists[lid]) lists.lists[lid].items = items;
-      state.activeListId[store.id] = lid;
-      touchListLastOpened(store.id, lid);
+      if (_isV2()) {
+        const lid = createNewList(store.id, name); // createNewList is already V2-aware
+        if (state.lists[lid]) state.lists[lid].items = items;
+        state.activeListId = lid;
+        touchListLastOpened(null, lid);
+      } else {
+        const lid = createNewList(store.id, name);
+        const lists = getLists(store.id);
+        if (lists && lists.lists[lid]) lists.lists[lid].items = items;
+        state.activeListId[store.id] = lid;
+        touchListLastOpened(store.id, lid);
+      }
     } else {
       setActiveListItems(store.id, items);
     }
@@ -8239,7 +8505,8 @@ async function processListInput(){
       showProcessing(`Found ${names.length} items — sorting by aisle…`);
       const results=classifyItems(names,store);
       _applyItems(applyCorr(results,store));
-      await window.persistStore(store.id);
+      if (_isV2()) { const _lid = typeof state.activeListId==='string'?state.activeListId:null; if(_lid&&window.persistList) await window.persistList(_lid); }
+      else { await window.persistStore(store.id); }
       hideProcessing(); renderListScreen(); showToast(`${names.length} items from photo organised ✓`);
     } catch(err){
       hideProcessing(); console.error(err);
@@ -8257,7 +8524,8 @@ async function processListInput(){
   showProcessing('Sorting items by aisle…');
   const results=classifyItems(names,store);
   _applyItems(applyCorr(results,store));
-  await window.persistStore(store.id);
+  if (_isV2()) { const _lid2 = typeof state.activeListId==='string'?state.activeListId:null; if(_lid2&&window.persistList) await window.persistList(_lid2); }
+  else { await window.persistStore(store.id); }
   hideProcessing(); renderListScreen(); showToast(`${names.length} items organised ✓`);
 }
 
