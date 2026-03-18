@@ -6530,7 +6530,7 @@ function renderListPicker(storeId) {
         data-listid="${l.id}">
         <div style="flex:1;cursor:pointer;min-width:0;user-select:none;-webkit-user-select:none"
           data-listid="${l.id}"
-          onclick="selectList(null,'${l.id}')"
+          onclick="_listPickerSingleClick(event,'${l.id}')"
           data-longpress="rename">
           <div style="font-weight:${isActive?'600':'400'};font-size:.9rem;display:flex;align-items:center;gap:6px">
             ${isActive?'<span style="color:var(--green);font-size:.6rem">●</span>':''}
@@ -6555,6 +6555,7 @@ function renderListPicker(storeId) {
         el.addEventListener('dblclick', e => {
           e.preventDefault();
           clearTimeout(_lpt);
+          clearTimeout(_listPickerClickTimer); // cancel pending single-click
           _inlineRenameList(el.dataset.listid);
         });
       });
@@ -9071,6 +9072,18 @@ function normalizeGroceryInput(raw) {
 // ITEM ACTIONS
 // ══════════════════════════════
 // ── V2 list picker helpers ────────────────────────────────────────────────────
+// Deferred single-click so dblclick can cancel it on desktop
+let _listPickerClickTimer = null;
+function _listPickerSingleClick(e, listId) {
+  // On touch, fire immediately — no dblclick to worry about
+  if (e.pointerType === 'touch' || window.matchMedia('(hover:none)').matches) {
+    selectList(null, listId);
+    return;
+  }
+  clearTimeout(_listPickerClickTimer);
+  _listPickerClickTimer = setTimeout(() => selectList(null, listId), 250);
+}
+
 function _inlineRenameList(listId) {
   const label = document.getElementById('list-name-label-' + listId);
   if (!label) return;
