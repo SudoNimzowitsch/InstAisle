@@ -1052,7 +1052,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
   <button class="btn btn-sm btn-ghost" id="toolbar-list-btn" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
-  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer" onclick="openListPickerForActiveStore()">
+  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none" onclick="openListPickerForActiveStore()">
     <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
   </div>
   <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Add items</button>
@@ -6528,7 +6528,10 @@ function renderListPicker(storeId) {
       const isActive = l.id === activeId;
       return `<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--border)"
         data-listid="${l.id}">
-        <div style="flex:1;cursor:pointer;min-width:0" onclick="selectList(null,'${l.id}')">
+        <div style="flex:1;cursor:pointer;min-width:0;user-select:none;-webkit-user-select:none"
+          data-listid="${l.id}"
+          onclick="selectList(null,'${l.id}')"
+          data-longpress="rename">
           <div style="font-weight:${isActive?'600':'400'};font-size:.9rem;display:flex;align-items:center;gap:6px">
             ${isActive?'<span style="color:var(--green);font-size:.6rem">●</span>':''}
             <span id="list-name-label-${l.id}">${esc(l.name)}</span>
@@ -6536,12 +6539,27 @@ function renderListPicker(storeId) {
           </div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${l.items.length} item${l.items.length!==1?'s':''} · <span style="color:${storeColor}">${esc(storeLabel)}</span></div>
         </div>
-        <button class="btn btn-sm btn-ghost" style="flex-shrink:0;padding:4px 8px;font-size:.75rem;color:var(--muted)"
-          onclick="event.stopPropagation();_inlineRenameList('${l.id}')" title="Rename">✏️</button>
         <button class="btn btn-sm btn-ghost" style="flex-shrink:0;padding:4px 8px;color:var(--muted);font-size:.9rem"
           onclick="event.stopPropagation();_deleteListDirect('${l.id}')" title="Delete">✕</button>
       </div>`;
     }).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
+    // Wire long-press on list name areas for rename
+    setTimeout(() => {
+      document.querySelectorAll('#list-picker-items [data-longpress="rename"]').forEach(el => {
+        let _lpt;
+        el.addEventListener('touchstart', e => {
+          _lpt = setTimeout(() => { e.preventDefault(); _inlineRenameList(el.dataset.listid); }, 600);
+        }, { passive: true });
+        el.addEventListener('touchend',   () => clearTimeout(_lpt), { passive: true });
+        el.addEventListener('touchmove',  () => clearTimeout(_lpt), { passive: true });
+        el.addEventListener('mousedown',  e => {
+          if (e.button !== 0) return;
+          _lpt = setTimeout(() => { e.preventDefault(); _inlineRenameList(el.dataset.listid); }, 600);
+        });
+        el.addEventListener('mouseup',    () => clearTimeout(_lpt));
+        el.addEventListener('mouseleave', () => clearTimeout(_lpt));
+      });
+    }, 50);
     return;
   }
   // V1 path
