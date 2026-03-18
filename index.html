@@ -9902,6 +9902,11 @@ function openModal(id) {
 function closeModal(id) {
   const el = document.getElementById(id);
   if (!el || !el.classList.contains('open')) return;
+  // Blur any focused input and kill all selections before closing
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.blur();
+  }
+  if (window.getSelection) window.getSelection().removeAllRanges();
   el.classList.remove('open');
   // If the current history state is for this modal, go back
   if (history.state?.type === 'modal' && history.state?.modalId === id) {
