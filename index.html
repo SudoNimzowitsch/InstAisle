@@ -1684,9 +1684,12 @@ async function _loadUserDataV2(uid) {
     listsSnap.forEach(snap => {
       const d = snap.data();
       state.lists[snap.id] = { ...d, id: snap.id };
-      // Merge sharedListMeta
-      if (d.sharedListMeta) {
-        Object.assign(state.sharedListMeta, d.sharedListMeta);
+      // sharedListMeta on the list doc is { [listId]: { shareId, ownerUid } }
+      // Merge into the flat state.sharedListMeta map
+      if (d.sharedListMeta && typeof d.sharedListMeta === 'object') {
+        Object.entries(d.sharedListMeta).forEach(([lid, meta]) => {
+          if (meta && meta.shareId) state.sharedListMeta[lid] = meta;
+        });
       }
     });
   }
@@ -1746,14 +1749,10 @@ function _subscribeListDoc(listId) {
     if (state.lists[listId]) {
       // Only update non-item fields from lists/{listId} if this list is shared
       // (items are synced via shared_lists which is more up-to-date)
-      const isShared = state.sharedListMeta?.[listId] || state.pendingShareLinks?.[listId];
-      if (isShared) {
-        // Only update metadata, not items
-        const { items: _ignore, ...meta } = data;
-        state.lists[listId] = { ...state.lists[listId], ...meta, id: listId };
-      } else {
-        state.lists[listId] = { ...state.lists[listId], ...data, id: listId };
-      }
+      // Never overwrite items (handled by _subscribeSharedList for shared lists)
+      // Never overwrite sharedListMeta from Firestore — state.sharedListMeta is authoritative
+      const { items: _ignoreItems, sharedListMeta: _ignoreMeta, ...safeMeta } = data;
+      state.lists[listId] = { ...state.lists[listId], ...safeMeta, id: listId };
       renderAll();
     }
   });
@@ -2847,7 +2846,10 @@ window.persistList = async function(listId) {
       migratedFromStoreId: listDoc.migratedFromStoreId || null,
       createdAt:       listDoc.createdAt || Date.now(),
       lastOpened:      listDoc.lastOpened || Date.now(),
-      sharedListMeta:  listDoc.sharedListMeta || null,
+      // Always write current sharedListMeta from state — not from listDoc which may be stale
+      sharedListMeta:  state.sharedListMeta?.[listId]
+        ? { [listId]: state.sharedListMeta[listId] }
+        : (listDoc.sharedListMeta || null),
     }, { merge: true });
     setSyncDot('ok');
 
