@@ -5624,13 +5624,30 @@ function _subscribeSharedList(listId, shareId, storeId) {
       }
     }
 
-    if (!lists || !lists.lists[listId]) return;
-    // Sync items if remote differs (avoid echo of own writes or in-progress saves)
+    // Sync items if remote differs (avoid echo of own writes)
     const remote = JSON.stringify(data.items || []);
-    const local  = JSON.stringify(lists.lists[listId].items || []);
-    if (remote !== local && !window._isSharingWrite) {
-      lists.lists[listId].items = data.items || [];
-      renderListScreen();
+    if (_isV2()) {
+      if (!state.lists[listId]) return;
+      const local = JSON.stringify(state.lists[listId].items || []);
+      if (remote !== local && !window._isSharingWrite) {
+        // Merge corrections: keep local per-store corrections, take remote item data
+        state.lists[listId].items = (data.items || []).map(remoteItem => {
+          const localItem = state.lists[listId].items.find(i => i.name === remoteItem.name);
+          return {
+            ...remoteItem,
+            corrections: { ...(remoteItem.corrections || {}), ...(localItem?.corrections || {}) }
+          };
+        });
+        if (window.persistList) window.persistList(listId);
+        renderListScreen();
+      }
+    } else {
+      if (!lists || !lists.lists[listId]) return;
+      const local = JSON.stringify(lists.lists[listId].items || []);
+      if (remote !== local && !window._isSharingWrite) {
+        lists.lists[listId].items = data.items || [];
+        renderListScreen();
+      }
     }
   }, _onSnapErr);
   _shareListUnsubs[listId] = unsub;
