@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "online.instaisle.app",
-        "sha256_cert_fingerprints": ["ED:CD:32:51:F7:65:13:FD:5B:F4:7F:09:9B:34:17:34:74:45:93:F2:68:53:47:25:86:33:00:2B:33:09:36:69"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "online.instaisle.app",
+    "sha256_cert_fingerprints": ["D5:7F:58:F6:69:72:B3:77:B7:2E:DC:37:6E:6E:4B:5E:A4:F1:B0:F7:D4:29:9E:F5:08:49:A2:32:AA:23:03:7A"]
+  }
+}]
