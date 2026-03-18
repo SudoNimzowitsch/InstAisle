@@ -1741,12 +1741,19 @@ function _subscribeListDoc(listId) {
   if (!window._listUnsubs) window._listUnsubs = [];
   const { db, doc, onSnapshot } = window._fb;
   const unsub = onSnapshot(doc(db, 'lists', listId), (snap) => {
-    if (!snap.exists() || window._isSaving) return;
+    if (!snap.exists() || window._isSaving || window._isSharingWrite) return;
     const data = snap.data();
-    // Don't overwrite local state if we just wrote (echo prevention)
-    if (window._isSharingWrite) return;
     if (state.lists[listId]) {
-      state.lists[listId] = { ...state.lists[listId], ...data, id: listId };
+      // Only update non-item fields from lists/{listId} if this list is shared
+      // (items are synced via shared_lists which is more up-to-date)
+      const isShared = state.sharedListMeta?.[listId] || state.pendingShareLinks?.[listId];
+      if (isShared) {
+        // Only update metadata, not items
+        const { items: _ignore, ...meta } = data;
+        state.lists[listId] = { ...state.lists[listId], ...meta, id: listId };
+      } else {
+        state.lists[listId] = { ...state.lists[listId], ...data, id: listId };
+      }
       renderAll();
     }
   });
@@ -5638,7 +5645,8 @@ function _subscribeSharedList(listId, shareId, storeId) {
             corrections: { ...(remoteItem.corrections || {}), ...(localItem?.corrections || {}) }
           };
         });
-        if (window.persistList) window.persistList(listId);
+        // Don't call persistList here — that would write back to shared_lists creating a loop
+        // The lists/{listId} doc is synced by the user's own edits via persistActiveStore
         renderListScreen();
       }
     } else {
@@ -5676,11 +5684,19 @@ async function _saveSharedMeta(storeId, listId) {
   if (!window._currentUser) return;
   const { db, doc, updateDoc } = window._fb;
   try {
-    if (_isV2() && listId) {
-      // V2: save sharedListMeta on the list doc itself
-      await updateDoc(doc(db, 'lists', listId), {
-        sharedListMeta: { [listId]: state.sharedListMeta?.[listId] || null }
-      });
+    if (_isV2()) {
+      // V2: write each shared list's meta onto its own list doc
+      // If a specific listId is passed, just update that one
+      // Otherwise update all lists that have sharedListMeta entries
+      const toUpdate = listId
+        ? [listId]
+        : Object.keys(state.sharedListMeta || {});
+      for (const lid of toUpdate) {
+        if (!state.lists[lid]) continue;
+        await updateDoc(doc(db, 'lists', lid), {
+          sharedListMeta: { [lid]: state.sharedListMeta?.[lid] || null }
+        }).catch(e => console.warn('sharedMeta save error for', lid, e));
+      }
     } else {
       await updateDoc(doc(db, 'stores', storeId), {
         sharedListMeta: state.sharedListMeta || {}
@@ -5760,7 +5776,7 @@ async function _activateSharedList(shareId, fullData) {
 
   if (!state.sharedListMeta) state.sharedListMeta = {};
   state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
-  _saveSharedMeta(targetStoreId);
+  _saveSharedMeta(targetStoreId, listId);
   _subscribeSharedList(listId, shareId, targetStoreId);
 
   window._isAcceptingShare = true;
@@ -5946,7 +5962,7 @@ async function acceptSharedList() {
   state.activeStoreId = targetStoreId;
   if (!state.sharedListMeta) state.sharedListMeta = {};
   state.sharedListMeta[listId] = { shareId, ownerUid: fullData.ownerUid };
-  _saveSharedMeta(targetStoreId);
+  _saveSharedMeta(targetStoreId, listId);
   _subscribeSharedList(listId, shareId, targetStoreId);
   window._isAcceptingShare = true;
   state.activeStoreId = targetStoreId;
