@@ -8660,7 +8660,7 @@ async function processListInput(){
   const raw=document.getElementById('list-text-input').value.trim();
   resetUploadZone();
   if(!raw){ showToast('Enter at least one item'); return; }
-  const names=raw.split(/[\n,]/).map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
+  const names=raw.split(/[\n,]/).map(l=>l.replace(/^([-•*]+\s*|\d+[.)]\s*)/,'').trim()).filter(Boolean);
   if(!names.length){ showToast('No items found'); return; }
   showProcessing('Sorting items by aisle…');
   const results=classifyItems(names,store);
@@ -8708,7 +8708,7 @@ async function handleEditMergeUpload(e){
   const reader=new FileReader();
   reader.onload=async ev=>{
     const raw=ev.target.result;
-    const names=raw.split(/[\n,]/).map(l=>l.replace(/^[-•*\d.)]+\s*/,'').trim()).filter(Boolean);
+    const names=raw.split(/[\n,]/).map(l=>l.replace(/^([-•*]+\s*|\d+[.)]\s*)/,'').trim()).filter(Boolean);
     if(!names.length){ showToast('No items found in file'); return; }
     showProcessing('Merging items…');
     const newItems=applyCorr(classifyItems(names,store),store);
@@ -9199,7 +9199,8 @@ async function deleteItemFromEdit(idx) {
   const store = getActiveStore();
   if (!store) return;
   const _ri = getActiveListItems(store.id); _ri.splice(idx,1); setActiveListItems(store.id,_ri);
-  await window.persistStore(store.id);
+  if (_isV2()) { const _lid = typeof state.activeListId==='string'?state.activeListId:null; if(_lid&&window.persistList) await window.persistList(_lid); }
+  else { await window.persistStore(store.id); }
   renderEditListItems();
   renderListScreen();
 }
@@ -9222,7 +9223,7 @@ async function addItemFromEdit() {
   // Split on commas or line breaks, clean up each entry
   const names = raw
     .split(/[,\n]+/)
-    .map(s => s.replace(/^[-•*\d.)]+\s*/, '').trim())
+    .map(s => s.replace(/^([-•*]+\s*|\d+[.)]\s*)/, '').trim())
     .filter(Boolean);
 
   if (!names.length) return;
@@ -9234,7 +9235,8 @@ async function addItemFromEdit() {
   const _afe = getActiveListItems(store.id);
   _afe.push(...newItems);
   setActiveListItems(store.id, _afe);
-  await window.persistStore(store.id);
+  if (_isV2()) { const _lid = typeof state.activeListId==='string'?state.activeListId:null; if(_lid&&window.persistList) await window.persistList(_lid); }
+  else { await window.persistStore(store.id); }
 
   input.value = '';
   input.focus();
