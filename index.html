@@ -9093,9 +9093,15 @@ function normalizeGroceryInput(raw) {
 // Deferred single-click so dblclick can cancel it on desktop
 let _listPickerClickTimer = null;
 function _listPickerSingleClick(e, listId) {
-  // On touch, fire immediately — no dblclick to worry about
+  // On touch, small delay to let any active rename input blur and clear selection first
   if (e.pointerType === 'touch' || window.matchMedia('(hover:none)').matches) {
-    selectList(null, listId);
+    const active = document.activeElement;
+    if (active && active.tagName === 'INPUT') {
+      active.blur();
+      setTimeout(() => selectList(null, listId), 80);
+    } else {
+      selectList(null, listId);
+    }
     return;
   }
   clearTimeout(_listPickerClickTimer);
@@ -9115,14 +9121,24 @@ function _inlineRenameList(listId) {
   input.focus();
   input.select();
   const commit = () => {
-    input.setSelectionRange(0, 0); // collapse selection before anything re-renders
+    // Immediately collapse selection and remove input from DOM
+    try { input.setSelectionRange(0, 0); } catch(e) {}
     if (window.getSelection) window.getSelection().removeAllRanges();
-    const name = input.value.trim();
-    if (name && name !== current && state.lists[listId]) {
-      state.lists[listId].name = name;
-      if (window.persistList) window.persistList(listId);
-    }
-    renderListPicker(null);
+    // Restore label first so DOM has no input with selection
+    const newLabel = document.createElement('span');
+    newLabel.id = 'list-name-label-' + listId;
+    const name = input.value.trim() || current;
+    newLabel.textContent = name;
+    if (input.parentNode) input.replaceWith(newLabel);
+    // Then persist and re-render after a brief delay
+    // so iOS has time to clear the selection menu before anything else renders
+    setTimeout(() => {
+      if (name && name !== current && state.lists[listId]) {
+        state.lists[listId].name = name;
+        if (window.persistList) window.persistList(listId);
+      }
+      renderListPicker(null);
+    }, 50);
   };
   input.addEventListener('blur', commit);
   input.addEventListener('keydown', e => {
