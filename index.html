@@ -1051,8 +1051,8 @@ textarea.input{resize:vertical;min-height:90px;}
 
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
-  <button class="btn btn-sm btn-ghost" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
-  <div style="flex:1;display:flex;justify-content:center;align-items:center;" >
+  <button class="btn btn-sm btn-ghost" id="toolbar-list-btn" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
+  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer" onclick="openListPickerForActiveStore()">
     <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
   </div>
   <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Add items</button>
@@ -6314,6 +6314,9 @@ function renderListScreen(){
   const _nextBtn = document.getElementById('store-next-btn');
   if (_prevBtn) _prevBtn.style.display = _showArrows ? 'flex' : 'none';
   if (_nextBtn) _nextBtn.style.display = _showArrows ? 'flex' : 'none';
+  // Hide ☰ in V2 — list name in toolbar is clickable instead
+  const _listBtn = document.getElementById('toolbar-list-btn');
+  if (_listBtn) _listBtn.style.display = _isV2() ? 'none' : '';
 
   // Pre-seed _aislesFirstCheckDone for aisles that already have checked items
   // on page load, so a new check in that aisle still fires suggestions.
@@ -6515,7 +6518,6 @@ let _listContextId = null; // which list is being acted on
 
 function renderListPicker(storeId) {
   if (_isV2()) {
-    // V2: show all lists across all stores, with preferred store as subtitle
     const allLists = Object.values(state.lists)
       .sort((a,b) => (b.lastOpened||0) - (a.lastOpened||0));
     const activeId = typeof state.activeListId === 'string' ? state.activeListId : null;
@@ -6523,27 +6525,23 @@ function renderListPicker(storeId) {
       const prefStore = state.stores.find(s => s.id === l.preferredStoreId);
       const storeLabel = prefStore ? prefStore.name : '';
       const storeColor = prefStore ? prefStore.color : 'var(--muted)';
-      return `<div class="card" style="cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:8px;border-color:${l.id===activeId?'var(--green)':'var(--border)'}"
-        onclick="selectList(null,'${l.id}')"
-        oncontextmenu="event.preventDefault();openListContext(null,'${l.id}')"
-        data-listid="${l.id}" data-storeid="">
-        <div style="flex:1">
-          <div style="font-weight:${l.id===activeId?'600':'400'};font-size:.9rem">${esc(l.name)}${state.sharedListMeta?.[l.id]?'<span style="font-size:.7rem;color:var(--muted);margin-left:5px" title="Shared list">🔗</span>':''}</div>
-          <div style="font-size:.72rem;color:var(--muted)">${l.items.length} item${l.items.length!==1?'s':''} · <span style="color:${storeColor}">${esc(storeLabel)}</span></div>
+      const isActive = l.id === activeId;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--border)"
+        data-listid="${l.id}">
+        <div style="flex:1;cursor:pointer;min-width:0" onclick="selectList(null,'${l.id}')">
+          <div style="font-weight:${isActive?'600':'400'};font-size:.9rem;display:flex;align-items:center;gap:6px">
+            ${isActive?'<span style="color:var(--green);font-size:.6rem">●</span>':''}
+            <span id="list-name-label-${l.id}">${esc(l.name)}</span>
+            ${state.sharedListMeta?.[l.id]?'<span style="font-size:.7rem;color:var(--muted)" title="Shared list">🔗</span>':''}
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${l.items.length} item${l.items.length!==1?'s':''} · <span style="color:${storeColor}">${esc(storeLabel)}</span></div>
         </div>
-        ${l.id===activeId?'<span style="color:var(--green);font-size:.72rem">Active</span>':''}
-        <button class="btn btn-sm btn-ghost" style="flex-shrink:0;font-size:1.1rem;color:var(--text);padding:4px 10px"
-          onclick="event.stopPropagation();openListContext(null,'${l.id}')">…</button>
+        <button class="btn btn-sm btn-ghost" style="flex-shrink:0;padding:4px 8px;font-size:.75rem;color:var(--muted)"
+          onclick="event.stopPropagation();_inlineRenameList('${l.id}')" title="Rename">✏️</button>
+        <button class="btn btn-sm btn-ghost" style="flex-shrink:0;padding:4px 8px;color:var(--muted);font-size:.9rem"
+          onclick="event.stopPropagation();_deleteListDirect('${l.id}')" title="Delete">✕</button>
       </div>`;
     }).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
-    setTimeout(() => {
-      document.querySelectorAll('#list-picker-items [data-listid]').forEach(el => {
-        let timer;
-        el.addEventListener('touchstart', () => { timer = setTimeout(() => openListContext(null, el.dataset.listid), 600); }, {passive:true});
-        el.addEventListener('touchend',   () => clearTimeout(timer), {passive:true});
-        el.addEventListener('touchmove',  () => clearTimeout(timer), {passive:true});
-      });
-    }, 50);
     return;
   }
   // V1 path
@@ -9055,6 +9053,43 @@ function normalizeGroceryInput(raw) {
 // ══════════════════════════════
 // ITEM ACTIONS
 // ══════════════════════════════
+// ── V2 list picker helpers ────────────────────────────────────────────────────
+function _inlineRenameList(listId) {
+  const label = document.getElementById('list-name-label-' + listId);
+  if (!label) return;
+  const current = state.lists[listId]?.name || '';
+  const input = document.createElement('input');
+  input.value = current;
+  input.style.cssText = 'font-size:.9rem;font-weight:600;border:none;border-bottom:1px solid var(--green);background:transparent;color:var(--text);width:100%;outline:none;padding:0';
+  label.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const name = input.value.trim();
+    if (name && name !== current && state.lists[listId]) {
+      state.lists[listId].name = name;
+      if (window.persistList) window.persistList(listId);
+    }
+    renderListPicker(null);
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
+}
+
+function _deleteListDirect(listId) {
+  const list = state.lists[listId];
+  if (!list) return;
+  const allLists = Object.keys(state.lists);
+  // Set context for confirmDeleteList
+  _listContextId = listId;
+  _listPickerStoreId = list.preferredStoreId;
+  document.getElementById('delete-list-name').textContent = '"' + list.name + '"';
+  document.getElementById('modal-delete-list').classList.add('open');
+}
+
 function expandAisle(aisleKey, storeId) {
   _aisleExpandedOverride[storeId + '_' + aisleKey] = true;
   renderListScreen();
