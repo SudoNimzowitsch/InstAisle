@@ -6552,12 +6552,11 @@ function renderListPicker(storeId) {
         }, { passive: true });
         el.addEventListener('touchend',   () => clearTimeout(_lpt), { passive: true });
         el.addEventListener('touchmove',  () => clearTimeout(_lpt), { passive: true });
-        el.addEventListener('mousedown',  e => {
-          if (e.button !== 0) return;
-          _lpt = setTimeout(() => { e.preventDefault(); _inlineRenameList(el.dataset.listid); }, 600);
+        el.addEventListener('dblclick', e => {
+          e.preventDefault();
+          clearTimeout(_lpt);
+          _inlineRenameList(el.dataset.listid);
         });
-        el.addEventListener('mouseup',    () => clearTimeout(_lpt));
-        el.addEventListener('mouseleave', () => clearTimeout(_lpt));
       });
     }, 50);
     return;
