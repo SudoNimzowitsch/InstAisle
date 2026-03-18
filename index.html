@@ -9143,10 +9143,11 @@ function _inlineRenameList(listId) {
   input.value = current;
   input.style.cssText = 'font-size:.9rem;font-weight:600;border:none;border-bottom:1px solid var(--green);background:transparent;color:var(--text);width:100%;outline:none;padding:0;-webkit-touch-callout:none';
   label.replaceWith(input);
-  // Clear any text selection that accumulated during long-press
+  // Clear any text selection, place cursor at end (no selection = no iOS callout bar)
   if (window.getSelection) window.getSelection().removeAllRanges();
   input.focus();
-  input.select();
+  const _len = input.value.length;
+  input.setSelectionRange(_len, _len);
   const commit = () => {
     // Immediately collapse selection and remove input from DOM
     try { input.setSelectionRange(0, 0); } catch(e) {}
