@@ -1052,7 +1052,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
   <button class="btn btn-sm btn-ghost" id="toolbar-list-btn" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
-  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none" onclick="openListPickerForActiveStore()">
+  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none" onclick="openListPickerForActiveStore()">
     <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
   </div>
   <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Add items</button>
@@ -1362,7 +1362,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
     <div class="modal-handle"></div>
     <div class="modal-title" id="list-picker-title">My Lists</div>
-    <div id="list-picker-items" style="overflow-y:auto;flex:1;margin-bottom:12px"></div>
+    <div id="list-picker-items" style="overflow-y:auto;flex:1;margin-bottom:12px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none"></div>
     <button class="btn btn-primary btn-full" onclick="promptNewList()">＋ New list</button>
   </div>
 </div>
@@ -6548,7 +6548,10 @@ function renderListPicker(storeId) {
       document.querySelectorAll('#list-picker-items [data-longpress="rename"]').forEach(el => {
         let _lpt;
         el.addEventListener('touchstart', e => {
-          _lpt = setTimeout(() => { e.preventDefault(); _inlineRenameList(el.dataset.listid); }, 600);
+          _lpt = setTimeout(() => {
+            if (window.getSelection) window.getSelection().removeAllRanges();
+            _inlineRenameList(el.dataset.listid);
+          }, 600);
         }, { passive: true });
         el.addEventListener('touchend',   () => clearTimeout(_lpt), { passive: true });
         el.addEventListener('touchmove',  () => clearTimeout(_lpt), { passive: true });
@@ -9092,6 +9095,8 @@ function _inlineRenameList(listId) {
   input.value = current;
   input.style.cssText = 'font-size:.9rem;font-weight:600;border:none;border-bottom:1px solid var(--green);background:transparent;color:var(--text);width:100%;outline:none;padding:0';
   label.replaceWith(input);
+  // Clear any text selection that accumulated during long-press
+  if (window.getSelection) window.getSelection().removeAllRanges();
   input.focus();
   input.select();
   const commit = () => {
