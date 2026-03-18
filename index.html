@@ -1950,6 +1950,11 @@ window.loadUserDoc = async function() {
       );
     } else {
       state._dismissedCache = new Set();
+      // First login — create stub user doc so the flag system works
+      try {
+        const { setDoc } = window._fb;
+        await setDoc(doc(db, 'users', uid), { createdAt: Date.now() }, { merge: true });
+      } catch(e) { console.warn('loadUserDoc stub:', e.message); }
     }
   } catch(e) {
     console.warn('loadUserDoc prefs:', e.message);
