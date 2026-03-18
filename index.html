@@ -1597,8 +1597,27 @@ async function loadUserData(uid) {
   });
 
   if (!state.activeStoreId || !state.stores.find(s => s.id === state.activeStoreId)) {
-    state.activeStoreId = state.stores[0]?.id || null;
+    // Try to restore from last session
+    try {
+      const _savedStore = localStorage.getItem('instaisle_activeStore');
+      if (_savedStore && state.stores.find(s => s.id === _savedStore))
+        state.activeStoreId = _savedStore;
+      else
+        state.activeStoreId = state.stores[0]?.id || null;
+    } catch(e) {
+      state.activeStoreId = state.stores[0]?.id || null;
+    }
   }
+
+  // Restore active list per store
+  try {
+    const _savedList = localStorage.getItem('instaisle_activeList');
+    if (_savedList && state.activeStoreId) {
+      const _lists = getLists(state.activeStoreId);
+      if (_lists?.lists?.[_savedList])
+        state.activeListId[state.activeStoreId] = _savedList;
+    }
+  } catch(e) {}
 
   renderAll();
   setSyncDot('ok');
@@ -1694,7 +1713,17 @@ async function _loadUserDataV2(uid) {
     });
   }
 
-  // Set active list — prefer last opened list for active store
+  // Restore active list/store from last session
+  try {
+    const _savedStore = localStorage.getItem('instaisle_activeStore');
+    const _savedList  = localStorage.getItem('instaisle_activeList');
+    if (_savedStore && state.stores.find(s => s.id === _savedStore))
+      state.activeStoreId = _savedStore;
+    if (_savedList && state.lists[_savedList])
+      state.activeListId = _savedList;
+  } catch(e) {}
+
+  // Fall back to most recently opened list for active store if nothing restored
   if (!state.activeListId || !state.lists[state.activeListId]) {
     const listsForStore = Object.values(state.lists)
       .filter(l => l.preferredStoreId === state.activeStoreId)
@@ -3045,6 +3074,7 @@ window.signOut = async function() {
   state.activeStoreId=null;
   state.activeListId = _isV2() ? null : {};
   window._useNewListStructure = false; // reset flag on signout
+  try { localStorage.removeItem('instaisle_activeStore'); localStorage.removeItem('instaisle_activeList'); } catch(e) {}
   closeModal('modal-profile');
   renderAll();
 };
@@ -6198,7 +6228,19 @@ function switchScreen(name, pushHistory=true) {
 // ══════════════════════════════
 // RENDER
 // ══════════════════════════════
-function renderAll(){ renderTopbar(); renderListScreen(); }
+function renderAll(){
+  renderTopbar();
+  renderListScreen();
+  // Persist active list/store to localStorage for session restore
+  try {
+    if (state.activeStoreId)
+      localStorage.setItem('instaisle_activeStore', state.activeStoreId);
+    const _lid = _isV2()
+      ? (typeof state.activeListId === 'string' ? state.activeListId : null)
+      : (state.activeStoreId ? state.activeListId?.[state.activeStoreId] : null);
+    if (_lid) localStorage.setItem('instaisle_activeList', _lid);
+  } catch(e) {}
+}
 
 function renderTopbar(){
   const s=getActiveStore();
