@@ -6560,6 +6560,33 @@ function renderListPicker(storeId) {
     }).join('') || '<p class="text-muted" style="text-align:center;padding:12px 0">No lists yet.</p>';
     // Wire long-press on list name areas for rename
     setTimeout(() => {
+      // Global touchstart on picker: if a rename input is active, kill it immediately
+      const pickerEl = document.getElementById('list-picker-items');
+      if (pickerEl) {
+        pickerEl.addEventListener('touchstart', e => {
+          const activeInput = pickerEl.querySelector('input');
+          if (!activeInput) return;
+          // Don't kill it if they're tapping the input itself
+          if (e.target === activeInput) return;
+          // Kill selection and remove input before the tap registers
+          try { activeInput.setSelectionRange(0, 0); } catch(e2) {}
+          if (window.getSelection) window.getSelection().removeAllRanges();
+          activeInput.blur();
+          // Force remove from DOM immediately — don't wait for blur handler
+          const lid = activeInput.closest('[data-listid]')?.dataset.listid;
+          const span = document.createElement('span');
+          if (lid) span.id = 'list-name-label-' + lid;
+          const name = activeInput.value.trim() || activeInput.defaultValue;
+          span.textContent = name;
+          activeInput.replaceWith(span);
+          // Save if changed
+          if (lid && name && state.lists[lid] && name !== state.lists[lid].name) {
+            state.lists[lid].name = name;
+            if (window.persistList) window.persistList(lid);
+          }
+        }, { passive: true });
+      }
+
       document.querySelectorAll('#list-picker-items [data-longpress="rename"]').forEach(el => {
         let _lpt;
         el.addEventListener('touchstart', e => {
