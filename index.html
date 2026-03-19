@@ -1069,8 +1069,11 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- LIST TOOLBAR (sticky, shown only on list screen) -->
 <div id="list-toolbar">
   <button class="btn btn-sm btn-ghost" id="toolbar-list-btn" onclick="openListPickerForActiveStore()" title="All lists" style="padding:5px 9px;font-size:.8rem;flex-shrink:0">☰</button>
-  <div style="flex:1;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent" onclick="openListPickerForActiveStore()">
-    <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
+  <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:4px;">
+    <span id="list-toolbar-share-badge" style="font-size:.7rem;color:var(--muted);pointer-events:none;display:none">🔗</span>
+    <div style="cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent" onclick="openListPickerForActiveStore()">
+      <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
+    </div>
   </div>
   <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Add items</button>
   <button class="btn btn-sm btn-ghost" onclick="uncheckAll()" style="flex-shrink:0">Uncheck all</button>
@@ -6320,7 +6323,12 @@ function renderListScreen(){
       : getLists(store.id)?.lists[lid]?.name);
     const _isShared = lid && state.sharedListMeta?.[lid];
     // In V2: 🔗 is a non-tappable indicator only; sharing is accessed via the topbar icon
-    const _sharedBadge = _isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px" title="Shared list">🔗</span>' : '';
+    // Update share badge (sits outside clickable area — never tappable)
+    const _badgeEl = document.getElementById('list-toolbar-share-badge');
+    if (_badgeEl) _badgeEl.style.display = _isShared ? '' : 'none';
+    const _sharedBadge = (!_isV2() && _isShared)
+      ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px;cursor:pointer" title="Manage sharing" onclick="topbarShareList()">🔗</span>'
+      : '';
     tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + _sharedBadge + done + '/' + total + ' ✓';
   }
   const tb = document.getElementById('list-toolbar');
