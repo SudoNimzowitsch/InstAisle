@@ -320,14 +320,14 @@ textarea.input{resize:vertical;min-height:90px;}
 .dismiss-suggestion{background:none;border:none;cursor:pointer;
   font-size:.8rem;color:#e05555;padding:0 2px;line-height:1;flex-shrink:0;}
 .item-check{
-  width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
   flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .15s;
 }
 .item-check.done{background:var(--green);border-color:var(--green);}
-.item-name{flex:1;font-size:1.05rem;font-weight:400;}
+.item-name{flex:1;font-size:1.15rem;font-weight:400;}
 .item-aisle-badge{
-  font-size:.75rem;font-weight:600;padding:5px 10px;border-radius:20px;
+  font-size:1rem;font-weight:600;padding:7px 14px;border-radius:20px;
   cursor:pointer;transition:all .15s;flex-shrink:0;
 }
 .item-aisle-badge:hover{filter:brightness(1.3);}
@@ -1082,9 +1082,17 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- SCREENS -->
-<div id="fab-stack" style="position:fixed;bottom:80px;right:16px;z-index:20;display:none;flex-direction:column;gap:10px;align-items:flex-end">
-  <button id="fab-new-list" onclick="topbarNewList()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:28px;padding:12px 20px;font-size:.95rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .15s;">＋ New list</button>
-  <button id="fab-add-items" onclick="openEditList()" style="background:var(--green);color:#0a1a12;border:none;border-radius:28px;padding:14px 22px;font-size:1rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .15s;">＋ Add items</button>
+<div id="fab-stack" style="position:fixed;bottom:68px;right:16px;z-index:20;display:none;flex-direction:column;gap:12px;align-items:flex-end">
+  <button id="fab-new-list" onclick="topbarNewList()"
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)'"
+    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'"
+    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'">＋ New list</button>
+  <button id="fab-add-items" onclick="openEditList()"
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)'"
+    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'"
+    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'">＋ Add items</button>
 </div>
 <div class="screens">
   <button class="store-cycle-btn" id="store-prev-btn" onclick="cyclePrevStore()" title="Previous store">‹</button>
@@ -6423,7 +6431,7 @@ function renderListScreen(){
               data-item-idx="${item.idx}" data-aisle-key="${key}"
               ${_itemBg?`style="${_itemBg}"`:''}>`; html+=`
             <div class="item-check ${item.checked?'done':''}" onclick="toggleCheck(${item.idx})">
-              ${item.checked?'<span style="font-size:.7rem;color:#0a1a12">✓</span>':''}
+              ${item.checked?'<span style="font-size:.95rem;color:#0a1a12">✓</span>':''}
             </div>
             <div class="item-name">${esc(item.name)} ${aiDot}</div>
             <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
