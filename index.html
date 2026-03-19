@@ -1061,7 +1061,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="user-avatar" id="user-avatar-sm">?</div>
       <span id="user-name-sm">Account</span>
     </div>
-    <div class="icon-btn" onclick="topbarShareList()" title="Share list" id="topbar-share-btn" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+    <div class="icon-btn" onclick="topbarShareList()" title="Share list" id="topbar-share-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     <div class="icon-btn" onclick="topbarNewList()" title="New list">＋</div>
   </div>
 </div>
@@ -6319,12 +6319,14 @@ function renderListScreen(){
       ? state.lists[lid]?.name
       : getLists(store.id)?.lists[lid]?.name);
     const _isShared = lid && state.sharedListMeta?.[lid];
-    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + (_isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px;cursor:pointer" title="Manage sharing" onclick="topbarShareList()">🔗</span>' : '') + done + '/' + total + ' ✓';
+    // In V2: 🔗 is a non-tappable indicator only; sharing is accessed via the topbar icon
+    const _sharedBadge = _isShared ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px" title="Shared list">🔗</span>' : '';
+    tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + _sharedBadge + done + '/' + total + ' ✓';
   }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
   const _shareBtn = document.getElementById('topbar-share-btn');
-  if (_shareBtn) _shareBtn.style.display = '';
+  if (_shareBtn) _shareBtn.style.display = ''; // always visible when list is showing
   // Show store cycle arrows only in V2 mode with multiple stores
   const _showArrows = _isV2() && state.stores.length > 1;
   const _prevBtn = document.getElementById('store-prev-btn');
