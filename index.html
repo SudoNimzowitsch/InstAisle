@@ -5356,16 +5356,22 @@ function signInGoogle()     { if(window._fbReady) window.signInGoogle();     els
 function signOut()          { if(window._fbReady) window.signOut();          else showToast('Loading… please try again'); }
 
 async function clearCacheAndReload() {
-  // Show full-screen throbber
+  // Show full-screen throbber immediately and keep it up through the reload
   let _throbber = document.getElementById('update-throbber');
   if (!_throbber) {
     _throbber = document.createElement('div');
     _throbber.id = 'update-throbber';
-    _throbber.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text);font-size:.9rem';
+    _throbber.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center';
     _throbber.innerHTML = '<div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>';
     document.body.appendChild(_throbber);
   }
   _throbber.style.display = 'flex';
+
+  // Hide everything else so no screen flicker shows through
+  document.querySelectorAll('.topbar,.screens,.bottom-nav,#list-toolbar,#fab-stack').forEach(el => {
+    if (el) el.style.visibility = 'hidden';
+  });
+
   try {
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
