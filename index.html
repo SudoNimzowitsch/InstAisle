@@ -1087,12 +1087,12 @@ textarea.input{resize:vertical;min-height:90px;}
 <!-- SCREENS -->
 <div id="fab-stack" style="position:fixed;bottom:20px;right:16px;z-index:20;display:none;flex-direction:column;gap:12px;align-items:flex-end">
   <button id="fab-new-list" onclick="topbarNewList()"
-    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.5;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.75;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
     onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)';this.style.opacity='1'"
     onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'"
     onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'">＋ New list</button>
   <button id="fab-add-items" onclick="openEditList()"
-    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.5;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.75;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
     onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)';this.style.opacity='1'"
     onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'"
     onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'">＋ Add items</button>
@@ -6352,9 +6352,18 @@ function renderListScreen(){
   if (tb) tb.classList.add('visible');
   const _shareBtn = document.getElementById('topbar-share-btn');
   if (_shareBtn) _shareBtn.style.display = ''; // always visible when list is showing
-  // Show/hide FAB stack
+  // Show/hide FAB stack and tint to store color
   const _fab = document.getElementById('fab-stack');
-  if (_fab) _fab.style.display = 'flex';
+  if (_fab) {
+    _fab.style.display = 'flex';
+    const _fabColor = store.color || 'var(--green)';
+    document.querySelectorAll('#fab-stack button').forEach(btn => {
+      btn.style.background = _fabColor;
+      // Dark text on light colors, light text on dark — store colors are always mid-saturated
+      // so dark text (#0a1a12) works universally here
+      btn.style.color = '#0a1a12';
+    });
+  }
 
   // Show store cycle arrows only in V2 mode with multiple stores
   const _showArrows = _isV2() && state.stores.length > 1;
