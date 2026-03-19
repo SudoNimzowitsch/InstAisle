@@ -107,10 +107,10 @@ body{
   gap:5px;align-items:center;z-index:9;
 }
 #list-toolbar.visible{display:flex;}
-#list-toolbar .btn-sm{padding:6px 10px;font-size:0.75rem;}
+#list-toolbar .btn-sm{padding:8px 12px;font-size:0.9rem;}
 .tb-short{display:none;}
 @media(max-width:480px){
-  #list-toolbar .btn-sm{padding:6px 7px;font-size:0.68rem;}
+  #list-toolbar .btn-sm{padding:8px 9px;font-size:0.82rem;}
 }
 
 /* BOTTOM NAV */
@@ -328,9 +328,12 @@ textarea.input{resize:vertical;min-height:90px;}
 .item-name{flex:1;font-size:1.15rem;font-weight:400;}
 .item-aisle-badge{
   font-size:1rem;font-weight:600;padding:7px 14px;border-radius:20px;
-  cursor:pointer;transition:all .15s;flex-shrink:0;
+  cursor:pointer;transition:transform .12s,box-shadow .12s;flex-shrink:0;
+  user-select:none;-webkit-user-select:none;
+  -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
 }
-.item-aisle-badge:hover{filter:brightness(1.3);}
+.item-aisle-badge:hover{filter:brightness(1.2);}
+.item-aisle-badge:active{transform:scale(.9);}
 .ai-dot{font-size:.55rem;color:#7dd3fc;vertical-align:middle;}
 
 /* AISLE GROUPS */
@@ -1063,7 +1066,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <span id="user-name-sm">Account</span>
     </div>
     <div class="icon-btn" onclick="topbarShareList()" title="Share list" id="topbar-share-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
-    <div class="icon-btn" onclick="topbarNewList()" title="New list">＋</div>
+
   </div>
 </div>
 
@@ -1073,7 +1076,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:4px;">
     <span id="list-toolbar-share-badge" style="font-size:.7rem;color:var(--muted);pointer-events:none;display:none">🔗</span>
     <div style="cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent" onclick="openListPickerForActiveStore()">
-      <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
+      <div style="font-size:.88rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
     </div>
   </div>
 
@@ -1082,17 +1085,17 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- SCREENS -->
-<div id="fab-stack" style="position:fixed;bottom:68px;right:16px;z-index:20;display:none;flex-direction:column;gap:12px;align-items:flex-end">
+<div id="fab-stack" style="position:fixed;bottom:20px;right:16px;z-index:20;display:none;flex-direction:column;gap:12px;align-items:flex-end">
   <button id="fab-new-list" onclick="topbarNewList()"
-    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
-    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)'"
-    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'"
-    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'">＋ New list</button>
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.5;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)';this.style.opacity='1'"
+    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'"
+    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'">＋ New list</button>
   <button id="fab-add-items" onclick="openEditList()"
-    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
-    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)'"
-    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'"
-    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)'">＋ Add items</button>
+    style="background:var(--green);color:#0a1a12;border:none;border-radius:32px;padding:17px 28px;font-size:1.2rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,opacity .12s;opacity:.5;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"
+    onpointerdown="this.style.transform='scale(.93)';this.style.boxShadow='0 2px 6px rgba(0,0,0,.3)';this.style.opacity='1'"
+    onpointerup="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'"
+    onpointerleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,.4)';this.style.opacity='.5'">＋ Add items</button>
 </div>
 <div class="screens">
   <button class="store-cycle-btn" id="store-prev-btn" onclick="cyclePrevStore()" title="Previous store">‹</button>
@@ -6434,7 +6437,10 @@ function renderListScreen(){
               ${item.checked?'<span style="font-size:.95rem;color:#0a1a12">✓</span>':''}
             </div>
             <div class="item-name">${esc(item.name)} ${aiDot}</div>
-            <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})">
+            <div class="item-aisle-badge" style="background:${bgBadge};color:${color}" onclick="openMoveItem(${item.idx})"
+              onpointerdown="this.style.transform='scale(.88)'"
+              onpointerup="this.style.transform=''"
+              onpointerleave="this.style.transform=''">
               ${isUM?'?':`A${+key+1}`}
             </div>
           </div>`;
