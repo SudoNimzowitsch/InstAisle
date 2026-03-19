@@ -113,29 +113,6 @@ body{
   #list-toolbar .btn-sm{padding:6px 7px;font-size:0.68rem;}
 }
 
-/* FLOATING ADD BUTTON */
-#fab-add-items{
-  position:fixed;
-  bottom:80px; /* above bottom nav */
-  right:16px;
-  z-index:20;
-  display:none;
-  align-items:center;
-  gap:8px;
-  background:var(--green);
-  color:#0a1a12;
-  border:none;
-  border-radius:28px;
-  padding:14px 22px;
-  font-size:1rem;
-  font-weight:600;
-  font-family:'Outfit',sans-serif;
-  cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.4);
-  transition:transform .15s, box-shadow .15s;
-}
-#fab-add-items:active{transform:scale(.96);box-shadow:0 2px 8px rgba(0,0,0,.3);}
-
 /* BOTTOM NAV */
 .nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
@@ -315,8 +292,8 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .edit-item-delete:hover{color:#f87171;background:rgba(239,68,68,.1);}
 .list-item{
-  display:flex;align-items:center;gap:10px;padding:7px 12px;
-  border-radius:10px;background:var(--surface2);margin-bottom:6px;
+  display:flex;align-items:center;gap:10px;padding:4px 12px;
+  border-radius:10px;background:var(--surface2);margin-bottom:5px;
   transition:all .15s;position:relative;user-select:none;
   min-height:44px;
 }
@@ -348,7 +325,7 @@ textarea.input{resize:vertical;min-height:90px;}
   transition:all .15s;
 }
 .item-check.done{background:var(--green);border-color:var(--green);}
-.item-name{flex:1;font-size:.97rem;font-weight:400;}
+.item-name{flex:1;font-size:1.05rem;font-weight:400;}
 .item-aisle-badge{
   font-size:.75rem;font-weight:600;padding:5px 10px;border-radius:20px;
   cursor:pointer;transition:all .15s;flex-shrink:0;
@@ -1099,13 +1076,16 @@ textarea.input{resize:vertical;min-height:90px;}
       <div style="font-size:.72rem;color:var(--muted);white-space:nowrap;" id="list-toolbar-count"></div>
     </div>
   </div>
-  <button class="btn btn-sm btn-ghost" onclick="openEditList()" style="flex-shrink:0">Add items</button>
+
   <button class="btn btn-sm btn-ghost" onclick="uncheckAll()" style="flex-shrink:0">Uncheck all</button>
   <button class="btn btn-sm btn-ghost" onclick="clearChecked()" style="flex-shrink:0">Clear checked</button>
 </div>
 
 <!-- SCREENS -->
-<button id="fab-add-items" onclick="openEditList()">＋ Add items</button>
+<div id="fab-stack" style="position:fixed;bottom:80px;right:16px;z-index:20;display:none;flex-direction:column;gap:10px;align-items:flex-end">
+  <button id="fab-new-list" onclick="topbarNewList()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:28px;padding:12px 20px;font-size:.95rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .15s;">＋ New list</button>
+  <button id="fab-add-items" onclick="openEditList()" style="background:var(--green);color:#0a1a12;border:none;border-radius:28px;padding:14px 22px;font-size:1rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .15s;">＋ Add items</button>
+</div>
 <div class="screens">
   <button class="store-cycle-btn" id="store-prev-btn" onclick="cyclePrevStore()" title="Previous store">‹</button>
   <button class="store-cycle-btn" id="store-next-btn" onclick="cycleNextStore()" title="Next store">›</button>
@@ -6263,7 +6243,7 @@ function _initStoreSwipe() {
 // ══════════════════════════════
 function switchScreen(name, pushHistory=true) {
   // Show FAB only on list screen
-  const _fab = document.getElementById('fab-add-items');
+  const _fab = document.getElementById('fab-stack');
   if (_fab) _fab.style.display = name === 'list' ? 'flex' : 'none';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const tb = document.getElementById('list-toolbar');
@@ -6361,8 +6341,8 @@ function renderListScreen(){
   if (tb) tb.classList.add('visible');
   const _shareBtn = document.getElementById('topbar-share-btn');
   if (_shareBtn) _shareBtn.style.display = ''; // always visible when list is showing
-  // Show/hide FAB
-  const _fab = document.getElementById('fab-add-items');
+  // Show/hide FAB stack
+  const _fab = document.getElementById('fab-stack');
   if (_fab) _fab.style.display = 'flex';
 
   // Show store cycle arrows only in V2 mode with multiple stores
