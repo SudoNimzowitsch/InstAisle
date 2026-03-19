@@ -113,6 +113,29 @@ body{
   #list-toolbar .btn-sm{padding:6px 7px;font-size:0.68rem;}
 }
 
+/* FLOATING ADD BUTTON */
+#fab-add-items{
+  position:fixed;
+  bottom:80px; /* above bottom nav */
+  right:16px;
+  z-index:20;
+  display:none;
+  align-items:center;
+  gap:8px;
+  background:var(--green);
+  color:#0a1a12;
+  border:none;
+  border-radius:28px;
+  padding:14px 22px;
+  font-size:1rem;
+  font-weight:600;
+  font-family:'Outfit',sans-serif;
+  cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+  transition:transform .15s, box-shadow .15s;
+}
+#fab-add-items:active{transform:scale(.96);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
 /* BOTTOM NAV */
 .nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
@@ -292,9 +315,10 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .edit-item-delete:hover{color:#f87171;background:rgba(239,68,68,.1);}
 .list-item{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  display:flex;align-items:center;gap:10px;padding:7px 12px;
   border-radius:10px;background:var(--surface2);margin-bottom:6px;
   transition:all .15s;position:relative;user-select:none;
+  min-height:44px;
 }
 .list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
 .list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
@@ -324,9 +348,9 @@ textarea.input{resize:vertical;min-height:90px;}
   transition:all .15s;
 }
 .item-check.done{background:var(--green);border-color:var(--green);}
-.item-name{flex:1;font-size:.88rem;font-weight:400;}
+.item-name{flex:1;font-size:.97rem;font-weight:400;}
 .item-aisle-badge{
-  font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:20px;
+  font-size:.75rem;font-weight:600;padding:5px 10px;border-radius:20px;
   cursor:pointer;transition:all .15s;flex-shrink:0;
 }
 .item-aisle-badge:hover{filter:brightness(1.3);}
@@ -1081,6 +1105,7 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- SCREENS -->
+<button id="fab-add-items" onclick="openEditList()">＋ Add items</button>
 <div class="screens">
   <button class="store-cycle-btn" id="store-prev-btn" onclick="cyclePrevStore()" title="Previous store">‹</button>
   <button class="store-cycle-btn" id="store-next-btn" onclick="cycleNextStore()" title="Next store">›</button>
@@ -6237,6 +6262,9 @@ function _initStoreSwipe() {
 // NAVIGATION
 // ══════════════════════════════
 function switchScreen(name, pushHistory=true) {
+  // Show FAB only on list screen
+  const _fab = document.getElementById('fab-add-items');
+  if (_fab) _fab.style.display = name === 'list' ? 'flex' : 'none';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.toggle('visible', name === 'list');
@@ -6323,18 +6351,20 @@ function renderListScreen(){
       : getLists(store.id)?.lists[lid]?.name);
     const _isShared = lid && state.sharedListMeta?.[lid];
     // In V2: 🔗 is a non-tappable indicator only; sharing is accessed via the topbar icon
-    // Update share badge (sits outside clickable area — never tappable)
+    // Non-tappable share badge outside clickable area — same for V1 and V2
     const _badgeEl = document.getElementById('list-toolbar-share-badge');
     if (_badgeEl) _badgeEl.style.display = _isShared ? '' : 'none';
-    const _sharedBadge = (!_isV2() && _isShared)
-      ? '<span style="font-size:.7rem;color:var(--muted);margin-right:4px;cursor:pointer" title="Manage sharing" onclick="topbarShareList()">🔗</span>'
-      : '';
+    const _sharedBadge = '';
     tcEl.innerHTML = (lname ? '<span style="color:var(--text);font-weight:600;margin-right:5px">' + esc(lname) + '</span>' : '') + _sharedBadge + done + '/' + total + ' ✓';
   }
   const tb = document.getElementById('list-toolbar');
   if (tb) tb.classList.add('visible');
   const _shareBtn = document.getElementById('topbar-share-btn');
   if (_shareBtn) _shareBtn.style.display = ''; // always visible when list is showing
+  // Show/hide FAB
+  const _fab = document.getElementById('fab-add-items');
+  if (_fab) _fab.style.display = 'flex';
+
   // Show store cycle arrows only in V2 mode with multiple stores
   const _showArrows = _isV2() && state.stores.length > 1;
   const _prevBtn = document.getElementById('store-prev-btn');
