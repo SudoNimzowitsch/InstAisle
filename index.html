@@ -844,21 +844,6 @@ textarea.input{resize:vertical;min-height:90px;}
 </style>
 </head>
 <body>
-<script>(function(){
-  try {
-    if (sessionStorage.getItem('instaisle_refreshing')) {
-      document.documentElement.style.background = '#0f1117';
-      document.addEventListener('DOMContentLoaded', function() {
-        document.body.style.visibility = 'hidden';
-        var t = document.createElement('div');
-        t.id = 'update-throbber';
-        t.style.cssText = 'position:fixed;inset:0;background:#0f1117;z-index:9999;display:flex;align-items:center;justify-content:center';
-        t.innerHTML = '<div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.15);border-top-color:#4ade80;border-radius:50%;animation:spin .8s linear infinite"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-        document.body.appendChild(t);
-      });
-    }
-  } catch(e) {}
-})();</script>
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
@@ -5372,7 +5357,7 @@ function signOut()          { if(window._fbReady) window.signOut();          els
 
 async function clearCacheAndReload() {
   _showRefreshThrobber();
-  try { sessionStorage.setItem('instaisle_refreshing', '1'); } catch(e) {}
+
   try {
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
@@ -5391,8 +5376,8 @@ function _showRefreshThrobber() {
   if (!t) {
     t = document.createElement('div');
     t.id = 'update-throbber';
-    t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .3s;opacity:0';
-    t.innerHTML = '<div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>';
+    t.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .25s;opacity:0';
+    t.innerHTML = '<div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>';
     document.body.appendChild(t);
   }
   t.style.display = 'flex';
@@ -5401,8 +5386,6 @@ function _showRefreshThrobber() {
 
 function _hideRefreshThrobber() {
   const t = document.getElementById('update-throbber');
-  // Restore body visibility first
-  document.body.style.visibility = '';
   if (!t) return;
   t.style.transition = 'opacity .4s';
   t.style.opacity = '0';
@@ -6193,12 +6176,7 @@ function boot() {
   renderAll();
   _initStoreSwipe();
   _initPullToRefresh();
-  try {
-    if (sessionStorage.getItem('instaisle_refreshing')) {
-      sessionStorage.removeItem('instaisle_refreshing');
-      _hideRefreshThrobber();
-    }
-  } catch(e) {}
+
 }
 
 function _updateStoreArrows() {
