@@ -8995,16 +8995,51 @@ function applyCorr(items,store){
 // ── applyKeywordVote: called on every item move ───────────────────────────────
 // Updates local store.aisles keywords and fires upstream vote
 function applyKeywordVote(store, norm, prevAisleIndex, newAisleIndex) {
-  // Nothing to do if same aisle
   if (prevAisleIndex === newAisleIndex) return;
 
   const srcAisle  = (prevAisleIndex != null && store.aisles[prevAisleIndex]) ? store.aisles[prevAisleIndex] : null;
   const destAisle = (newAisleIndex  != null && store.aisles[newAisleIndex])  ? store.aisles[newAisleIndex]  : null;
 
-  // ── Update local store keywords immediately ──────────────────────────────
+  // ── Classify the correction type ─────────────────────────────────────────
+  // Find which source keyword(s) matched the query and caused the misclassification
+  const srcKws = srcAisle ? (srcAisle.keywords || []) : [];
+  const srcScores = srcAisle ? (srcAisle.keyword_scores || {}) : {};
+
+  // For each matching source keyword, determine correction type:
+  // Case 1 (same item — plural/inflection): ratio ≥ 0.85 of norm covered by keyword
+  //   → increment existing keyword in dest (or add if absent), don't decrement src
+  // Case 4/5 (specific variety): keyword is a clean substring of norm,
+  //   residual after removing keyword consists only of whole words
+  //   → add new keyword to dest, leave src alone
+  // Case 3 (genuinely different item): everything else
+  //   → add new keyword to dest, decrement src keyword
+
+  function _residualIsWholeWords(query, keyword) {
+    // Remove keyword from query (word-boundary aware) and check residual
+    // is only complete whitespace-separated tokens — no partial tokens
+    const esc = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+    const residual = query.replace(new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])', 'g'), ' ')
+                          .trim().replace(/\s+/g, ' ');
+    // Residual should be empty or consist of whole space-separated words only
+    // (no partial character diffs within a token)
+    return residual === '' || /^[a-z0-9]+( [a-z0-9]+)*$/.test(residual);
+  }
+
+  function _correctionType(query, keyword) {
+    const kl = keyword.toLowerCase();
+    const matchedLen = Math.max(kl.length, Math.min(kl.length, query.length));
+    const ratio = kl.length / Math.max(kl.length, query.length);
+    if (ratio >= 0.85) return 'same-item';       // plural/inflection variant
+    if (_residualIsWholeWords(query, kl)) return 'variety'; // specific variety
+    return 'different';                            // genuinely different item
+  }
+
+  // ── Update destination aisle ──────────────────────────────────────────────
   if (destAisle) {
-    const kws = destAisle.keywords || (destAisle.keywords = []);
+    const kws    = destAisle.keywords    || (destAisle.keywords    = []);
     const scores = destAisle.keyword_scores || (destAisle.keyword_scores = {});
+
+    // Check if a stem-equivalent keyword already exists in dest
     const existing = kws.find(k => k.toLowerCase() === norm);
     if (!existing) {
       kws.push(norm);
@@ -9014,16 +9049,28 @@ function applyKeywordVote(store, norm, prevAisleIndex, newAisleIndex) {
     }
   }
 
+  // ── Update source aisle (selectively) ────────────────────────────────────
   if (srcAisle) {
-    const kws = srcAisle.keywords || [];
-    const scores = srcAisle.keyword_scores || (srcAisle.keyword_scores = {});
-    const existingKw = kws.find(k => k.toLowerCase() === norm);
-    if (existingKw) {
-      const cur = scores[existingKw] ?? 2;
-      // Decrement score but keep keyword in array — pruning is lazy (on next library load)
-      // kwMatch already ignores keywords with score <= 0
-      scores[existingKw] = Math.max(0, cur - 1);
-    }
+    // Only decrement source keywords that actually caused the misclassification
+    // and only if the correction type is 'different' (genuinely wrong keyword)
+    srcKws.forEach(kw => {
+      const kl = kw.toLowerCase();
+      const ks = srcScores[kl] ?? 2;
+      if (ks <= 0) return;
+      // Check if this keyword contributed to the match
+      const esc = kl.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+      const matched = new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(norm);
+      if (!matched) return;
+
+      const type = _correctionType(norm, kl);
+      if (type === 'different') {
+        // Keyword genuinely misled — decrement it
+        srcScores[kl] = Math.max(0, ks - 1);
+        console.log('[vote] decrement src keyword:', kl, '→', srcScores[kl], '(different item)');
+      } else {
+        console.log('[vote] leaving src keyword:', kl, 'untouched (', type, ')');
+      }
+    });
   }
 
   // ── Fire upstream vote (fire-and-forget) ────────────────────────────────
@@ -9054,7 +9101,9 @@ function kwMatch(norm,aisles){
   function matchLen(q, k) {
     if (wbMatch(k, q)) return k.length;
     if (wbMatch(q, k)) return q.length;
-    // Plural tolerance: try stripping 'es' before 's' so "matches"→"match" works
+    // Plural tolerance: -ies/-y (cherries/cherry), -es/-e (matches/match), -s
+    if (k.endsWith('ies') && k.length > 4 && wbMatch(k.slice(0,-3)+'y', q)) return k.length - 2;
+    if (q.endsWith('ies') && q.length > 4 && wbMatch(q.slice(0,-3)+'y', k)) return q.length - 2;
     if (k.endsWith('es') && k.length > 3 && wbMatch(k.slice(0,-2), q)) return k.length - 2;
     if (q.endsWith('es') && q.length > 3 && wbMatch(q.slice(0,-2), k)) return q.length - 2;
     if (k.endsWith('s') && wbMatch(k.slice(0,-1), q)) return k.length - 1;
