@@ -6199,6 +6199,7 @@ let _storeSwitchAnimating = false;
 
 function _cycleStore(dir) {
   if (!_isV2()) return;
+  if (window._pinchJustEnded) return;
   const stores = state.stores;
   if (stores.length < 2) return;
 
@@ -6315,6 +6316,9 @@ function _initPinchZoom() {
     if (e.touches.length < 2) {
       if (_onListScreen()) _applyListZoom(_listZoom, true);
       _startDist = 0;
+      // Block swipe/refresh gestures briefly after pinch ends
+      window._pinchJustEnded = true;
+      setTimeout(() => { window._pinchJustEnded = false; }, 300);
     }
   }, { passive: false });
 }
@@ -6357,7 +6361,7 @@ function _initPullToRefresh() {
     const dy = e.changedTouches[0].clientY - _ptr_startY;
     const ind = _getInd();
     ind.style.height = '0';
-    if (dy > 90) setTimeout(() => clearCacheAndReload(), 250);
+    if (dy > 90 && !window._pinchJustEnded) setTimeout(() => clearCacheAndReload(), 250);
   }, { passive: true });
 }
 
@@ -6375,6 +6379,7 @@ function _initStoreSwipe() {
   screen.addEventListener('touchend', e => {
     if (!_swActive || !_isV2()) return;
     _swActive = false;
+    if (window._pinchJustEnded) return;
     const dx = e.changedTouches[0].clientX - _swX;
     const dy = e.changedTouches[0].clientY - _swY;
     // Only trigger if horizontal swipe is dominant and long enough
