@@ -6277,6 +6277,10 @@ function _applyListZoom(zoom, save) {
   }
 }
 
+function _onListScreen() {
+  return document.getElementById('screen-list')?.classList.contains('active');
+}
+
 function _initPinchZoom() {
   // Restore saved zoom
   try {
@@ -6286,9 +6290,7 @@ function _initPinchZoom() {
 
   let _startDist = 0, _startZoom = 1;
 
-  function _onListScreen() {
-    return document.getElementById('screen-list')?.classList.contains('active');
-  }
+
 
   // Non-passive listeners so we can preventDefault and intercept before scroll
   document.addEventListener('touchstart', e => {
