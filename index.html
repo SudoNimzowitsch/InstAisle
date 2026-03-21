@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://instaisle.online">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://instaisle.online/icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>InstAisle</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -293,10 +293,10 @@ textarea.input{resize:vertical;min-height:90px;}
 }
 .edit-item-delete:hover{color:#f87171;background:rgba(239,68,68,.1);}
 .list-item{
-  display:flex;align-items:center;gap:10px;padding:4px 12px;
-  border-radius:10px;background:var(--surface2);margin-bottom:5px;
-  transition:all .15s;position:relative;user-select:none;
-  min-height:44px;
+  display:flex;align-items:center;gap:calc(10px * var(--list-zoom, 1));padding:calc(4px * var(--list-zoom, 1)) 12px;
+  border-radius:10px;background:var(--surface2);margin-bottom:calc(5px * var(--list-zoom, 1));
+  transition:padding .1s,gap .1s;position:relative;user-select:none;
+  min-height:calc(44px * var(--list-zoom, 1));
 }
 .list-item.dragging{opacity:.35;border:2px dashed var(--green);background:var(--surface);}
 .list-item.drop-before{box-shadow:0 -2px 0 0 var(--green);}
@@ -321,15 +321,18 @@ textarea.input{resize:vertical;min-height:90px;}
 .dismiss-suggestion{background:none;border:none;cursor:pointer;
   font-size:.8rem;color:#e05555;padding:0 2px;line-height:1;flex-shrink:0;}
 .item-check{
-  width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
+  width:calc(30px * var(--list-zoom, 1));height:calc(30px * var(--list-zoom, 1));
+  border-radius:50%;border:2px solid var(--border);
   flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
+  transition:width .1s,height .1s;
 }
 .item-check.done{background:var(--green);border-color:var(--green);}
-.item-name{flex:1;font-size:1.15rem;font-weight:400;}
+.item-name{flex:1;font-size:calc(1.15rem * var(--list-zoom, 1));font-weight:400;transition:font-size .1s;}
 .item-aisle-badge{
-  font-size:1rem;font-weight:600;padding:7px 14px;border-radius:20px;
-  cursor:pointer;transition:transform .12s,box-shadow .12s;flex-shrink:0;
+  font-size:calc(1rem * var(--list-zoom, 1));font-weight:600;
+  padding:calc(7px * var(--list-zoom, 1)) calc(14px * var(--list-zoom, 1));
+  border-radius:20px;
+  cursor:pointer;transition:transform .12s,box-shadow .12s,font-size .1s,padding .1s;flex-shrink:0;
   user-select:none;-webkit-user-select:none;
   -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
 }
@@ -6264,16 +6267,10 @@ let _listZoom = 1.0;
 
 function _applyListZoom(zoom, save) {
   _listZoom = Math.max(0.5, Math.min(1.5, zoom));
-  // Apply via CSS custom property on the list screen element
-  // All rem-based sizes inside screen-list will scale with this
+  // Set --list-zoom CSS variable on screen-list
+  // Item bar CSS uses this to scale heights, font sizes, padding, badge sizes
   const screen = document.getElementById('screen-list');
-  if (screen) {
-    // Override the root font size just for the list screen via transform scale
-    screen.style.transform = _listZoom === 1.0 ? '' : `scale(${_listZoom})`;
-    screen.style.transformOrigin = 'top center';
-    // Compensate height so content doesn't get clipped
-    screen.style.height = _listZoom === 1.0 ? '' : `${(1 / _listZoom) * 100}%`;
-  }
+  if (screen) screen.style.setProperty('--list-zoom', _listZoom.toFixed(3));
   if (save) {
     try { localStorage.setItem('instaisle_listzoom', _listZoom.toFixed(3)); } catch(e) {}
   }
