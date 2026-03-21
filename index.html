@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://instaisle.online">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://instaisle.online/icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>InstAisle</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -6295,13 +6295,15 @@ function _initPinchZoom() {
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    if (!_onListScreen() || e.touches.length !== 2 || _startDist === 0) return;
-    const dist = Math.hypot(
-      e.touches[1].clientX - e.touches[0].clientX,
-      e.touches[1].clientY - e.touches[0].clientY
-    );
-    _applyListZoom(_startZoom * (dist / _startDist), false);
-  }, { passive: true });
+    if (e.touches.length === 2 && _onListScreen() && _startDist > 0) {
+      e.preventDefault(); // stop browser native zoom
+      const dist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      _applyListZoom(_startZoom * (dist / _startDist), false);
+    }
+  }, { passive: false }); // must be non-passive to call preventDefault
 
   document.addEventListener('touchend', e => {
     if (_startDist === 0) return;
