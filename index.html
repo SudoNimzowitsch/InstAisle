@@ -6299,6 +6299,10 @@ function _initPinchZoom() {
       e.touches[1].clientY - e.touches[0].clientY
     );
     _startZoom = _listZoom;
+    // Immediately cancel swipe and pull-to-refresh state so they can't fire on touchend
+    window._pinchJustEnded = true;
+    window._swActive = false; // cancel store swipe
+    window._ptr_active_cancel = true; // signal ptr to abort
   }, { passive: false });
 
   document.addEventListener('touchmove', e => {
@@ -6361,35 +6365,39 @@ function _initPullToRefresh() {
     const dy = e.changedTouches[0].clientY - _ptr_startY;
     const ind = _getInd();
     ind.style.height = '0';
-    if (dy > 90 && !window._pinchJustEnded) setTimeout(() => clearCacheAndReload(), 250);
+    const cancelled = window._pinchJustEnded || window._ptr_active_cancel;
+    window._ptr_active_cancel = false;
+    if (dy > 90 && !cancelled) setTimeout(() => clearCacheAndReload(), 250);
   }, { passive: true });
 }
 
 function _initStoreSwipe() {
   const screen = document.getElementById('screen-list');
   if (!screen) return;
-  let _swX = 0, _swY = 0, _swActive = false;
+  let _swX = 0, _swY = 0;
+  window._swActive = false;
   screen.addEventListener('touchstart', e => {
     if (!_isV2()) return;
     if (e.touches.length !== 1) return;
     _swX = e.touches[0].clientX;
     _swY = e.touches[0].clientY;
-    _swActive = true;
+    window._swActive = true;
   }, { passive: true });
-  screen.addEventListener('touchend', e => {
-    if (!_swActive || !_isV2()) return;
-    _swActive = false;
+  // Use document-level touchend so it fires AFTER the pinch handler
+  // (element listeners fire before document listeners — pinch is on document)
+  document.addEventListener('touchend', e => {
+    if (!window._swActive || !_isV2()) return;
+    window._swActive = false;
     if (window._pinchJustEnded) return;
+    // Only consider if touch started on the list screen
+    if (!_onListScreen()) return;
     const dx = e.changedTouches[0].clientX - _swX;
     const dy = e.changedTouches[0].clientY - _swY;
-    // Only trigger if horizontal swipe is dominant and long enough
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    // Don't trigger if user is dragging a list item
     if (window._dragging) return;
     const stores = state.stores;
     if (stores.length < 2) return;
-    const curIdx = stores.findIndex(s => s.id === state.activeStoreId);
-    const dir = dx < 0 ? 1 : -1; // swipe left → next (+1), swipe right → prev (-1)
+    const dir = dx < 0 ? 1 : -1;
     _cycleStore(dir);
   }, { passive: true });
 }
