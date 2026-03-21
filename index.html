@@ -6264,8 +6264,16 @@ let _listZoom = 1.0;
 
 function _applyListZoom(zoom, save) {
   _listZoom = Math.max(0.5, Math.min(1.5, zoom));
-  const el = document.getElementById('list-content');
-  if (el) el.style.fontSize = (_listZoom * 100).toFixed(1) + '%';
+  // Apply via CSS custom property on the list screen element
+  // All rem-based sizes inside screen-list will scale with this
+  const screen = document.getElementById('screen-list');
+  if (screen) {
+    // Override the root font size just for the list screen via transform scale
+    screen.style.transform = _listZoom === 1.0 ? '' : `scale(${_listZoom})`;
+    screen.style.transformOrigin = 'top center';
+    // Compensate height so content doesn't get clipped
+    screen.style.height = _listZoom === 1.0 ? '' : `${(1 / _listZoom) * 100}%`;
+  }
   if (save) {
     try { localStorage.setItem('instaisle_listzoom', _listZoom.toFixed(3)); } catch(e) {}
   }
@@ -6284,26 +6292,26 @@ function _initPinchZoom() {
     return document.getElementById('screen-list')?.classList.contains('active');
   }
 
-  // Use document-level listeners so we catch the gesture before scroll handling
+  // Non-passive listeners so we can preventDefault and intercept before scroll
   document.addEventListener('touchstart', e => {
     if (!_onListScreen() || e.touches.length !== 2) return;
+    e.preventDefault();
     _startDist = Math.hypot(
       e.touches[1].clientX - e.touches[0].clientX,
       e.touches[1].clientY - e.touches[0].clientY
     );
     _startZoom = _listZoom;
-  }, { passive: true });
+  }, { passive: false });
 
   document.addEventListener('touchmove', e => {
-    if (e.touches.length === 2 && _onListScreen() && _startDist > 0) {
-      e.preventDefault(); // stop browser native zoom
-      const dist = Math.hypot(
-        e.touches[1].clientX - e.touches[0].clientX,
-        e.touches[1].clientY - e.touches[0].clientY
-      );
-      _applyListZoom(_startZoom * (dist / _startDist), false);
-    }
-  }, { passive: false }); // must be non-passive to call preventDefault
+    if (!_onListScreen() || e.touches.length !== 2 || _startDist === 0) return;
+    e.preventDefault();
+    const dist = Math.hypot(
+      e.touches[1].clientX - e.touches[0].clientX,
+      e.touches[1].clientY - e.touches[0].clientY
+    );
+    _applyListZoom(_startZoom * (dist / _startDist), false);
+  }, { passive: false });
 
   document.addEventListener('touchend', e => {
     if (_startDist === 0) return;
@@ -6311,7 +6319,7 @@ function _initPinchZoom() {
       if (_onListScreen()) _applyListZoom(_listZoom, true);
       _startDist = 0;
     }
-  }, { passive: true });
+  }, { passive: false });
 }
 
 function _initPullToRefresh() {
