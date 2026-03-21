@@ -6176,7 +6176,7 @@ function boot() {
   renderAll();
   _initStoreSwipe();
   _initPullToRefresh();
-
+  _initPinchZoom();
 }
 
 function _updateStoreArrows() {
@@ -6256,6 +6256,60 @@ function _cycleStore(dir) {
 }
 
 // ── Pull-to-refresh: swipe down from top to check for updates ────────────────
+// ── Pinch-to-zoom on list screen ─────────────────────────────────────────────
+// Adjusts font size of list content between 50% and 150% of default.
+// Persists to localStorage as a multiplier (0.5–1.5).
+
+let _listZoom = 1.0;
+
+function _applyListZoom(zoom, save) {
+  _listZoom = Math.max(0.5, Math.min(1.5, zoom));
+  const el = document.getElementById('list-content');
+  if (el) el.style.fontSize = (_listZoom * 100).toFixed(1) + '%';
+  if (save) {
+    try { localStorage.setItem('instaisle_listzoom', _listZoom.toFixed(3)); } catch(e) {}
+  }
+}
+
+function _initPinchZoom() {
+  // Restore saved zoom
+  try {
+    const saved = parseFloat(localStorage.getItem('instaisle_listzoom'));
+    if (saved && saved >= 0.5 && saved <= 1.5) _applyListZoom(saved, false);
+  } catch(e) {}
+
+  const screen = document.getElementById('screen-list');
+  if (!screen) return;
+
+  let _p1 = null, _p2 = null, _startDist = 0, _startZoom = 1;
+
+  screen.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      _p1 = e.touches[0];
+      _p2 = e.touches[1];
+      _startDist = Math.hypot(_p2.clientX - _p1.clientX, _p2.clientY - _p1.clientY);
+      _startZoom = _listZoom;
+    }
+  }, { passive: true });
+
+  screen.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && _startDist > 0) {
+      const dist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      _applyListZoom(_startZoom * (dist / _startDist), false);
+    }
+  }, { passive: true });
+
+  screen.addEventListener('touchend', e => {
+    if (_startDist > 0 && e.touches.length < 2) {
+      _applyListZoom(_listZoom, true); // save on finger lift
+      _startDist = 0;
+    }
+  }, { passive: true });
+}
+
 function _initPullToRefresh() {
   let _ptr_startY = 0, _ptr_active = false, _ptr_indicator = null;
 
