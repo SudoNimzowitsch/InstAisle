@@ -6347,9 +6347,18 @@ function _initPullToRefresh() {
   document.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) return;
     _ptr_startY = e.touches[0].clientY;
-    // Active if the touched element is scrolled to top (or not scrollable)
-    const el = e.target.closest('.modal, #screen-list') || document.documentElement;
-    _ptr_active = el.scrollTop === 0;
+    // Find the nearest scrollable ancestor — check if it's at the very top
+    let el = e.target;
+    while (el && el !== document.body) {
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
+        // Touch is inside a scrolled container — don't activate ptr
+        _ptr_active = false;
+        return;
+      }
+      el = el.parentElement;
+    }
+    // Only activate if touch starts near the top of the screen (within 80px)
+    _ptr_active = e.touches[0].clientY < 80;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
