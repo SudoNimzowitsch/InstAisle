@@ -8991,12 +8991,7 @@ async function handleEditMergeUpload(e){
     // Use Gemini to parse image
     showProcessing('Reading your list with Gemini…');
     try {
-      const b64 = await new Promise((res,rej)=>{
-        const r=new FileReader();
-        r.onload=ev=>{ const d=ev.target.result; res(d.split(',')[1]); };
-        r.onerror=()=>rej(new Error('Read failed'));
-        r.readAsDataURL(f);
-      });
+      const b64 = await resizeImageFile(f);
       const names=await parseImageWithGemini(b64,'image/jpeg');
       if(!names.length){ hideProcessing(); showToast('No items found in photo'); return; }
       showProcessing(`Found ${names.length} items — merging…`);
@@ -9044,6 +9039,32 @@ function resetUploadZone(){
     zone.innerHTML=`<div class="upload-icon" id="upload-icon">📎</div>
       <p style="font-size:.78rem" id="upload-label">Tap to upload a file or photo of your list</p>`;
   }
+}
+
+// ── Resize an image File to max 1024px, returns base64 string (no prefix) ──
+function resizeImageFile(file, maxPx=1024, quality=0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Read failed'));
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+          else       { w = Math.round(w * maxPx / h); h = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 async function parseImageWithGemini(b64, mimeType){
