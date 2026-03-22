@@ -7593,6 +7593,14 @@ function sanitizeLocId(id) {
   return String(id).replace(/\//g, '_');
 }
 
+// Returns true if addr looks like a real street address (digit + letter + space + 8+ chars)
+// Mirrors the Cloud Function heuristic so client and server agree
+function _looksLikeRealAddress(addr) {
+  if (!addr || addr.trim().length < 8) return false;
+  const a = addr.trim();
+  return /\d/.test(a) && /[a-zA-Z]/.test(a) && /\s/.test(a);
+}
+
 // Fetch contributed aisle data for a specific location from Firestore
 // Returns contributed aisles array if found, null otherwise
 async function fetchLocationContribution(placeId) {
@@ -7736,6 +7744,19 @@ async function addStoreFromLibrary() {
     modal._chainRef = chain;
     modal.classList.add('open');
     return;
+  }
+
+  // If this library store has a missing or junk address, kick off a background
+  // geocode so future users get a real address. Fire-and-forget — never blocks UI.
+  if (chain._placeId && !_looksLikeRealAddress(chain._placeAddress)) {
+    const _geocodeStoreId = sanitizeLocId(chain._placeId);
+    window._currentUser?.getIdToken().then(token =>
+      fetch('https://us-central1-instaisle-e8d6b.cloudfunctions.net/geocodeStoreAddress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ storeId: _geocodeStoreId })
+      })
+    ).catch(e => console.warn('[geocode] background geocode failed:', e.message));
   }
 
   const storeName  = chain._placeName || chain.name;
