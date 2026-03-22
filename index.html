@@ -1281,7 +1281,7 @@ textarea.input{resize:vertical;min-height:90px;}
     </div>
     <div id="upload-preview" style="display:none;margin-bottom:4px"></div>
     <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFileUpload(event)">
-    <input type="file" id="file-input-browse" accept="image/*,text/*,.txt,.csv,.pdf" style="display:none" onchange="handleFileUpload(event)">
+    <input type="file" id="file-input-browse" accept="text/*,.txt,.csv,.pdf,.jpg,.jpeg,.png,.heic,.webp" style="display:none" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
     <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
     <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
