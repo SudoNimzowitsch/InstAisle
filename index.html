@@ -7457,33 +7457,63 @@ async function searchNearbyLocation() {
   statusEl.style.display = 'block';
   statusEl.textContent   = 'Searching for "' + query + '"…';
 
-  try {
-    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
-      encodeURIComponent(query);
-    const resp = await fetch(url, {
-      headers: { 'Accept-Language': 'en', 'User-Agent': 'InstAisle/1.0' }
-    });
-    const results = await resp.json();
+  // ⚠️ SECURITY NOTE: This key is intentionally client-side for performance.
+  // OpenCage free tier has no domain restriction. If upgrading to a paid tier,
+  // add domain restriction in the OpenCage dashboard or move to a Cloud Function.
+  const OPENCAGE_KEY = 'f6fbe292a2fa43be9860c7b05df59840';
 
+  try {
+    const url = 'https://api.opencagedata.com/geocode/v1/json?q=' +
+      encodeURIComponent(query) + '&key=' + OPENCAGE_KEY + '&limit=5&no_annotations=1&language=en';
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Geocoding request failed');
+    const data = await resp.json();
+
+    if (data.status?.code === 402) {
+      statusEl.textContent = 'Location search limit reached for today. Try using GPS instead.';
+      return;
+    }
+
+    const results = data.results || [];
     if (!results.length) {
       statusEl.textContent = 'Location not found. Try a city name or zip code.';
       return;
     }
 
-    const { lat, lon, display_name } = results[0];
-    statusEl.textContent = 'Loading stores near ' + display_name.split(',').slice(0, 2).join(',') + '…';
-
-    const ok = await computeNearbyFromCoords(parseFloat(lat), parseFloat(lon));
-    if (!ok) { statusEl.textContent = 'No store data found.'; return; }
-
-    _libNearbyLoaded = true;
-    statusEl.style.display = 'none';
-    initNearbyScroll();
+    // If multiple results, show a quick picker; otherwise proceed directly
+    if (results.length === 1) {
+      const { geometry, formatted } = results[0];
+      statusEl.textContent = 'Loading stores near ' + formatted.split(',').slice(0, 2).join(',') + '…';
+      const ok = await computeNearbyFromCoords(geometry.lat, geometry.lng);
+      if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+      _libNearbyLoaded = true;
+      statusEl.style.display = 'none';
+      initNearbyScroll();
+    } else {
+      // Show disambiguation list
+      statusEl.style.display = 'none';
+      const container = document.getElementById('nearby-list-container');
+      container.innerHTML = '<div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Which location?</div>' +
+        results.map((r, i) => `<button class="btn btn-ghost btn-full" style="text-align:left;margin-bottom:6px;font-size:.85rem"
+          onclick="_selectGeoResult(${r.geometry.lat},${r.geometry.lng},'${esc(r.formatted.split(',').slice(0,2).join(','))}')"
+          >${esc(r.formatted)}</button>`).join('');
+    }
 
   } catch (err) {
     statusEl.textContent = 'Search failed. Check your connection and try again.';
     console.error('searchNearbyLocation:', err);
   }
+}
+
+async function _selectGeoResult(lat, lng, label) {
+  const statusEl = document.getElementById('nearby-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Loading stores near ' + label + '…';
+  const ok = await computeNearbyFromCoords(lat, lng);
+  if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+  _libNearbyLoaded = true;
+  statusEl.style.display = 'none';
+  initNearbyScroll();
 }
 
 // ── Infinite scroll rendering ──────────────────────────────────────────────
