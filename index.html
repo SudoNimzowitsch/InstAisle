@@ -7247,6 +7247,7 @@ function openLibraryModal() {
   // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
   // Reuses the already-in-flight preload promise — never fires a second GPS call.
   const inp = document.getElementById('nearby-location-input');
+  console.log('[library] openLibraryModal | cache:', _storeLocationCache ? _storeLocationCache.length : 'null', '| userLoc:', _userLocationCache);
   if (!_storeLocationCache || !_userLocationCache) {
     inp.placeholder = 'Loading…';
     inp.disabled = true;
@@ -7254,6 +7255,7 @@ function openLibraryModal() {
       loadStoreLocations(),
       preloadUserLocation()  // no-op if already resolved, awaits if still in flight
     ]).finally(() => {
+      console.log('[library] ready | cache:', _storeLocationCache ? _storeLocationCache.length : 'null', '| userLoc:', _userLocationCache);
       inp.placeholder = 'Search by store name or location…';
       inp.disabled = false;
       inp.focus();
@@ -7309,6 +7311,7 @@ async function _libSearchInput(val) {
   // Ensure stores.json is loaded — may not be ready if user opens modal very quickly after login
   if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
+  console.log('[suggest] q:', q, '| cache:', cache ? cache.length : 'null', '| userLoc:', _userLocationCache);
   if (!cache || !cache.length) {
     _libSuggestions = [];
     _renderLibSuggestions();
@@ -7316,6 +7319,7 @@ async function _libSearchInput(val) {
   }
   if (!_userLocationCache) {
     // GPS not yet resolved — show no-location message
+    console.log('[suggest] bailing: no _userLocationCache');
     _libSuggestions = null;
     _renderLibSuggestions();
     return;
