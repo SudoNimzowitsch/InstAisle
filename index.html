@@ -1155,7 +1155,7 @@ textarea.input{resize:vertical;min-height:90px;}
             <input class="input" id="nearby-location-input" type="text"
               placeholder="Search by store name or location…"
               style="flex:1;font-size:.82rem"
-              oninput="_libSearchInput(this.value)"
+              oninput="console.log('[oninput]',this.value);_libSearchInput(this.value)"
               onkeydown="if(event.key==='Enter'){_libSuggestions=[];_renderLibSuggestions();searchNearbyLocation();}"
               onblur="setTimeout(()=>{_libSuggestions=[];_renderLibSuggestions();},150)"
               autocomplete="off">
