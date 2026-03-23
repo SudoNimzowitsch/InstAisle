@@ -519,13 +519,15 @@ textarea.input{resize:vertical;min-height:90px;}
   background:rgba(74,222,128,.15);color:var(--green);flex-shrink:0;white-space:nowrap;}
 .nearby-no-match-pill{font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:8px;
   background:var(--surface);color:var(--muted);flex-shrink:0;white-space:nowrap;}
-.lib-tabs{display:flex;background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;margin-bottom:14px;overflow:hidden;}
-.lib-tab{flex:1;padding:8px 4px;font-family:'Outfit',sans-serif;font-size:.75rem;
-  font-weight:600;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .15s;}
-.lib-tab.active{background:var(--surface);color:var(--text);}
-.lib-panel{display:none;}
-.lib-panel.active{display:block;}
+.lib-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;margin-top:4px;overflow:hidden;
+  box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:100;}
+.lib-suggestion{display:flex;flex-direction:column;gap:2px;padding:10px 12px;
+  cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.lib-suggestion:last-child{border-bottom:none;}
+.lib-suggestion:hover,.lib-suggestion:active{background:var(--surface2);}
+.lib-suggestion-name{font-size:.82rem;font-weight:600;color:var(--text);}
+.lib-suggestion-meta{font-size:.65rem;color:var(--muted);}
 .source-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:6px;
   background:rgba(96,165,250,.12);color:var(--blue);display:inline-block;margin-left:4px;}
 .source-badge.real{background:rgba(74,222,128,.12);color:var(--green);}
@@ -1145,32 +1147,26 @@ textarea.input{resize:vertical;min-height:90px;}
   <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
     <div class="modal-handle" style="flex-shrink:0"></div>
     <div class="modal-title" style="flex-shrink:0">Store Library</div>
-    <div class="lib-tabs" style="flex-shrink:0">
-      <button class="lib-tab active" id="libtab-nearby" onclick="switchLibTab('nearby')">📍 Nearby</button>
-      <button class="lib-tab" id="libtab-browse" onclick="switchLibTab('browse')">Browse All</button>
-    </div>
     <!-- Scrollable panel area -->
     <div style="flex:1;overflow-y:auto;min-height:0">
-      <!-- Nearby panel -->
-      <div class="lib-panel active" id="libpanel-nearby">
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <input class="input" id="nearby-location-input" type="text"
-            placeholder="Search a location, or use GPS below…"
-            style="flex:1;font-size:.82rem"
-            onkeydown="if(event.key==='Enter') searchNearbyLocation()"
-            autocomplete="off">
-          <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+      <div id="libpanel-nearby">
+        <div style="position:relative;margin-bottom:10px">
+          <div style="display:flex;gap:8px">
+            <input class="input" id="nearby-location-input" type="text"
+              placeholder="Search by store name or location…"
+              style="flex:1;font-size:.82rem"
+              oninput="_libSearchInput(this.value)"
+              onkeydown="if(event.key==='Enter'){_libSuggestions=[];_renderLibSuggestions();searchNearbyLocation();}"
+              onblur="setTimeout(()=>{_libSuggestions=[];_renderLibSuggestions();},150)"
+              autocomplete="off">
+            <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
+          </div>
+          <div id="lib-suggestions"></div>
         </div>
         <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
         <div id="nearby-status" class="loc-status" style="display:none"></div>
         <div id="nearby-list-container"></div>
         <div id="nearby-load-more-trigger" style="height:1px"></div>
-      </div>
-      <!-- Browse panel -->
-      <div class="lib-panel" id="libpanel-browse">
-        <input class="input" id="lib-search-input" placeholder="Search chains (Market Basket, Trader Joe's…)"
-          oninput="renderLibraryBrowse()" style="margin-bottom:12px">
-        <div id="lib-browse-grid" class="lib-chain-grid"></div>
       </div>
     </div>
     <!-- Fixed bottom section -->
@@ -7243,57 +7239,118 @@ let _userLocationCache = null;   // {lat, lng} preloaded on login
 
 function openLibraryModal() {
   _libSelectedChain = null;
+  _libSuggestions = [];
   document.getElementById('lib-selected-preview').style.display = 'none';
+  document.getElementById('nearby-location-input').value = '';
+  document.getElementById('nearby-list-container').innerHTML = '';
+  _renderLibSuggestions();
   openModal('modal-library');
-  // Auto-trigger nearby if we haven't yet this session
-  if (!_libNearbyLoaded) {
-    switchLibTab('nearby');
-  } else {
-    renderNearbyList();
+  if (_libNearbyLoaded) renderNearbyList();
+}
+
+// ── Unified search suggestions ──────────────────────────────────────────────
+
+let _libSuggestions = [];
+
+// Score how well a query matches a store name using word-boundary token matching.
+// Returns 0..1: 1.0 = all query tokens fully matched, 0 = no match.
+// Threshold for "counts as a match": >= 0.5 (at least half the query matched).
+function _storeNameMatchScore(query, storeName) {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const wbTest = (needle, haystack) => {
+    const esc = needle.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+    return new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(haystack);
+  };
+  const nq = norm(query);
+  const ns = norm(storeName);
+  if (!nq || !ns) return 0;
+  const tokens = nq.split(' ').filter(Boolean);
+  let matched = 0;
+  for (const t of tokens) {
+    if (wbTest(t, ns)) matched += t.length;
   }
-  renderLibraryBrowse();
+  return matched / nq.replace(/\s/g, '').length;
 }
 
-function switchLibTab(tab) {
-  ['nearby','browse'].forEach(t => {
-    document.getElementById('libtab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('libpanel-' + t).classList.toggle('active', t === tab);
-  });
-}
+const _LIB_MATCH_THRESHOLD = 0.5;
 
-// ── Browse tab ─────────────────────────────────────────────────────────────
-function renderLibraryBrowse() {
-  const q = (document.getElementById('lib-search-input')?.value || '').toLowerCase();
-  const all = getAllLibraryStores();
-  const filtered = q
-    ? all.filter(c => c.name.toLowerCase().includes(q) ||
-        c.searchNames.some(s => s.includes(q)))
-    : all;
-
-  const grid = document.getElementById('lib-browse-grid');
-  if (!filtered.length) {
-    grid.innerHTML = '<div class="loc-status">No chains match your search</div>';
+function _libSearchInput(val) {
+  const q = val.trim();
+  if (!q) {
+    _libSuggestions = [];
+    _renderLibSuggestions();
     return;
   }
-  grid.innerHTML = filtered.map(chain => {
-    const isSelected = _libSelectedChain?.id === chain.id;
-    const badge = chain.dataSource === 'real'
-      ? '<span class="source-badge real">Official data</span>'
-      : '<span class="source-badge">Curated</span>';
-    return `<button class="lib-chain-card ${isSelected ? 'selected' : ''}"
-        onclick="selectLibChain('${chain.id}', 'browse')">
-      <div class="lib-chain-row">
-        <div class="lib-chain-dot" style="background:${chain.color}"></div>
-        <div>
-          <div class="lib-chain-name">${esc(chain.name)}</div>
-          <div class="lib-chain-meta">${chain.aisles.length} aisles${badge}</div>
-        </div>
-      </div>
-    </button>`;
-  }).join('');
+  const cache = _storeLocationCache;
+  if (!cache || !cache.length) {
+    _libSuggestions = [];
+    _renderLibSuggestions();
+    return;
+  }
+  if (!_userLocationCache) {
+    // No location permission — show message
+    _libSuggestions = null;
+    _renderLibSuggestions();
+    return;
+  }
+  const { lat: uLat, lng: uLng } = _userLocationCache;
+  const results = [];
+  for (const s of cache) {
+    const nameScore = _storeNameMatchScore(q, s.name || '');
+    if (nameScore < _LIB_MATCH_THRESHOLD) continue;
+    const dist = haversineMeters(uLat, uLng, s.lat, s.lng);
+    // Primary sort: name match quality (desc), secondary: distance (asc)
+    const score = (1 - nameScore) * 1e9 + dist;
+    results.push({ ...s, _dist: dist, _score: score, _nameScore: nameScore });
+  }
+  results.sort((a, b) => a._score - b._score);
+  _libSuggestions = results.slice(0, 5);
+  _renderLibSuggestions();
 }
 
-// ── Nearby tab ─────────────────────────────────────────────────────────────────────────
+function _renderLibSuggestions() {
+  const el = document.getElementById('lib-suggestions');
+  if (!el) return;
+  if (_libSuggestions === null) {
+    // null = no location
+    el.innerHTML = '<div class="lib-suggestions"><div class="lib-suggestion" style="cursor:default">' +
+      '<div class="lib-suggestion-name" style="color:var(--muted)">📍 Location required</div>' +
+      '<div class="lib-suggestion-meta">Tap "Use My Location" to enable store search</div>' +
+      '</div></div>';
+    return;
+  }
+  if (!_libSuggestions.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="lib-suggestions">' +
+    _libSuggestions.map((s, i) => {
+      const dist = s._dist < 1000
+        ? Math.round(s._dist) + ' m'
+        : (s._dist / 1609.34).toFixed(1) + ' mi';
+      const addr = s.address ? ' · ' + s.address : '';
+      return `<div class="lib-suggestion" onmousedown="_selectLibSuggestion(${i})">
+        <div class="lib-suggestion-name">${esc(s.name)}</div>
+        <div class="lib-suggestion-meta">${dist}${esc(addr)}</div>
+      </div>`;
+    }).join('') +
+  '</div>';
+}
+
+async function _selectLibSuggestion(idx) {
+  const s = _libSuggestions[idx];
+  if (!s) return;
+  _libSuggestions = [];
+  _renderLibSuggestions();
+  document.getElementById('nearby-location-input').value = s.name;
+  const statusEl = document.getElementById('nearby-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Loading stores near ' + s.name + '…';
+  const ok = await computeNearbyFromCoords(s.lat, s.lng);
+  if (!ok) { statusEl.textContent = 'No store data found.'; return; }
+  _libNearbyLoaded = true;
+  statusEl.style.display = 'none';
+  initNearbyScroll();
+}
+
+// ── Nearby ─────────────────────────────────────────────────────────────────────────
 
 // Session cache — loaded once from Firestore, reused for the life of the page
 let _storeLocationCache   = null;
@@ -7453,10 +7510,48 @@ async function searchNearbyLocation() {
   const query    = input.value.trim();
   if (!query) return;
 
+  _libSuggestions = [];
+  _renderLibSuggestions();
+
   const statusEl = document.getElementById('nearby-status');
   statusEl.style.display = 'block';
   statusEl.textContent   = 'Searching for "' + query + '"…';
 
+  // ── Store name search: if query matches store names in cache, skip OpenCage ──
+  // Use the same word-boundary scoring as suggestions. If any stores score above
+  // threshold, treat this as a name filter and show matching nearby stores.
+  const cache = _storeLocationCache;
+  if (cache && cache.length && _userLocationCache) {
+    const { lat: uLat, lng: uLng } = _userLocationCache;
+    const nameMatches = [];
+    for (const s of cache) {
+      const nameScore = _storeNameMatchScore(query, s.name || '');
+      if (nameScore < _LIB_MATCH_THRESHOLD) continue;
+      const dist = haversineMeters(uLat, uLng, s.lat, s.lng);
+      nameMatches.push({ ...s, _dist: dist, _score: (1 - nameScore) * 1e9 + dist });
+    }
+    if (nameMatches.length) {
+      nameMatches.sort((a, b) => a._score - b._score);
+      // Populate _libNearbyResult directly with name-filtered results
+      _libNearbyResult = nameMatches.map(s => ({
+        place_id: s.osm_id,
+        name:     s.name,
+        address:  s.address,
+        lat:      s.lat,
+        lng:      s.lng,
+        distance: s._dist,
+        chain_id: s.chain_id,
+      }));
+      _libNearbyLoaded = true;
+      statusEl.style.display = 'none';
+      _nearbyPage = 0;
+      document.getElementById('nearby-list-container').innerHTML = '';
+      initNearbyScroll();
+      return;
+    }
+  }
+
+  // ── Location search: fall through to OpenCage ────────────────────────────
   // ⚠️ SECURITY NOTE: This key is intentionally client-side for performance.
   // OpenCage free tier has no domain restriction. If upgrading to a paid tier,
   // add domain restriction in the OpenCage dashboard or move to a Cloud Function.
@@ -7495,7 +7590,7 @@ async function searchNearbyLocation() {
       const container = document.getElementById('nearby-list-container');
       container.innerHTML = '<div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Which location?</div>' +
         results.map((r, i) => `<button class="btn btn-ghost btn-full" style="text-align:left;margin-bottom:6px;font-size:.85rem"
-          onclick="_selectGeoResult(${r.geometry.lat},${r.geometry.lng},'${esc(r.formatted.split(',').slice(0,2).join(','))}')"
+          onclick="_selectGeoResult(${r.geometry.lat},${r.geometry.lng},\'${esc(r.formatted.split(',').slice(0,2).join(','))}\')"
           >${esc(r.formatted)}</button>`).join('');
     }
 
@@ -7644,13 +7739,7 @@ async function selectNearbyStore(placeId) {
   showLibraryPreview(store.name, metaText, { ...chain, aisles });
 }
 
-function selectLibChain(chainId, source) {
-  const chain = getAllLibraryStores().find(c => c.id === chainId);
-  if (!chain) return;
-  _libSelectedChain = { ...chain, _placeId: null, _placeName: null, _placeAddress: null };
-  if (source === 'browse') renderLibraryBrowse();
-  showLibraryPreview(chain.name, chain.aisles.length + ' aisles pre-loaded', chain);
-}
+// selectLibChain removed — browse tab eliminated in unified search refactor
 
 function showLibraryPreview(name, meta, chain) {
   const preview = document.getElementById('lib-selected-preview');
