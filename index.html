@@ -7288,11 +7288,21 @@ async function _libSearchInput(val) {
     _renderLibSuggestions();
     return;
   }
+  // If location not yet resolved, try to get it now (may already be in flight from preload)
   if (!_userLocationCache) {
-    // No location permission — show message
-    _libSuggestions = null;
-    _renderLibSuggestions();
-    return;
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 5000, maximumAge: 600000, enableHighAccuracy: false
+        })
+      );
+      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (e) {
+      // Permission denied or unavailable
+      _libSuggestions = null;
+      _renderLibSuggestions();
+      return;
+    }
   }
   const { lat: uLat, lng: uLng } = _userLocationCache;
   const results = [];
