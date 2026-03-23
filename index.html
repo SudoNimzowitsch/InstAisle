@@ -1136,7 +1136,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <rect x="8" y="13" width="8" height="5" rx="1"/>
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg>Add from Store Library</button>
+</svg>Search for Stores</button>
       <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-store-switch').classList.remove('open');openNewStore()">+ Build My Own Store</button>
     </div>
   </div>
@@ -1146,7 +1146,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
     <div class="modal-handle" style="flex-shrink:0"></div>
-    <div class="modal-title" style="flex-shrink:0">Store Library</div>
+    <div class="modal-title" style="flex-shrink:0">Store Search</div>
     <!-- Scrollable panel area -->
     <div style="flex:1;overflow-y:auto;min-height:0">
       <div id="libpanel-nearby">
@@ -1163,7 +1163,6 @@ textarea.input{resize:vertical;min-height:90px;}
           </div>
           <div id="lib-suggestions"></div>
         </div>
-        <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
         <div id="nearby-status" class="loc-status" style="display:none"></div>
         <div id="nearby-list-container"></div>
         <div id="nearby-load-more-trigger" style="height:1px"></div>
@@ -7245,42 +7244,70 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  if (_libNearbyLoaded) renderNearbyList();
+  // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
+  // Reuses the already-in-flight preload promise — never fires a second GPS call.
+  const inp = document.getElementById('nearby-location-input');
+  if (!_storeLocationCache || !_userLocationCache) {
+    inp.placeholder = 'Loading…';
+    inp.disabled = true;
+    Promise.all([
+      loadStoreLocations(),
+      preloadUserLocation()  // no-op if already resolved, awaits if still in flight
+    ]).finally(() => {
+      inp.placeholder = 'Search by store name or location…';
+      inp.disabled = false;
+      inp.focus();
+    });
+  }
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
 
 let _libSuggestions = [];
 
-// Score how well a query matches a store name using word-boundary token matching.
-// Returns 0..1: 1.0 = all query tokens fully matched, 0 = no match.
-// Threshold for "counts as a match": >= 0.5 (at least half the query matched).
+// Score how well a query matches a store name using prefix matching.
+// Each query token is compared against the prefix of each word in the store name.
+// "east" scores 1.0 against "Eastside Mart" (prefix of first word).
+// "east" scores slightly less against "New East Market" (prefix of non-first word).
+// Score = sum of best prefix matches per query token / total query chars.
+// Threshold: >= 0.5
 function _storeNameMatchScore(query, storeName) {
   const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  const wbTest = (needle, haystack) => {
-    const esc = needle.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-    return new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(haystack);
-  };
   const nq = norm(query);
   const ns = norm(storeName);
   if (!nq || !ns) return 0;
-  const tokens = nq.split(' ').filter(Boolean);
-  let matched = 0;
-  for (const t of tokens) {
-    if (wbTest(t, ns)) matched += t.length;
+
+  const queryTokens = nq.split(' ').filter(Boolean);
+  const nameWords   = ns.split(' ').filter(Boolean);
+
+  // For each query token, find the best prefix match across all name words.
+  // A query token matches a name word if the name word starts with the query token.
+  // First-word matches score full credit; later words get a 0.85 multiplier.
+  let totalMatched = 0;
+  for (const qt of queryTokens) {
+    let best = 0;
+    for (let i = 0; i < nameWords.length; i++) {
+      if (nameWords[i].startsWith(qt)) {
+        const credit = qt.length * (i === 0 ? 1.0 : 0.85);
+        if (credit > best) best = credit;
+      }
+    }
+    totalMatched += best;
   }
-  return matched / nq.replace(/\s/g, '').length;
+  return totalMatched / nq.replace(/\s/g, '').length;
 }
 
 const _LIB_MATCH_THRESHOLD = 0.5;
 
-function _libSearchInput(val) {
+async function _libSearchInput(val) {
   const q = val.trim();
   if (!q) {
     _libSuggestions = [];
     _renderLibSuggestions();
     return;
   }
+  // Ensure stores.json is loaded — may not be ready if user opens modal very quickly after login
+  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (!cache || !cache.length) {
     _libSuggestions = [];
@@ -7288,7 +7315,7 @@ function _libSearchInput(val) {
     return;
   }
   if (!_userLocationCache) {
-    // No location permission — show message
+    // GPS not yet resolved — show no-location message
     _libSuggestions = null;
     _renderLibSuggestions();
     return;
@@ -7315,7 +7342,7 @@ function _renderLibSuggestions() {
     // null = no location
     el.innerHTML = '<div class="lib-suggestions"><div class="lib-suggestion" style="cursor:default">' +
       '<div class="lib-suggestion-name" style="color:var(--muted)">📍 Location required</div>' +
-      '<div class="lib-suggestion-meta">Tap "Use My Location" to enable store search</div>' +
+      '<div class="lib-suggestion-meta">Enable location access in your browser settings to search stores</div>' +
       '</div></div>';
     return;
   }
@@ -7429,22 +7456,28 @@ async function computeNearbyFromCoords(lat, lng) {
 
 // Called silently on login — fires GPS + JSON fetch in parallel so the
 // Nearby tab opens instantly on first use.
-async function preloadUserLocation() {
-  try {
-    const pos = await new Promise((resolve, reject) =>
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
-      })
-    );
-    _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    // If JSON is already loaded, go ahead and compute results now
-    if (_storeLocationCache) {
-      await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
-      _libNearbyLoaded = true;
+let _preloadLocationPromise = null;
+
+function preloadUserLocation() {
+  if (_preloadLocationPromise) return _preloadLocationPromise;
+  _preloadLocationPromise = (async () => {
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
+        })
+      );
+      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // If JSON is already loaded, go ahead and compute results now
+      if (_storeLocationCache) {
+        await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+        _libNearbyLoaded = true;
+      }
+    } catch (err) {
+      // Silently ignore — permission denied or unavailable
     }
-  } catch (err) {
-    // Silently ignore — permission denied or unavailable, user can tap manually
-  }
+  })();
+  return _preloadLocationPromise;
 }
 
 async function findNearbyStores() {
@@ -7520,6 +7553,7 @@ async function searchNearbyLocation() {
   // ── Store name search: if query matches store names in cache, skip OpenCage ──
   // Use the same word-boundary scoring as suggestions. If any stores score above
   // threshold, treat this as a name filter and show matching nearby stores.
+  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (cache && cache.length && _userLocationCache) {
     const { lat: uLat, lng: uLng } = _userLocationCache;
