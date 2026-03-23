@@ -1136,7 +1136,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <rect x="8" y="13" width="8" height="5" rx="1"/>
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg>Search for Stores</button>
+</svg>Add from Store Library</button>
       <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-store-switch').classList.remove('open');openNewStore()">+ Build My Own Store</button>
     </div>
   </div>
@@ -1146,7 +1146,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
     <div class="modal-handle" style="flex-shrink:0"></div>
-    <div class="modal-title" style="flex-shrink:0">Store Search</div>
+    <div class="modal-title" style="flex-shrink:0">Store Library</div>
     <!-- Scrollable panel area -->
     <div style="flex:1;overflow-y:auto;min-height:0">
       <div id="libpanel-nearby">
@@ -1163,6 +1163,7 @@ textarea.input{resize:vertical;min-height:90px;}
           </div>
           <div id="lib-suggestions"></div>
         </div>
+        <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
         <div id="nearby-status" class="loc-status" style="display:none"></div>
         <div id="nearby-list-container"></div>
         <div id="nearby-load-more-trigger" style="height:1px"></div>
@@ -7244,21 +7245,7 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
-  // Reuses the already-in-flight preload promise — never fires a second GPS call.
-  const inp = document.getElementById('nearby-location-input');
-  if (!_storeLocationCache || !_userLocationCache) {
-    inp.placeholder = 'Loading…';
-    inp.disabled = true;
-    Promise.all([
-      loadStoreLocations(),
-      preloadUserLocation()  // no-op if already resolved, awaits if still in flight
-    ]).finally(() => {
-      inp.placeholder = 'Search by store name or location…';
-      inp.disabled = false;
-      inp.focus();
-    });
-  }
+  if (_libNearbyLoaded) renderNearbyList();
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
@@ -7271,7 +7258,7 @@ let _libSuggestions = [];
 function _storeNameMatchScore(query, storeName) {
   const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   const wbTest = (needle, haystack) => {
-    const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const esc = needle.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
     return new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(haystack);
   };
   const nq = norm(query);
@@ -7287,15 +7274,13 @@ function _storeNameMatchScore(query, storeName) {
 
 const _LIB_MATCH_THRESHOLD = 0.5;
 
-async function _libSearchInput(val) {
+function _libSearchInput(val) {
   const q = val.trim();
   if (!q) {
     _libSuggestions = [];
     _renderLibSuggestions();
     return;
   }
-  // Ensure stores.json is loaded — may not be ready if user opens modal very quickly after login
-  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (!cache || !cache.length) {
     _libSuggestions = [];
@@ -7303,7 +7288,7 @@ async function _libSearchInput(val) {
     return;
   }
   if (!_userLocationCache) {
-    // GPS not yet resolved — show no-location message
+    // No location permission — show message
     _libSuggestions = null;
     _renderLibSuggestions();
     return;
@@ -7330,7 +7315,7 @@ function _renderLibSuggestions() {
     // null = no location
     el.innerHTML = '<div class="lib-suggestions"><div class="lib-suggestion" style="cursor:default">' +
       '<div class="lib-suggestion-name" style="color:var(--muted)">📍 Location required</div>' +
-      '<div class="lib-suggestion-meta">Enable location access in your browser settings to search stores</div>' +
+      '<div class="lib-suggestion-meta">Tap "Use My Location" to enable store search</div>' +
       '</div></div>';
     return;
   }
@@ -7444,28 +7429,22 @@ async function computeNearbyFromCoords(lat, lng) {
 
 // Called silently on login — fires GPS + JSON fetch in parallel so the
 // Nearby tab opens instantly on first use.
-let _preloadLocationPromise = null;
-
-function preloadUserLocation() {
-  if (_preloadLocationPromise) return _preloadLocationPromise;
-  _preloadLocationPromise = (async () => {
-    try {
-      const pos = await new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
-        })
-      );
-      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      // If JSON is already loaded, go ahead and compute results now
-      if (_storeLocationCache) {
-        await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
-        _libNearbyLoaded = true;
-      }
-    } catch (err) {
-      // Silently ignore — permission denied or unavailable
+async function preloadUserLocation() {
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
+      })
+    );
+    _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    // If JSON is already loaded, go ahead and compute results now
+    if (_storeLocationCache) {
+      await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+      _libNearbyLoaded = true;
     }
-  })();
-  return _preloadLocationPromise;
+  } catch (err) {
+    // Silently ignore — permission denied or unavailable, user can tap manually
+  }
 }
 
 async function findNearbyStores() {
@@ -7541,7 +7520,6 @@ async function searchNearbyLocation() {
   // ── Store name search: if query matches store names in cache, skip OpenCage ──
   // Use the same word-boundary scoring as suggestions. If any stores score above
   // threshold, treat this as a name filter and show matching nearby stores.
-  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (cache && cache.length && _userLocationCache) {
     const { lat: uLat, lng: uLng } = _userLocationCache;
