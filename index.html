@@ -7273,13 +7273,15 @@ function _storeNameMatchScore(query, storeName) {
 
 const _LIB_MATCH_THRESHOLD = 0.5;
 
-function _libSearchInput(val) {
+async function _libSearchInput(val) {
   const q = val.trim();
   if (!q) {
     _libSuggestions = [];
     _renderLibSuggestions();
     return;
   }
+  // Ensure stores.json is loaded — may not be ready if user opens modal very quickly after login
+  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (!cache || !cache.length) {
     _libSuggestions = [];
