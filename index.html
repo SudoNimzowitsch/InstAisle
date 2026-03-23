@@ -1642,6 +1642,7 @@ async function loadUserData(uid) {
       ownerUid: d.ownerUid,
       library_location_id:      d.library_location_id      || null,
       library_chain_id:         d.library_chain_id         || null,
+      library_address:          d.library_address          || null,
       library_aisles_snapshot:  d.library_aisles_snapshot  || null,
     });
     // Prefer new multi-list format; fall back to legacy flat array
@@ -1698,6 +1699,7 @@ async function loadUserData(uid) {
           aisles: data.aisles || [],
           library_location_id: data.library_location_id || null,
           library_chain_id: data.library_chain_id || null,
+          library_address: data.library_address || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
         if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
@@ -1735,6 +1737,7 @@ async function _loadUserDataV2(uid) {
       ownerUid: d.ownerUid,
       library_location_id:     d.library_location_id     || null,
       library_chain_id:        d.library_chain_id        || null,
+      library_address:         d.library_address         || null,
       library_aisles_snapshot: d.library_aisles_snapshot || null,
     });
     // Corrections are now per-item but keep legacy store corrections as fallback
@@ -1805,6 +1808,7 @@ async function _loadUserDataV2(uid) {
           name: data.name, color: data.color, aisles: data.aisles || [],
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
+          library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null,
         };
         state.corrections[d.id] = data.corrections || {};
@@ -1969,6 +1973,7 @@ async function seedDemoStore(uid) {
           aisles: data.aisles || [],
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
+          library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
@@ -2285,6 +2290,7 @@ window.persistStore = async function(storeId) {
       // Always persist library provenance
       library_location_id:     store.library_location_id     || null,
       library_chain_id:        store.library_chain_id        || null,
+      library_address:         store.library_address         || null,
       library_aisles_snapshot: store.library_aisles_snapshot || null,
     };
     if (!_v2) {
@@ -2876,6 +2882,7 @@ window.createStoreInFirestore = async function(storeData) {
     list: [], corrections: {}, createdAt: serverTimestamp(),
     library_chain_id:    storeData.library_chain_id    || null,
     library_location_id: storeData.library_location_id || null,
+    library_address:     storeData.library_address     || null,
     library_aisles_snapshot: storeData.library_aisles_snapshot || null
   });
   setSyncDot('ok');
@@ -2891,6 +2898,7 @@ window.createStoreInFirestore = async function(storeData) {
           aisles: data.aisles || [],
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
+          library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
@@ -6115,6 +6123,7 @@ async function _importStoreFromShare(d) {
           color: data.color, aisles: data.aisles || [],
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
+          library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
         state.lists[storeId] = data.lists_v2 || data.list || [];
         renderAll();
@@ -6665,6 +6674,7 @@ function renderStoresScreen(){
           <div style="width:12px;height:12px;border-radius:50%;background:${store.color};flex-shrink:0"></div>
           <div>
             <div style="font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:8px">${esc(store.name)}</div>
+            ${store.library_address ? `<div style="font-size:.65rem;color:var(--muted);margin-bottom:2px">${esc(store.library_address)}</div>` : ''}
             <div class="text-muted">${store.aisles.length} aisles · ${ll} items · ${cc} corrections</div>
           </div>
         </div>
@@ -7897,6 +7907,7 @@ async function addStoreFromLibrary() {
   pendingLibraryMeta = chain.id || chain._placeId
     ? { chain_id: chain.id || null,
         location_id: chain._placeId ? sanitizeLocId(chain._placeId) : null,
+        address: _looksLikeRealAddress(chain._placeAddress) ? chain._placeAddress : null,
         aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
     : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
@@ -8935,6 +8946,7 @@ async function saveStore(){
     const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,
       library_chain_id:    pendingLibraryMeta?.chain_id    || null,
       library_location_id: pendingLibraryMeta?.location_id || null,
+      library_address:     pendingLibraryMeta?.address     || null,
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
     };
     state.stores.push(newStore);
