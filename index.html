@@ -1155,7 +1155,7 @@ textarea.input{resize:vertical;min-height:90px;}
             <input class="input" id="nearby-location-input" type="text"
               placeholder="Search by store name or location…"
               style="flex:1;font-size:.82rem"
-              oninput="console.log('[oninput]',this.value);_libSearchInput(this.value)"
+              oninput="_libSearchInput(this.value)"
               onkeydown="if(event.key==='Enter'){_libSuggestions=[];_renderLibSuggestions();searchNearbyLocation();}"
               onblur="setTimeout(()=>{if(!document.getElementById('lib-suggestions').contains(document.activeElement)){_libSuggestions=[];_renderLibSuggestions();}},150)"
               autocomplete="off">
@@ -2322,7 +2322,6 @@ window.persistStore = async function(storeId) {
     }
     // Contribute changes to library (non-blocking, best-effort)
     if (window.contributeToLibrary) {
-      console.log('[library] triggering contribution for store:', store.name, '| library_location_id:', store.library_location_id);
       window.contributeToLibrary(store).catch(e => console.warn('[library] contribution error:', e.message));
     } else {
       console.warn('[library] contributeToLibrary not available yet');
@@ -2441,7 +2440,6 @@ async function resolveNameConflict(choice) {
             const updatedAisles = aisles.filter(a => a.name !== conflict.user_aisle_name);
             updatedAisles[libIdx] = aisles[libIdx];
             await updateDoc(locRef, { aisles: updatedAisles });
-            console.log('[library] merged', conflict.user_aisle_name, '→', conflict.lib_aisle_name);
           }
         }
       } catch(e) { console.warn('[library] name conflict merge error:', e.message); }
@@ -2518,7 +2516,6 @@ async function resolveIndexConflict(choice) {
         }
       }
     }
-    console.log('[library] resolved index conflict:', aisle_name, '→ position', resolvedIndex + 1);
   } catch(e) { console.warn('[library] resolve conflict error:', e.message); }
   // Show next conflict if any
   maybeShowIndexConflictPrompt();
@@ -2600,7 +2597,6 @@ window.recordKeywordVote = async function(locId, srcAisleName, destAisleName, ke
     if (!changed) return;
 
     await updateDoc(locRef, { aisles, last_updated_ts: serverTimestamp() });
-    console.log('[library] keyword vote recorded:', keyword, srcAisleName, '→', destAisleName);
   } catch(e) {
     console.warn('[library] recordKeywordVote error:', e.message);
   }
@@ -2608,7 +2604,6 @@ window.recordKeywordVote = async function(locId, srcAisleName, destAisleName, ke
 
 window.contributeToLibrary = async function(store) {
   const locId = store.library_location_id;
-  console.log('[library] contributeToLibrary called. locId:', locId, '| user:', window._currentUser?.uid, '| store:', store.name);
   if (!locId) { console.warn('[library] aborting: no library_location_id on store'); return; }
   if (!window._currentUser) { console.warn('[library] aborting: no current user'); return; }
   const uid = window._currentUser.uid;
@@ -2617,7 +2612,6 @@ window.contributeToLibrary = async function(store) {
 
   const locRef  = doc(db, 'store_locations', sanitizeLocId(locId));
   const locSnap = await getDoc(locRef);
-  console.log('[library] location doc exists:', locSnap.exists(), '| path: store_locations/' + sanitizeLocId(locId));
   if (!locSnap.exists()) {
     // Document doesn't exist yet — create it with contributed aisle data
     await setDoc(locRef, {
@@ -2626,7 +2620,6 @@ window.contributeToLibrary = async function(store) {
       first_contributor_uid: uid,
       first_contribution_ts: serverTimestamp(),
     });
-    console.log('[library] created new location doc and donated aisle set for', sanitizeLocId(locId));
     return;
   }
 
@@ -2638,7 +2631,6 @@ window.contributeToLibrary = async function(store) {
     ...a,
     keywords: (a.keywords || []).filter(k => (a.keyword_scores?.[k.toLowerCase()] ?? 2) > 0)
   })) : null;
-  console.log('[library] data_status:', dataStatus, '| has aisles:', !!libAisles);
 
   // ── CASE 1: No real data — donate full aisle set immediately ─────────
   if (dataStatus === 'none' || !libAisles) {
@@ -2648,7 +2640,6 @@ window.contributeToLibrary = async function(store) {
       first_contributor_uid: uid,
       first_contribution_ts: serverTimestamp(),
     }, { merge: true });
-    console.log('[library] donated full aisle set for', locId);
     return;
   }
 
@@ -2824,7 +2815,6 @@ window.contributeToLibrary = async function(store) {
       }
     }
     await updateDoc(locRef, { aisles: updatedAisles });
-    console.log('[library] applied', Object.keys(immediateUpdates).length, 'immediate updates to', locId);
   }
 
   // ── Write pending changes ─────────────────────────────────────────────
@@ -2858,7 +2848,6 @@ window.contributeToLibrary = async function(store) {
           if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== p.keyword.toLowerCase());
         }
         await updateDoc(locRef, { aisles: updatedAisles });
-        console.log('[library] confirmed pending change:', nKey);
       }
     } else {
       // First time this change is proposed — write to pending
@@ -2872,7 +2861,6 @@ window.contributeToLibrary = async function(store) {
         confirmed_at:   null,
         status:         'pending',
       });
-      console.log('[library] wrote pending change:', nKey);
     }
   }
 };
@@ -7244,23 +7232,7 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
-  // Reuses the already-in-flight preload promise — never fires a second GPS call.
-  const inp = document.getElementById('nearby-location-input');
-  console.log('[library] openLibraryModal | cache:', _storeLocationCache ? _storeLocationCache.length : 'null', '| userLoc:', _userLocationCache);
-  if (!_storeLocationCache || !_userLocationCache) {
-    inp.placeholder = 'Loading…';
-    inp.disabled = true;
-    Promise.all([
-      loadStoreLocations(),
-      preloadUserLocation()  // no-op if already resolved, awaits if still in flight
-    ]).finally(() => {
-      console.log('[library] ready | cache:', _storeLocationCache ? _storeLocationCache.length : 'null', '| userLoc:', _userLocationCache);
-      inp.placeholder = 'Search by store name or location…';
-      inp.disabled = false;
-      inp.focus();
-    });
-  }
+  if (_libNearbyLoaded) renderNearbyList();
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
@@ -7311,7 +7283,6 @@ async function _libSearchInput(val) {
   // Ensure stores.json is loaded — may not be ready if user opens modal very quickly after login
   if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
-  console.log('[suggest] q:', q, '| cache:', cache ? cache.length : 'null', '| userLoc:', _userLocationCache);
   if (!cache || !cache.length) {
     _libSuggestions = [];
     _renderLibSuggestions();
@@ -7319,7 +7290,6 @@ async function _libSearchInput(val) {
   }
   if (!_userLocationCache) {
     // GPS not yet resolved — show no-location message
-    console.log('[suggest] bailing: no _userLocationCache');
     _libSuggestions = null;
     _renderLibSuggestions();
     return;
@@ -7335,14 +7305,12 @@ async function _libSearchInput(val) {
     results.push({ ...s, _dist: dist, _score: score, _nameScore: nameScore });
   }
   results.sort((a, b) => a._score - b._score);
-  console.log('[suggest] results found:', results.length, results.slice(0,3).map(r => r.name + '(' + r._nameScore.toFixed(2) + ')'));
   _libSuggestions = results.slice(0, 5);
   _renderLibSuggestions();
 }
 
 function _renderLibSuggestions() {
   const el = document.getElementById('lib-suggestions');
-  console.log('[render] el:', !!el, '| suggestions:', JSON.stringify(_libSuggestions)?.slice(0,100));
   if (!el) return;
   if (_libSuggestions === null) {
     // null = no location
