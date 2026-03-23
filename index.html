@@ -7335,12 +7335,14 @@ async function _libSearchInput(val) {
     results.push({ ...s, _dist: dist, _score: score, _nameScore: nameScore });
   }
   results.sort((a, b) => a._score - b._score);
+  console.log('[suggest] results found:', results.length, results.slice(0,3).map(r => r.name + '(' + r._nameScore.toFixed(2) + ')'));
   _libSuggestions = results.slice(0, 5);
   _renderLibSuggestions();
 }
 
 function _renderLibSuggestions() {
   const el = document.getElementById('lib-suggestions');
+  console.log('[render] el:', !!el, '| suggestions:', JSON.stringify(_libSuggestions)?.slice(0,100));
   if (!el) return;
   if (_libSuggestions === null) {
     // null = no location
