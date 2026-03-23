@@ -7224,7 +7224,7 @@ let _libNearbyResult  = [];      // cached nearby search results
 let _libNearbyLoaded  = false;
 let _userLocationCache = null;   // {lat, lng} preloaded on login
 
-function openLibraryModal() {
+async function openLibraryModal() {
   _libSelectedChain = null;
   _libSuggestions = [];
   document.getElementById('lib-selected-preview').style.display = 'none';
@@ -7232,7 +7232,17 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  if (_libNearbyLoaded) renderNearbyList();
+  if (_libNearbyLoaded) {
+    renderNearbyList();
+    return;
+  }
+  // Ensure both GPS and stores.json are ready, then compute and show nearby list
+  await Promise.all([loadStoreLocations(), preloadUserLocation()]);
+  if (_userLocationCache && !_libNearbyLoaded) {
+    await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+    _libNearbyLoaded = true;
+  }
+  renderNearbyList();
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
