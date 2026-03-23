@@ -1157,7 +1157,7 @@ textarea.input{resize:vertical;min-height:90px;}
               style="flex:1;font-size:.82rem"
               oninput="console.log('[oninput]',this.value);_libSearchInput(this.value)"
               onkeydown="if(event.key==='Enter'){_libSuggestions=[];_renderLibSuggestions();searchNearbyLocation();}"
-              onblur="setTimeout(()=>{_libSuggestions=[];_renderLibSuggestions();},150)"
+              onblur="setTimeout(()=>{if(!document.getElementById('lib-suggestions').contains(document.activeElement)){_libSuggestions=[];_renderLibSuggestions();}},150)"
               autocomplete="off">
             <button class="btn btn-primary" onclick="searchNearbyLocation()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
           </div>
