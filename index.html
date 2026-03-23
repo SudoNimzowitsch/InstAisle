@@ -7245,21 +7245,14 @@ function openLibraryModal() {
   _renderLibSuggestions();
   openModal('modal-library');
   // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
-  // Show a subtle placeholder while loading; remove it when both are ready.
+  // Reuses the already-in-flight preload promise — never fires a second GPS call.
   const inp = document.getElementById('nearby-location-input');
-  const ready = () => _storeLocationCache && _userLocationCache;
-  if (!ready()) {
+  if (!_storeLocationCache || !_userLocationCache) {
     inp.placeholder = 'Loading…';
     inp.disabled = true;
     Promise.all([
       loadStoreLocations(),
-      _userLocationCache ? Promise.resolve() : new Promise(resolve =>
-        navigator.geolocation.getCurrentPosition(
-          pos => { _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude }; resolve(); },
-          () => resolve(), // permission denied — resolve anyway, suggestions will show no-location msg
-          { timeout: 8000, maximumAge: 600000, enableHighAccuracy: false }
-        )
-      )
+      preloadUserLocation()  // no-op if already resolved, awaits if still in flight
     ]).finally(() => {
       inp.placeholder = 'Search by store name or location…';
       inp.disabled = false;
@@ -7451,22 +7444,28 @@ async function computeNearbyFromCoords(lat, lng) {
 
 // Called silently on login — fires GPS + JSON fetch in parallel so the
 // Nearby tab opens instantly on first use.
-async function preloadUserLocation() {
-  try {
-    const pos = await new Promise((resolve, reject) =>
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
-      })
-    );
-    _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    // If JSON is already loaded, go ahead and compute results now
-    if (_storeLocationCache) {
-      await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
-      _libNearbyLoaded = true;
+let _preloadLocationPromise = null;
+
+function preloadUserLocation() {
+  if (_preloadLocationPromise) return _preloadLocationPromise;
+  _preloadLocationPromise = (async () => {
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
+        })
+      );
+      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // If JSON is already loaded, go ahead and compute results now
+      if (_storeLocationCache) {
+        await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+        _libNearbyLoaded = true;
+      }
+    } catch (err) {
+      // Silently ignore — permission denied or unavailable
     }
-  } catch (err) {
-    // Silently ignore — permission denied or unavailable, user can tap manually
-  }
+  })();
+  return _preloadLocationPromise;
 }
 
 async function findNearbyStores() {
