@@ -1136,7 +1136,7 @@ textarea.input{resize:vertical;min-height:90px;}
   <rect x="8" y="13" width="8" height="5" rx="1"/>
   <path d="M9.5 15 Q11 14.4 12.5 15.2 Q14 15.8 14.5 15" stroke-width="1.1"/>
   <path d="M9.5 17 Q11 16.5 13 17" stroke-width="1.1"/>
-</svg>Add from Store Library</button>
+</svg>Search for Stores</button>
       <button class="btn btn-ghost btn-full" onclick="document.getElementById('modal-store-switch').classList.remove('open');openNewStore()">+ Build My Own Store</button>
     </div>
   </div>
@@ -1146,7 +1146,7 @@ textarea.input{resize:vertical;min-height:90px;}
 <div class="modal-overlay" id="modal-library" onclick="closeModal('modal-library')">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
     <div class="modal-handle" style="flex-shrink:0"></div>
-    <div class="modal-title" style="flex-shrink:0">Store Library</div>
+    <div class="modal-title" style="flex-shrink:0">Store Search</div>
     <!-- Scrollable panel area -->
     <div style="flex:1;overflow-y:auto;min-height:0">
       <div id="libpanel-nearby">
@@ -7244,7 +7244,7 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  if (_libNearbyLoaded) renderNearbyList();
+  // List intentionally not repopulated on open — empty search = empty list
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
