@@ -7244,7 +7244,28 @@ function openLibraryModal() {
   document.getElementById('nearby-list-container').innerHTML = '';
   _renderLibSuggestions();
   openModal('modal-library');
-  // List intentionally not repopulated on open — empty search = empty list
+  // Warm up stores.json cache and GPS in parallel so suggestions are ready immediately.
+  // Show a subtle placeholder while loading; remove it when both are ready.
+  const inp = document.getElementById('nearby-location-input');
+  const ready = () => _storeLocationCache && _userLocationCache;
+  if (!ready()) {
+    inp.placeholder = 'Loading…';
+    inp.disabled = true;
+    Promise.all([
+      loadStoreLocations(),
+      _userLocationCache ? Promise.resolve() : new Promise(resolve =>
+        navigator.geolocation.getCurrentPosition(
+          pos => { _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude }; resolve(); },
+          () => resolve(), // permission denied — resolve anyway, suggestions will show no-location msg
+          { timeout: 8000, maximumAge: 600000, enableHighAccuracy: false }
+        )
+      )
+    ]).finally(() => {
+      inp.placeholder = 'Search by store name or location…';
+      inp.disabled = false;
+      inp.focus();
+    });
+  }
 }
 
 // ── Unified search suggestions ──────────────────────────────────────────────
@@ -7288,21 +7309,11 @@ async function _libSearchInput(val) {
     _renderLibSuggestions();
     return;
   }
-  // If location not yet resolved, try to get it now (may already be in flight from preload)
   if (!_userLocationCache) {
-    try {
-      const pos = await new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 5000, maximumAge: 600000, enableHighAccuracy: false
-        })
-      );
-      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    } catch (e) {
-      // Permission denied or unavailable
-      _libSuggestions = null;
-      _renderLibSuggestions();
-      return;
-    }
+    // GPS not yet resolved — show no-location message
+    _libSuggestions = null;
+    _renderLibSuggestions();
+    return;
   }
   const { lat: uLat, lng: uLng } = _userLocationCache;
   const results = [];
@@ -7531,6 +7542,7 @@ async function searchNearbyLocation() {
   // ── Store name search: if query matches store names in cache, skip OpenCage ──
   // Use the same word-boundary scoring as suggestions. If any stores score above
   // threshold, treat this as a name filter and show matching nearby stores.
+  if (!_storeLocationCache) await loadStoreLocations();
   const cache = _storeLocationCache;
   if (cache && cache.length && _userLocationCache) {
     const { lat: uLat, lng: uLng } = _userLocationCache;
