@@ -1163,7 +1163,6 @@ textarea.input{resize:vertical;min-height:90px;}
           </div>
           <div id="lib-suggestions"></div>
         </div>
-        <button class="btn btn-ghost btn-full btn-sm" id="btn-find-nearby" onclick="findNearbyStores()" style="margin-bottom:10px">📍 Use My Location</button>
         <div id="nearby-status" class="loc-status" style="display:none"></div>
         <div id="nearby-list-container"></div>
         <div id="nearby-load-more-trigger" style="height:1px"></div>
@@ -7258,7 +7257,7 @@ let _libSuggestions = [];
 function _storeNameMatchScore(query, storeName) {
   const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   const wbTest = (needle, haystack) => {
-    const esc = needle.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+    const esc = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])').test(haystack);
   };
   const nq = norm(query);
@@ -7315,7 +7314,7 @@ function _renderLibSuggestions() {
     // null = no location
     el.innerHTML = '<div class="lib-suggestions"><div class="lib-suggestion" style="cursor:default">' +
       '<div class="lib-suggestion-name" style="color:var(--muted)">📍 Location required</div>' +
-      '<div class="lib-suggestion-meta">Tap "Use My Location" to enable store search</div>' +
+      '<div class="lib-suggestion-meta">Enable location access in your browser settings to search stores</div>' +
       '</div></div>';
     return;
   }
