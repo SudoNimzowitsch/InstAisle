@@ -8222,8 +8222,11 @@ async function addStoreFromLibrary() {
         if (_geoLocId && window._fb && window._currentUser) {
           const { db, doc, updateDoc, setDoc } = window._fb;
           updateDoc(doc(db, 'store_locations', _geoLocId), { address })
+            .then(() => console.log('[geocode] wrote address to store_locations/', _geoLocId))
             .catch(() => setDoc(doc(db, 'store_locations', _geoLocId),
-              { address, lat: _geoLat, lng: _geoLng }, { merge: true }));
+              { address, lat: _geoLat, lng: _geoLng }, { merge: true })
+              .then(() => console.log('[geocode] created store_locations/', _geoLocId))
+              .catch(e => console.warn('[geocode] store_locations write failed:', e.message)));
         }
       } catch(e) {
         console.warn('[geocode] client reverse-geocode failed:', e.message);
