@@ -1166,6 +1166,8 @@ textarea.input{resize:vertical;min-height:90px;}
             <button class="btn btn-primary" onclick="_commitLocationSearch()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
             <button class="btn btn-ghost" onclick="_closeLocationSearch()" style="flex-shrink:0;padding:0 10px;font-size:.82rem">✕</button>
           </div>
+          <button class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;font-size:.75rem;color:var(--muted)"
+            onclick="_returnToGpsLocation()">&#x1F4CD; Use my current location</button>
         </div>
         <!-- Store name search -->
         <div style="position:relative;margin-bottom:10px">
@@ -7369,6 +7371,36 @@ async function _applyLocationCoords(lat, lng, label) {
   _updateLocationButton();
   const btn = document.getElementById('btn-location-label');
   if (btn) btn.style.display = '';
+
+  statusEl.style.display = 'none';
+  document.getElementById('nearby-location-input').value = '';
+  _nearbyPage = 0;
+  document.getElementById('nearby-list-container').innerHTML = '';
+  initNearbyScroll();
+}
+
+// Return to the user's real GPS location after a manual search
+async function _returnToGpsLocation() {
+  _closeLocationSearch();
+  const cached = _loadLocationFromCache();
+  const live = _userLocationCache;
+
+  // Prefer live GPS coords if available, fall back to localStorage cache
+  const coords = live || cached;
+  if (!coords) {
+    showToast('Location not available yet — try again in a moment');
+    return;
+  }
+
+  const label = _userLocationLabel || cached?.label || 'Your location';
+  const statusEl = document.getElementById('nearby-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Loading stores near ' + label + '…';
+
+  await computeNearbyFromCoords(coords.lat, coords.lng);
+  _libNearbyLoaded = true;
+  _userLocationLabel = cached?.label || label;
+  _updateLocationButton();
 
   statusEl.style.display = 'none';
   document.getElementById('nearby-location-input').value = '';
