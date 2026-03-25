@@ -1360,6 +1360,8 @@ textarea.input{resize:vertical;min-height:90px;}
       </button>
     </div>
     <div class="divider"></div>
+    <div class="divider"></div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:8px;color:var(--muted)" onclick="closeModal('modal-profile');clearCacheAndReload()">🔄 Clear cache &amp; hard reload</button>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
   </div>
 </div>
@@ -6405,7 +6407,7 @@ function _initPullToRefresh() {
     ind.style.height = '0';
     const cancelled = window._pinchJustEnded || window._ptr_active_cancel;
     window._ptr_active_cancel = false;
-    if (dy > 90 && !cancelled) setTimeout(() => clearCacheAndReload(), 250);
+    if (dy > 90 && !cancelled) setTimeout(() => location.reload(), 250);
   }, { passive: true });
 }
 
@@ -7253,18 +7255,6 @@ async function openLibraryModal() {
   _libSelectedChain = null;
   _libSuggestions = [];
 
-  // If not ready yet, wait for GPS + tiles + nearby computation before opening.
-  if (!_libNearbyLoaded) {
-    const btn = document.getElementById('btn-open-library');
-    if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
-    await preloadUserLocation();
-    if (_userLocationCache && !_libNearbyLoaded) {
-      await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
-      _libNearbyLoaded = true;
-    }
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/><path d="M5 11v9h14v-9"/><rect x="9" y="14" width="6" height="6" rx="1"/></svg>Search for Stores'; }
-  }
-
   document.getElementById('lib-selected-preview').style.display = 'none';
   document.getElementById('nearby-location-input').value = '';
   document.getElementById('nearby-list-container').innerHTML = '';
@@ -7272,7 +7262,36 @@ async function openLibraryModal() {
   _renderLibSuggestions();
   _updateLocationButton();
   openModal('modal-library');
-  renderNearbyList();
+
+  // If nearby results already ready, render immediately
+  if (_libNearbyLoaded) {
+    renderNearbyList();
+    if (_outerTilesPromise) _addLoadingMoreFooter();
+    return;
+  }
+
+  // Tiles may be loading from cached location — show a brief loading state
+  // inside the modal rather than blocking the open
+  const container = document.getElementById('nearby-list-container');
+  container.innerHTML = '<div class="loc-status" style="display:block">Loading nearby stores…</div>';
+
+  // If GPS/tiles haven't started yet (no cache), kick them off now
+  preloadUserLocation();
+
+  // Poll until _libNearbyLoaded (tiles finish loading from cache or live GPS)
+  const start = Date.now();
+  while (!_libNearbyLoaded && Date.now() - start < 12000) {
+    await new Promise(r => setTimeout(r, 200));
+    if (!document.getElementById('modal-library')?.classList.contains('open')) return; // modal closed
+  }
+
+  if (_libNearbyLoaded) {
+    container.innerHTML = '';
+    renderNearbyList();
+    if (_outerTilesPromise) _addLoadingMoreFooter();
+  } else {
+    container.innerHTML = '<div class="loc-status" style="display:block">Could not get location. Search above or tap 📍 to try again.</div>';
+  }
 }
 
 // ── Location search (the button + input for changing search area) ─────────────
@@ -7705,8 +7724,40 @@ let _preloadLocationPromise = null;
 
 let _userLocationLabel = null; // Human-readable name for user's current tile
 
+// ── Persist last-known location to localStorage so the library opens instantly ──
+function _saveLocationToCache(lat, lng, label) {
+  try {
+    localStorage.setItem('instaisle_lastloc', JSON.stringify({ lat, lng, label, ts: Date.now() }));
+  } catch(e) {}
+}
+
+function _loadLocationFromCache() {
+  try {
+    const raw = localStorage.getItem('instaisle_lastloc');
+    if (!raw) return null;
+    return JSON.parse(raw); // { lat, lng, label, ts }
+  } catch(e) { return null; }
+}
+
 function preloadUserLocation() {
   if (_preloadLocationPromise) return _preloadLocationPromise;
+
+  // Immediately seed from localStorage cache so tiles start loading right away
+  const cached = _loadLocationFromCache();
+  if (cached && !_userLocationCache) {
+    _userLocationCache = { lat: cached.lat, lng: cached.lng };
+    if (cached.label) {
+      _userLocationLabel = cached.label;
+      _updateLocationButton();
+    }
+    // Kick off tile loading from cached location in background (don't await)
+    if (!_libNearbyLoaded) {
+      computeNearbyFromCoords(cached.lat, cached.lng).then(ok => {
+        if (ok) _libNearbyLoaded = true;
+      });
+    }
+  }
+
   _preloadLocationPromise = (async () => {
     try {
       const pos = await new Promise((resolve, reject) =>
@@ -7714,14 +7765,26 @@ function preloadUserLocation() {
           timeout: 15000, maximumAge: 600000, enableHighAccuracy: false
         })
       );
-      _userLocationCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      // If stores already loaded, compute nearby
-      if (_storeLocationCache) {
-        await computeNearbyFromCoords(_userLocationCache.lat, _userLocationCache.lng);
+      const newLat = pos.coords.latitude, newLng = pos.coords.longitude;
+
+      // Check if live fix differs meaningfully from cached location (>2km)
+      const prevLat = _userLocationCache?.lat, prevLng = _userLocationCache?.lng;
+      const moved = prevLat && haversineMeters(prevLat, prevLng, newLat, newLng) > 2000;
+
+      _userLocationCache = { lat: newLat, lng: newLng };
+
+      // If location changed significantly, reload tiles for new location
+      if (moved || !_libNearbyLoaded) {
+        await computeNearbyFromCoords(newLat, newLng);
         _libNearbyLoaded = true;
+        // If library modal is open, re-render list with updated location
+        if (document.getElementById('modal-library')?.classList.contains('open')) {
+          renderNearbyList();
+        }
       }
-      // Resolve tile name — check index first, then reverse-geocode if missing
-      _resolveUserLocationLabel(_userLocationCache.lat, _userLocationCache.lng);
+
+      // Resolve label — check index first, then reverse-geocode if missing
+      _resolveUserLocationLabel(newLat, newLng);
     } catch (err) {
       // Silently ignore — permission denied or unavailable
     }
@@ -7735,6 +7798,7 @@ async function _resolveUserLocationLabel(lat, lng) {
   const existing = _getTileName(lat, lng);
   if (existing) {
     _userLocationLabel = existing;
+    _saveLocationToCache(lat, lng, existing);
     _updateLocationButton();
     return;
   }
@@ -7756,6 +7820,8 @@ async function _resolveUserLocationLabel(lat, lng) {
     if (name) {
       _userLocationLabel = name;
       _cacheTileNameLocally(lat, lng, name);
+      // Persist coords + label so next session loads instantly
+      _saveLocationToCache(lat, lng, name);
       _updateLocationButton();
     }
   } catch(e) { /* silently ignore */ }
