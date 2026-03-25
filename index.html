@@ -53,11 +53,12 @@ body{
   background:linear-gradient(135deg,var(--green),var(--blue));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
 }
-.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-right{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;}
 .store-pill{
   background:var(--surface2);border:1px solid var(--border);border-radius:20px;
   padding:5px 12px 5px 8px;font-size:0.72rem;font-weight:500;cursor:pointer;
   display:flex;align-items:center;gap:6px;color:var(--text);transition:border-color .15s;
+  min-width:0;max-width:42vw;flex-shrink:1;
 }
 .store-pill:hover{border-color:var(--green);}
 .store-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
@@ -65,6 +66,7 @@ body{
   background:var(--surface);border:1px solid var(--border);border-radius:50%;
   width:34px;height:34px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:1rem;transition:border-color .15s;color:var(--text);
+  flex-shrink:0;
 }
 .icon-btn:hover{border-color:var(--green);}
 
@@ -606,6 +608,7 @@ textarea.input{resize:vertical;min-height:90px;}
   background:var(--surface2);border:1px solid var(--border);border-radius:20px;
   padding:4px 10px 4px 4px;font-size:.72rem;font-weight:500;cursor:pointer;
   display:flex;align-items:center;gap:6px;color:var(--text);transition:border-color .15s;
+  flex-shrink:0;
 }
 .user-pill:hover{border-color:var(--blue);}
 .user-avatar{
@@ -6488,7 +6491,10 @@ function renderTopbar(){
       const parts = s.library_address.split(',').map(p => p.trim());
       const street = parts[0] || '';
       const city   = parts[1] || '';
-      addrEl.textContent = street + (city ? ', ' + city : '');
+      // Two separate spans so each line truncates independently
+      addrEl.innerHTML =
+        `<span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(street)}</span>` +
+        (city ? `<span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(city)}</span>` : '');
       addrEl.style.display = '';
     } else {
       addrEl.style.display = 'none';
