@@ -1067,7 +1067,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="store-dot" id="active-store-dot"></div>
       <div style="display:flex;flex-direction:column;gap:0;min-width:0">
         <span id="active-store-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No store</span>
-        <span id="active-store-address" style="font-size:.58rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;display:none"></span>
+        <span id="active-store-address" style="font-size:.58rem;color:var(--muted);line-height:1.3;display:none"></span>
       </div>
       <span style="color:var(--muted)">▾</span>
     </div>
@@ -6486,7 +6486,10 @@ function renderTopbar(){
   const addrEl = document.getElementById('active-store-address');
   if (addrEl) {
     if (s?.library_address) {
-      addrEl.textContent = _shortAddress(s.library_address);
+      const parts = s.library_address.split(',').map(p => p.trim());
+      const street = parts[0] || '';
+      const city   = parts[1] || '';
+      addrEl.innerHTML = esc(street) + (city ? '<br>' + esc(city) : '');
       addrEl.style.display = '';
     } else {
       addrEl.style.display = 'none';
