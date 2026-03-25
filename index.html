@@ -1166,7 +1166,7 @@ textarea.input{resize:vertical;min-height:90px;}
             <button class="btn btn-primary" onclick="_commitLocationSearch()" style="flex-shrink:0;padding:0 14px;font-size:.82rem">Go</button>
             <button class="btn btn-ghost" onclick="_closeLocationSearch()" style="flex-shrink:0;padding:0 10px;font-size:.82rem">✕</button>
           </div>
-          <button class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;font-size:.75rem;color:var(--muted)"
+          <button id="lib-use-gps-btn" class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;font-size:.75rem;color:var(--muted);display:none"
             onclick="_returnToGpsLocation()">&#x1F4CD; Use my current location</button>
         </div>
         <!-- Store name search -->
@@ -7305,6 +7305,18 @@ function _openLocationSearch() {
   inp.value = _userLocationLabel || '';
   inp.focus();
   inp.select();
+
+  // Only show "use my location" if GPS/cached coords are more than 1 mile
+  // from the center of the current search results
+  const gpsCoords = _userLocationCache || _loadLocationFromCache();
+  const gpsBtn = document.getElementById('lib-use-gps-btn');
+  if (gpsBtn && gpsCoords && _libNearbyResult.length) {
+    const first = _libNearbyResult[0];
+    const distMeters = first ? haversineMeters(gpsCoords.lat, gpsCoords.lng, first.lat, first.lng) : 0;
+    gpsBtn.style.display = distMeters > 1609 ? '' : 'none'; // 1609m ≈ 1 mile
+  } else if (gpsBtn) {
+    gpsBtn.style.display = 'none';
+  }
 }
 
 function _closeLocationSearch() {
