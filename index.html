@@ -8175,7 +8175,8 @@ async function addStoreFromLibrary() {
   }
 
   // If this library store has a missing or junk address, kick off a background
-  // geocode so future users get a real address. Fire-and-forget — never blocks UI.
+  // geocode so future users get a real address. Also backfills the address onto
+  // the user's own store entry when the result comes back.
   if (chain._placeId && !_looksLikeRealAddress(chain._placeAddress)) {
     const _geocodeStoreId = sanitizeLocId(chain._placeId);
     window._currentUser?.getIdToken().then(token =>
@@ -8183,6 +8184,25 @@ async function addStoreFromLibrary() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ storeId: _geocodeStoreId })
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const address = data?.address;
+        if (!address || !_looksLikeRealAddress(address)) return;
+        // Update pendingLibraryMeta so the address is written when store is saved
+        if (pendingLibraryMeta) pendingLibraryMeta.address = address;
+        // If store was already saved (user tapped Save quickly), patch it now
+        const locId = _geocodeStoreId;
+        const savedStore = state.stores.find(s => s.library_location_id === locId);
+        if (savedStore && !savedStore.library_address) {
+          savedStore.library_address = address;
+          renderTopbar();
+          if (window._fb && window._currentUser) {
+            const { db, doc, updateDoc } = window._fb;
+            updateDoc(doc(db, 'stores', savedStore.id), { library_address: address })
+              .catch(e => console.warn('[geocode] address backfill failed:', e.message));
+          }
+        }
       })
     ).catch(e => console.warn('[geocode] background geocode failed:', e.message));
   }
