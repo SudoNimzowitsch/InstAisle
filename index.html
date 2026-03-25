@@ -8067,8 +8067,10 @@ async function selectNearbyStore(placeId) {
   const hasContribution = !!contributed;
   _libSelectedChain = chain
     ? { ...chain, aisles, _placeId: placeId, _placeName: store.name,
-        _placeAddress: store.address, _hasContribution: hasContribution }
+        _placeAddress: store.address, _placeLat: store.lat, _placeLng: store.lng,
+        _hasContribution: hasContribution }
     : { _placeId: placeId, _placeName: store.name, _placeAddress: store.address,
+        _placeLat: store.lat, _placeLng: store.lng,
         id: null, name: store.name, color: STORE_COLORS[0], aisles,
         _hasContribution: hasContribution };
   renderNearbyList();
@@ -8174,30 +8176,39 @@ async function addStoreFromLibrary() {
     return;
   }
 
-  // If this library store has a missing or junk address, kick off a background
-  // geocode so future users get a real address. Also backfills the address onto
-  // the user's own store entry when the result comes back.
-  if (chain._placeId && !_looksLikeRealAddress(chain._placeAddress)) {
-    const _geocodeLocId = sanitizeLocId(chain._placeId);
+  // If this library store has a missing or junk address, reverse-geocode directly
+  // from the tile coords we already have. Updates pendingLibraryMeta and the
+  // saved store doc when the result comes back.
+  if (!_looksLikeRealAddress(chain._placeAddress) && chain._placeLat && chain._placeLng) {
+    const _geoLat = chain._placeLat, _geoLng = chain._placeLng;
+    const _geoLocId = chain._placeId ? sanitizeLocId(chain._placeId) : null;
     (async () => {
       try {
-        const token = await window._currentUser?.getIdToken();
-        if (!token) return;
+        const OPENCAGE_KEY = 'f6fbe292a2fa43be9860c7b05df59840';
         const resp = await fetch(
-          'https://us-central1-instaisle-e8d6b.cloudfunctions.net/geocodeStoreAddress',
-          { method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ storeId: _geocodeLocId }) }
+          `https://api.opencagedata.com/geocode/v1/json?q=${_geoLat}+${_geoLng}&key=${OPENCAGE_KEY}&limit=1&no_annotations=1`
         );
-        if (!resp.ok) { console.warn('[geocode] response not ok:', resp.status); return; }
+        if (!resp.ok) return;
         const data = await resp.json();
-        const address = data?.address;
-        console.log('[geocode] result for', _geocodeLocId, ':', address);
+        if (data?.status?.code === 402) return; // quota exceeded
+        const result = data?.results?.[0];
+        if (!result) return;
+        const c = result.components || {};
+        const parts = [
+          c.house_number && c.road ? `${c.house_number} ${c.road}` : (c.road || null),
+          c.city || c.town || c.village || c.county || null,
+          c.state_code || c.state || null,
+          c.postcode || null,
+        ].filter(Boolean);
+        const address = parts.length >= 2 ? parts.join(', ') : (result.formatted || null);
+        console.log('[geocode] client reverse-geocode result:', address);
         if (!address || !_looksLikeRealAddress(address)) return;
-        // Update pendingLibraryMeta so the address is written when store is saved
+        // Update pendingLibraryMeta so address is written when store is saved
         if (pendingLibraryMeta) pendingLibraryMeta.address = address;
-        // If store was already saved, patch local state + Firestore
-        const savedStore = state.stores.find(s => s.library_location_id === _geocodeLocId);
+        // If store already saved, patch local state + Firestore
+        const savedStore = _geoLocId
+          ? state.stores.find(s => s.library_location_id === _geoLocId)
+          : null;
         if (savedStore && !savedStore.library_address) {
           savedStore.library_address = address;
           renderTopbar();
@@ -8207,8 +8218,15 @@ async function addStoreFromLibrary() {
             console.log('[geocode] backfilled address on store', savedStore.id);
           }
         }
+        // Also write back to store_locations Firestore doc for future users
+        if (_geoLocId && window._fb && window._currentUser) {
+          const { db, doc, updateDoc, setDoc } = window._fb;
+          updateDoc(doc(db, 'store_locations', _geoLocId), { address })
+            .catch(() => setDoc(doc(db, 'store_locations', _geoLocId),
+              { address, lat: _geoLat, lng: _geoLng }, { merge: true }));
+        }
       } catch(e) {
-        console.warn('[geocode] background geocode failed:', e.message);
+        console.warn('[geocode] client reverse-geocode failed:', e.message);
       }
     })();
   }
