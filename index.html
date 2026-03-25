@@ -1065,7 +1065,10 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="sync-dot" id="sync-dot" title="Sync status"></div>
     <div class="store-pill" onclick="openStoreSwitch()">
       <div class="store-dot" id="active-store-dot"></div>
-      <span id="active-store-name">No store</span>
+      <div style="display:flex;flex-direction:column;gap:0;min-width:0">
+        <span id="active-store-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No store</span>
+        <span id="active-store-address" style="font-size:.58rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none"></span>
+      </div>
       <span style="color:var(--muted)">▾</span>
     </div>
     <div class="user-pill" onclick="openProfileModal()" id="user-pill">
@@ -6479,6 +6482,15 @@ function renderTopbar(){
   const s=getActiveStore();
   document.getElementById('active-store-name').textContent = s?s.name:'No store';
   document.getElementById('active-store-dot').style.background = s?s.color:'#555';
+  const addrEl = document.getElementById('active-store-address');
+  if (addrEl) {
+    if (s?.library_address) {
+      addrEl.textContent = s.library_address;
+      addrEl.style.display = '';
+    } else {
+      addrEl.style.display = 'none';
+    }
+  }
 }
 
 function renderListScreen(){
@@ -6716,9 +6728,12 @@ function renderStoresScreen(){
 function openStoreSwitch(){
   document.getElementById('store-switch-list').innerHTML=state.stores.map(s=>`
     <div class="card" style="cursor:pointer;border-color:${state.activeStoreId===s.id?s.color:'var(--border)'};margin-bottom:8px;display:flex;align-items:center;gap:10px" onclick="setActiveStore('${s.id}')">
-      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
-      <span style="font-weight:${state.activeStoreId===s.id?'600':'400'};flex:1">${esc(s.name)}</span>
-      ${state.activeStoreId===s.id?'<span style="color:var(--green);font-size:.75rem">Active</span>':''}
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0;margin-top:2px;align-self:flex-start"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:${state.activeStoreId===s.id?'600':'400'}">${esc(s.name)}</div>
+        ${s.library_address?`<div style="font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">${esc(s.library_address)}</div>`:''}
+      </div>
+      ${state.activeStoreId===s.id?'<span style="color:var(--green);font-size:.75rem;flex-shrink:0">Active</span>':''}
       ${s.owner===state.uid?`<button class="btn btn-sm btn-ghost" style="flex-shrink:0" onclick="event.stopPropagation();document.getElementById('modal-store-switch').classList.remove('open');editStore('${s.id}')">Edit</button>`:''}
       <button class="btn btn-sm btn-danger" style="flex-shrink:0"
         onclick="event.stopPropagation();deleteStore('${s.id}')">✕</button>
@@ -8208,6 +8223,7 @@ async function addStoreFromLibrary() {
         aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
     : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
+  const _addrElLib = document.getElementById('store-modal-address'); if (_addrElLib) _addrElLib.textContent = '';
   document.getElementById('store-name-input').value = storeName;
   tempColor  = storeColor;
   tempAisles = aisles;
@@ -8228,6 +8244,7 @@ function openNewStore(){
   pendingScannedKws={}; aisleImgTargetIdx=null;
   pendingLibraryMeta=null;
   document.getElementById('store-modal-title').textContent='New Store';
+  const _addrElNew = document.getElementById('store-modal-address'); if (_addrElNew) _addrElNew.textContent = '';
   document.getElementById('store-name-input').value='';
   const _saveBtnN = document.getElementById('store-save-btn');
   if (_saveBtnN) _saveBtnN.style.display = '';
@@ -8304,6 +8321,15 @@ function editStore(id){
   pendingLibraryMeta=null;
   state.editingStoreId=id;
   document.getElementById('store-modal-title').textContent='Edit Store';
+  // Show address below title if available
+  let _addrEl = document.getElementById('store-modal-address');
+  if (!_addrEl) {
+    _addrEl = document.createElement('div');
+    _addrEl.id = 'store-modal-address';
+    _addrEl.style.cssText = 'font-size:.7rem;color:var(--muted);margin-top:-10px;margin-bottom:4px';
+    document.getElementById('store-modal-title').after(_addrEl);
+  }
+  _addrEl.textContent = store.library_address || '';
   document.getElementById('store-name-input').value=store.name;
   tempColor=store.color;
   tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords],keyword_scores:{...(a.keyword_scores||{})}}));
