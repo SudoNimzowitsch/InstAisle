@@ -8178,33 +8178,39 @@ async function addStoreFromLibrary() {
   // geocode so future users get a real address. Also backfills the address onto
   // the user's own store entry when the result comes back.
   if (chain._placeId && !_looksLikeRealAddress(chain._placeAddress)) {
-    const _geocodeStoreId = sanitizeLocId(chain._placeId);
-    window._currentUser?.getIdToken().then(token =>
-      fetch('https://us-central1-instaisle-e8d6b.cloudfunctions.net/geocodeStoreAddress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ storeId: _geocodeStoreId })
-      })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+    const _geocodeLocId = sanitizeLocId(chain._placeId);
+    (async () => {
+      try {
+        const token = await window._currentUser?.getIdToken();
+        if (!token) return;
+        const resp = await fetch(
+          'https://us-central1-instaisle-e8d6b.cloudfunctions.net/geocodeStoreAddress',
+          { method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ storeId: _geocodeLocId }) }
+        );
+        if (!resp.ok) { console.warn('[geocode] response not ok:', resp.status); return; }
+        const data = await resp.json();
         const address = data?.address;
+        console.log('[geocode] result for', _geocodeLocId, ':', address);
         if (!address || !_looksLikeRealAddress(address)) return;
         // Update pendingLibraryMeta so the address is written when store is saved
         if (pendingLibraryMeta) pendingLibraryMeta.address = address;
-        // If store was already saved (user tapped Save quickly), patch it now
-        const locId = _geocodeStoreId;
-        const savedStore = state.stores.find(s => s.library_location_id === locId);
+        // If store was already saved, patch local state + Firestore
+        const savedStore = state.stores.find(s => s.library_location_id === _geocodeLocId);
         if (savedStore && !savedStore.library_address) {
           savedStore.library_address = address;
           renderTopbar();
           if (window._fb && window._currentUser) {
             const { db, doc, updateDoc } = window._fb;
-            updateDoc(doc(db, 'stores', savedStore.id), { library_address: address })
-              .catch(e => console.warn('[geocode] address backfill failed:', e.message));
+            await updateDoc(doc(db, 'stores', savedStore.id), { library_address: address });
+            console.log('[geocode] backfilled address on store', savedStore.id);
           }
         }
-      })
-    ).catch(e => console.warn('[geocode] background geocode failed:', e.message));
+      } catch(e) {
+        console.warn('[geocode] background geocode failed:', e.message);
+      }
+    })();
   }
 
   const storeName  = chain._placeName || chain.name;
