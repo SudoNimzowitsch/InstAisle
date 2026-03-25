@@ -7728,13 +7728,6 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
 async function computeNearbyFromCoords(lat, lng) {
   const allStores = await loadStoreLocations(lat, lng);
   if (!allStores.length) {
-    // Tile fetch failed — fall back to monolithic stores.json
-    // This only runs if the tiles/ directory is missing from GitHub Pages (e.g. bad deploy).
-    console.warn('[tiles] falling back to stores.json');
-    try {
-      const resp = await fetch('/stores.json');
-      if (resp.ok) _storeLocationCache = await resp.json();
-    } catch(e) { console.warn('[tiles] fallback also failed:', e.message); }
     if (!_storeLocationCache || !_storeLocationCache.length) return false;
   }
 
