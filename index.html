@@ -7353,15 +7353,9 @@ async function _selectLibSuggestion(idx) {
   if (!s) return;
   _libSuggestions = [];
   _renderLibSuggestions();
-  document.getElementById('nearby-location-input').value = s.name;
-  const statusEl = document.getElementById('nearby-status');
-  statusEl.style.display = 'block';
-  statusEl.textContent = 'Loading stores near ' + s.name + '…';
-  const ok = await computeNearbyFromCoords(s.lat, s.lng);
-  if (!ok) { statusEl.textContent = 'No store data found.'; return; }
-  _libNearbyLoaded = true;
-  statusEl.style.display = 'none';
-  initNearbyScroll();
+  document.getElementById('nearby-location-input').value = '';
+  // Select this store directly — same as tapping it in the nearby list
+  await selectNearbyStore(s.place_id || s.osm_id);
 }
 
 // ── Nearby ─────────────────────────────────────────────────────────────────────────
