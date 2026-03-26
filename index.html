@@ -1065,7 +1065,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="store-dot" id="active-store-dot"></div>
       <div style="display:flex;flex-direction:column;gap:0;min-width:0;overflow:hidden">
         <span id="active-store-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">No store</span>
-        <span id="active-store-address" style="font-size:.58rem;color:var(--muted);line-height:1.3;display:none;min-width:0;overflow:hidden"></span>
+        <span id="active-store-address" style="font-size:.58rem;color:var(--muted);line-height:1.3;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
       </div>
     </div>
     <div class="user-avatar" id="user-avatar-sm" onclick="openProfileModal()" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#0a1a12;flex-shrink:0;cursor:pointer;overflow:hidden;border:1px solid var(--border)">?</div>
@@ -6482,15 +6482,8 @@ function renderTopbar(){
       const parts = s.library_address.split(',').map(p => p.trim());
       const street = parts[0] || '';
       const city   = parts[1] || '';
-      if (city) {
-        addrEl.innerHTML =
-          `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${esc(street)}</span>` +
-          `<span style="flex-shrink:0;white-space:nowrap">,\u00a0${esc(city)}</span>`;
-        addrEl.style.display = 'flex';
-      } else {
-        addrEl.textContent = street;
-        addrEl.style.display = '';
-      }
+      addrEl.textContent = street + (city ? ', ' + city : '');
+      addrEl.style.display = '';
     } else {
       addrEl.style.display = 'none';
     }
@@ -8225,9 +8218,9 @@ async function addStoreFromLibrary() {
         }
         // Also write back to store_locations Firestore doc for future users
         if (_geoLocId && window._fb && window._currentUser) {
-          const { db, doc, setDoc } = window._fb;
+          const { db, doc, setDoc, serverTimestamp } = window._fb;
           setDoc(doc(db, 'store_locations', _geoLocId),
-            { address, lat: _geoLat, lng: _geoLng }, { merge: true })
+            { address, lat: _geoLat, lng: _geoLng, updated_at: serverTimestamp() }, { merge: true })
             .then(() => console.log('[geocode] wrote address to store_locations/', _geoLocId))
             .catch(e => console.warn('[geocode] store_locations write failed:', e.message));
         }
