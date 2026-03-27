@@ -9670,7 +9670,43 @@ function kwMatch(norm,aisles){
   // Votes (ks) scale quality — equal quality defers to votes.
   // Matching requires word boundaries so "oil" won't match "foil".
   // Plural tolerance: also tries stripping a trailing 's' from either side.
+  // Typo tolerance: edit distance fallback for longer words/phrases.
   const DEFAULT_KW_SCORE = 2;
+
+  // Levenshtein edit distance
+  function _editDist(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({length: m+1}, (_, i) =>
+      Array.from({length: n+1}, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
+          : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  // Pairs that are close in edit distance but genuinely different grocery items
+  const _TYPO_BLOCKLIST = new Set([
+    'oil|foil','ham|jam','yam|jam','peas|teas','peas|pears',
+    'ale|kale','mint|pint','rye|dye','brie|brine','ice|rice',
+    'soap|soup','pasta|paste','beef|beer','salt|malt',
+    'spice|slice','mustard|custard','butter|batter','cream|creem',
+  ]);
+  function _isBlocked(a, b) {
+    return _TYPO_BLOCKLIST.has(a+'|'+b) || _TYPO_BLOCKLIST.has(b+'|'+a);
+  }
+
+  // Token-level typo check: every token of q must be within edit tolerance of
+  // the corresponding token of k (same token count required)
+  function _typoMatch(q, k) {
+    const qt = q.split(' '), kt = k.split(' ');
+    if (qt.length !== kt.length) return false;
+    return qt.every((tok, i) => {
+      if (tok.length < 4) return tok === kt[i]; // short tokens must be exact
+      const tol = Math.max(1, Math.floor(tok.length / 5)); // 1 error per 5 chars
+      return !_isBlocked(tok, kt[i]) && _editDist(tok, kt[i]) <= tol;
+    });
+  }
 
   function wbMatch(needle, haystack) {
     // Returns true if needle appears in haystack at word boundaries
@@ -9706,6 +9742,14 @@ function kwMatch(norm,aisles){
     }
     // Only score if shared words are substantial relative to keyword length
     if (sharedLen > 0 && sharedLen >= Math.min(k.length * 0.4, 6)) return sharedLen;
+    // Collapsed match: "tritip" matches "tri tip" by comparing with spaces removed
+    const qc = q.replace(/\s/g,''), kc = k.replace(/\s/g,'');
+    if (qc === kc) return k.length;
+    if (qc.endsWith('s') && qc.slice(0,-1) === kc) return k.length - 1;
+    if (kc.endsWith('s') && kc.slice(0,-1) === qc) return k.length - 1;
+    // Typo match: token-level edit distance (catches "mellon"→"melon", "brocoli"→"broccoli")
+    // Only apply to words of 4+ chars and score lower than exact matches
+    if (_typoMatch(q, k)) return Math.round(k.length * 0.85);
     return 0;
   }
 
@@ -9717,7 +9761,8 @@ function kwMatch(norm,aisles){
       const kl = k.toLowerCase();
       const ks = scores[kl] ?? DEFAULT_KW_SCORE;
       if(ks <= 0) return;
-      const ml = matchLen(norm, kl);
+      const kn = normalise(kl); // normalise keyword same way as query
+      const ml = matchLen(norm, kn);
       if(ml > 0){
         const quality = ml / Math.max(kl.length, norm.length);
         sc += ks * quality;
