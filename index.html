@@ -9754,22 +9754,38 @@ function kwMatch(norm,aisles){
     return 0;
   }
 
-  let best=0,bestIdx=null;
+  // Scoring: quality (match type) is the primary determinant; keyword_score is
+  // the tiebreaker between aisles that achieve the same best quality.
+  // An exact match at quality 1.0 always beats any number of partial matches,
+  // regardless of keyword scores.
+  let bestQuality=0, bestScore=0, bestIdx=null;
   aisles.forEach((a,i)=>{
     const scores = a.keyword_scores || {};
-    let sc=0;
+    let aisleQuality=0, aisleScore=0;
     a.keywords.forEach(k=>{
       const kl = k.toLowerCase();
       const ks = scores[kl] ?? DEFAULT_KW_SCORE;
       if(ks <= 0) return;
-      const kn = normalise(kl); // normalise keyword same way as query
+      const kn = normalise(kl);
       const ml = matchLen(norm, kn);
-      if(ml > 0){
-        const quality = ml / Math.max(kl.length, norm.length);
-        sc += ks * quality;
+      if(ml === 0) return;
+      const quality = ml / Math.max(kl.length, norm.length);
+      if(quality > aisleQuality){
+        // Better quality match found — reset this aisle's score
+        aisleQuality = quality;
+        aisleScore = ks;
+      } else if(quality === aisleQuality){
+        // Same quality — accumulate keyword scores as tiebreaker
+        aisleScore += ks;
       }
+      // quality < aisleQuality: ignore, a better match already found in this aisle
     });
-    if(sc>best){ best=sc; bestIdx=i; }
+    if(aisleQuality > bestQuality ||
+      (aisleQuality === bestQuality && aisleScore > bestScore)){
+      bestQuality = aisleQuality;
+      bestScore   = aisleScore;
+      bestIdx     = i;
+    }
   });
   return bestIdx;
 }
