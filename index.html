@@ -7062,12 +7062,14 @@ function moveListToStore(destId) {
 
 let _libSelectedChain = null;    // currently highlighted chain in library modal
 let _libNearbyResult  = [];      // cached nearby search results
+let _nearbyFilteredResult = null; // non-null when a name filter is active
 let _libNearbyLoaded  = false;
 let _userLocationCache = null;   // {lat, lng} preloaded on login
 
 async function openLibraryModal() {
   _libSelectedChain = null;
   _libSuggestions = [];
+  _nearbyFilteredResult = null;
 
   document.getElementById('lib-selected-preview').style.display = 'none';
   document.getElementById('nearby-location-input').value = '';
@@ -7235,18 +7237,18 @@ async function _returnToGpsLocation() {
 
 // Apply a store name filter to the current nearby list
 function _applyNameFilter(query) {
-  if (!query.trim()) { renderNearbyList(); return; }
+  if (!query.trim()) {
+    _nearbyFilteredResult = null;
+    renderNearbyList();
+    return;
+  }
   const matches = _libNearbyResult.filter(s =>
     _storeNameMatchScore(query, s.name) >= _LIB_MATCH_THRESHOLD
   );
-  // Temporarily swap _libNearbyResult and render, then restore
-  const saved = _libNearbyResult;
-  _libNearbyResult = matches;
+  _nearbyFilteredResult = matches;
   _nearbyPage = 0;
   document.getElementById('nearby-list-container').innerHTML = '';
   initNearbyScroll();
-  _libNearbyResult = saved;
-  // If outer tiles are still loading, show a footer so the user knows more may arrive
   if (_outerTilesPromise) _addLoadingMoreFooter();
 }
 
@@ -7295,18 +7297,28 @@ async function _libSearchInput(val) {
     _renderLibSuggestions();
     return;
   }
-  const cache = _storeLocationCache;
-  if (!cache || !cache.length) {
-    _libSuggestions = [];
+
+  // If tiles or GPS aren't ready yet, wait up to 5s rather than bailing silently
+  if (!_storeLocationCache?.length || !_userLocationCache) {
+    _libSuggestions = null; // show loading indicator
     _renderLibSuggestions();
-    return;
+    const deadline = Date.now() + 5000;
+    while ((!_storeLocationCache?.length || !_userLocationCache) && Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 150));
+    }
+    // If user has already changed the query, abort
+    const currentVal = document.getElementById('nearby-location-input')?.value?.trim();
+    if (currentVal !== val.trim()) return;
   }
+
   if (!_userLocationCache) {
-    // GPS not yet resolved — show no-location message
+    // GPS still not resolved after waiting
     _libSuggestions = null;
     _renderLibSuggestions();
     return;
   }
+
+  const cache = _storeLocationCache || [];
   const { lat: uLat, lng: uLng } = _userLocationCache;
   const results = [];
   for (const s of cache) {
@@ -7760,8 +7772,9 @@ function initNearbyScroll() {
 }
 
 function renderNearbyPage() {
+  const activeList = _nearbyFilteredResult !== null ? _nearbyFilteredResult : _libNearbyResult;
   const start = _nearbyPage * NEARBY_PAGE_SIZE;
-  const slice = _libNearbyResult.slice(start, start + NEARBY_PAGE_SIZE);
+  const slice = activeList.slice(start, start + NEARBY_PAGE_SIZE);
   if (!slice.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
     return;
@@ -7796,7 +7809,7 @@ function renderNearbyPage() {
   _nearbyPage++;
 
   // Stop observing if we've rendered everything
-  if (_nearbyPage * NEARBY_PAGE_SIZE >= _libNearbyResult.length) {
+  if (_nearbyPage * NEARBY_PAGE_SIZE >= activeList.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
   }
 }
