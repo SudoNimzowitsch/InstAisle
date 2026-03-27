@@ -7062,14 +7062,13 @@ function moveListToStore(destId) {
 
 let _libSelectedChain = null;    // currently highlighted chain in library modal
 let _libNearbyResult  = [];      // cached nearby search results
-let _nearbyFilteredResult = null; // non-null when a name filter is active
 let _libNearbyLoaded  = false;
 let _userLocationCache = null;   // {lat, lng} preloaded on login
 
 async function openLibraryModal() {
   _libSelectedChain = null;
   _libSuggestions = [];
-  _nearbyFilteredResult = null;
+  _libNearbyResultFull = null;
 
   document.getElementById('lib-selected-preview').style.display = 'none';
   document.getElementById('nearby-location-input').value = '';
@@ -7236,16 +7235,26 @@ async function _returnToGpsLocation() {
 }
 
 // Apply a store name filter to the current nearby list
+// _libNearbyResultFull holds the unfiltered list while a filter is active
+let _libNearbyResultFull = null;
+
 function _applyNameFilter(query) {
+  // Restore full list if we have it saved
+  if (_libNearbyResultFull) _libNearbyResult = _libNearbyResultFull;
+
   if (!query.trim()) {
-    _nearbyFilteredResult = null;
+    _libNearbyResultFull = null;
     renderNearbyList();
     return;
   }
-  const matches = _libNearbyResult.filter(s =>
+
+  // Save full list, set filtered as the active list
+  _libNearbyResultFull = _libNearbyResult;
+  _libNearbyResult = _libNearbyResultFull.filter(s =>
     _storeNameMatchScore(query, s.name) >= _LIB_MATCH_THRESHOLD
   );
-  _nearbyFilteredResult = matches;
+
+  if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
   _nearbyPage = 0;
   document.getElementById('nearby-list-container').innerHTML = '';
   initNearbyScroll();
@@ -7772,9 +7781,8 @@ function initNearbyScroll() {
 }
 
 function renderNearbyPage() {
-  const activeList = _nearbyFilteredResult !== null ? _nearbyFilteredResult : _libNearbyResult;
   const start = _nearbyPage * NEARBY_PAGE_SIZE;
-  const slice = activeList.slice(start, start + NEARBY_PAGE_SIZE);
+  const slice = _libNearbyResult.slice(start, start + NEARBY_PAGE_SIZE);
   if (!slice.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
     return;
@@ -7809,7 +7817,7 @@ function renderNearbyPage() {
   _nearbyPage++;
 
   // Stop observing if we've rendered everything
-  if (_nearbyPage * NEARBY_PAGE_SIZE >= activeList.length) {
+  if (_nearbyPage * NEARBY_PAGE_SIZE >= _libNearbyResult.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
   }
 }
@@ -7860,7 +7868,8 @@ async function fetchLocationContribution(placeId) {
 }
 
 async function selectNearbyStore(placeId) {
-  const store = _libNearbyResult.find(s => s.place_id === placeId);
+  const list = _libNearbyResultFull || _libNearbyResult;
+  const store = list.find(s => s.place_id === placeId);
   if (!store) return;
   // Use chain_id directly if available, otherwise fall back to name matching
   const chain = store.chain_id
