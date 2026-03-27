@@ -7375,6 +7375,11 @@ async function _selectLibSuggestion(idx) {
   _libSuggestions = [];
   _renderLibSuggestions();
   document.getElementById('nearby-location-input').value = '';
+  // Restore full list before lookup in case a name filter was active
+  if (_libNearbyResultFull) {
+    _libNearbyResult = _libNearbyResultFull;
+    _libNearbyResultFull = null;
+  }
   // Select this store directly — same as tapping it in the nearby list
   await selectNearbyStore(s.place_id || s.osm_id);
 }
@@ -7868,8 +7873,7 @@ async function fetchLocationContribution(placeId) {
 }
 
 async function selectNearbyStore(placeId) {
-  const list = _libNearbyResultFull || _libNearbyResult;
-  const store = list.find(s => s.place_id === placeId);
+  const store = _libNearbyResult.find(s => s.place_id === placeId);
   if (!store) return;
   // Use chain_id directly if available, otherwise fall back to name matching
   const chain = store.chain_id
