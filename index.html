@@ -7068,7 +7068,6 @@ let _userLocationCache = null;   // {lat, lng} preloaded on login
 async function openLibraryModal() {
   _libSelectedChain = null;
   _libSuggestions = [];
-  _libNearbyResultFull = null;
 
   document.getElementById('lib-selected-preview').style.display = 'none';
   document.getElementById('nearby-location-input').value = '';
@@ -7235,29 +7234,23 @@ async function _returnToGpsLocation() {
 }
 
 // Apply a store name filter to the current nearby list
-// _libNearbyResultFull holds the unfiltered list while a filter is active
-let _libNearbyResultFull = null;
+// Always filters against _libNearbyResult directly — no save/restore needed
+// because _onOuterTilesLoaded always rebuilds _libNearbyResult from scratch before calling this
 
 function _applyNameFilter(query) {
-  // Restore full list if we have it saved
-  if (_libNearbyResultFull) _libNearbyResult = _libNearbyResultFull;
-
   if (!query.trim()) {
-    _libNearbyResultFull = null;
     renderNearbyList();
     return;
   }
 
-  // Save full list, set filtered as the active list
-  _libNearbyResultFull = _libNearbyResult;
-  _libNearbyResult = _libNearbyResultFull.filter(s =>
+  const filtered = _libNearbyResult.filter(s =>
     _storeNameMatchScore(query, s.name) >= _LIB_MATCH_THRESHOLD
   );
 
   if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
   _nearbyPage = 0;
   document.getElementById('nearby-list-container').innerHTML = '';
-  initNearbyScroll();
+  initNearbyScroll(filtered); // pass filtered list — _libNearbyResult stays intact for selectNearbyStore
   if (_outerTilesPromise) _addLoadingMoreFooter();
 }
 
@@ -7375,11 +7368,6 @@ async function _selectLibSuggestion(idx) {
   _libSuggestions = [];
   _renderLibSuggestions();
   document.getElementById('nearby-location-input').value = '';
-  // Restore full list before lookup in case a name filter was active
-  if (_libNearbyResultFull) {
-    _libNearbyResult = _libNearbyResultFull;
-    _libNearbyResultFull = null;
-  }
   // Select this store directly — same as tapping it in the nearby list
   await selectNearbyStore(s.place_id || s.osm_id);
 }
@@ -7508,13 +7496,11 @@ function _mergeIntoCache(stores) {
   _storeLocationCache = (_storeLocationCache || []).concat(newStores);
 }
 
-// Called when outer tiles finish loading — re-runs any active name filter
+// Called when outer tiles finish loading — always rebuild _libNearbyResult,
+// then re-run any active name filter or refresh the visible list
 function _onOuterTilesLoaded() {
   _removeLoadingMoreFooter();
-  const activeQuery = document.getElementById('nearby-location-input')?.value?.trim();
-  if (!activeQuery) return;
-  // Re-run the name filter with the now-complete cache
-  // First recompute _libNearbyResult from the full cache sorted by distance
+  // Always rebuild _libNearbyResult with the now-complete cache
   if (_userLocationCache) {
     const { lat, lng } = _userLocationCache;
     const withDist = (_storeLocationCache || [])
@@ -7527,7 +7513,12 @@ function _onOuterTilesLoaded() {
       .map(s => ({ place_id: s.osm_id, name: s.name, address: s.address,
                    lat: s.lat, lng: s.lng, distance: s.distance, chain_id: s.chain_id }));
   }
-  _applyNameFilter(activeQuery);
+  const activeQuery = document.getElementById('nearby-location-input')?.value?.trim();
+  if (activeQuery) {
+    _applyNameFilter(activeQuery);
+  } else if (document.getElementById('modal-library')?.classList.contains('open')) {
+    renderNearbyList(); // refresh visible list with newly loaded stores
+  }
 }
 
 function _addLoadingMoreFooter() {
@@ -7767,10 +7758,13 @@ async function findNearbyStores() {
 
 // ── Infinite scroll rendering ──────────────────────────────────────────────
 
-function initNearbyScroll() {
+let _nearbyRenderList = null; // the list currently being rendered by initNearbyScroll
+
+function initNearbyScroll(overrideList) {
   // Disconnect old observer if any
   if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
 
+  _nearbyRenderList = overrideList || _libNearbyResult;
   _nearbyPage = 0;
   const container = document.getElementById('nearby-list-container');
   container.innerHTML = '<div class="nearby-list" id="nearby-list-inner"></div>';
@@ -7786,8 +7780,9 @@ function initNearbyScroll() {
 }
 
 function renderNearbyPage() {
+  const list = _nearbyRenderList || _libNearbyResult;
   const start = _nearbyPage * NEARBY_PAGE_SIZE;
-  const slice = _libNearbyResult.slice(start, start + NEARBY_PAGE_SIZE);
+  const slice = list.slice(start, start + NEARBY_PAGE_SIZE);
   if (!slice.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
     return;
@@ -7822,7 +7817,7 @@ function renderNearbyPage() {
   _nearbyPage++;
 
   // Stop observing if we've rendered everything
-  if (_nearbyPage * NEARBY_PAGE_SIZE >= _libNearbyResult.length) {
+  if (_nearbyPage * NEARBY_PAGE_SIZE >= list.length) {
     if (_nearbyObserver) { _nearbyObserver.disconnect(); _nearbyObserver = null; }
   }
 }
