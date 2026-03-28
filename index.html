@@ -6292,6 +6292,7 @@ function renderTopbar(){
 }
 
 function renderListScreen(){
+  invalidateAisleIndexCache(); // kwMatch results are cached per render pass
   const cont=document.getElementById('list-content');
   const store=getActiveStore();
   if(!store){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -10704,15 +10705,24 @@ function getActiveListDoc() {
 }
 
 // V2: get aisleIndex for an item in the current store context
-// Checks per-item corrections first, then falls back to kwMatch
+// Checks per-item corrections first, then falls back to kwMatch.
+// Results are memoized per render cycle in _aisleIndexCache, which is
+// cleared by invalidateAisleIndexCache() on any state change that
+// affects categorisation (store edits, corrections, store switch).
+const _aisleIndexCache = new Map();
+function invalidateAisleIndexCache() { _aisleIndexCache.clear(); }
 function getAisleIndex(item, storeId) {
   if (_isV2()) {
     if (item.corrections && item.corrections[storeId] !== undefined) {
       return item.corrections[storeId];
     }
+    const cacheKey = storeId + '\x00' + item.name;
+    if (_aisleIndexCache.has(cacheKey)) return _aisleIndexCache.get(cacheKey);
     const store = state.stores.find(s => s.id === storeId);
     if (!store) return null;
-    return kwMatch(normalise(normalizeGroceryInput(item.name)), store.aisles);
+    const result = kwMatch(normalise(normalizeGroceryInput(item.name)), store.aisles);
+    _aisleIndexCache.set(cacheKey, result);
+    return result;
   }
   // V1: aisleIndex is stored on item
   return item.aisleIndex ?? null;
