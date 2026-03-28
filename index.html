@@ -1710,6 +1710,7 @@ async function loadUserData(uid) {
       const data = d.data();
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
+        const _prevAisles = JSON.stringify(state.stores[idx].aisles);
         state.stores[idx] = { ...state.stores[idx], name: data.name, color: data.color,
           aisles: data.aisles || [],
           library_location_id: data.library_location_id || null,
@@ -1717,7 +1718,12 @@ async function loadUserData(uid) {
           library_address: data.library_address || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null };
         if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
+        const _prevCorr = JSON.stringify(state.corrections[d.id]);
         state.corrections[d.id] = data.corrections || {};
+        if (JSON.stringify(data.aisles||[]) !== _prevAisles ||
+            JSON.stringify(data.corrections||{}) !== _prevCorr) {
+          invalidateAisleIndexCache();
+        }
         renderAll();
         setSyncDot('ok');
       }
@@ -1819,6 +1825,7 @@ async function _loadUserDataV2(uid) {
       const data = d.data();
       const idx = state.stores.findIndex(s => s.id === d.id);
       if (idx !== -1) {
+        const _prevAisles2 = JSON.stringify(state.stores[idx].aisles);
         state.stores[idx] = { ...state.stores[idx],
           name: data.name, color: data.color, aisles: data.aisles || [],
           library_location_id:     data.library_location_id     || null,
@@ -1826,7 +1833,12 @@ async function _loadUserDataV2(uid) {
           library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null,
         };
+        const _prevCorr2 = JSON.stringify(state.corrections[d.id]);
         state.corrections[d.id] = data.corrections || {};
+        if (JSON.stringify(data.aisles||[]) !== _prevAisles2 ||
+            JSON.stringify(data.corrections||{}) !== _prevCorr2) {
+          invalidateAisleIndexCache();
+        }
         renderAll();
         setSyncDot('ok');
       }
@@ -6292,7 +6304,6 @@ function renderTopbar(){
 }
 
 function renderListScreen(){
-  invalidateAisleIndexCache(); // kwMatch results are cached per render pass
   const cont=document.getElementById('list-content');
   const store=getActiveStore();
   if(!store){ cont.innerHTML=`<div class="empty"><div class="empty-icon"><svg width="2.5rem" height="2.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -9149,7 +9160,7 @@ async function saveStore(){
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
     if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
   }
-  closeModal('modal-store'); renderAll(); switchScreen('list'); showToast('Store saved ✓');
+  invalidateAisleIndexCache(); closeModal('modal-store'); renderAll(); switchScreen('list'); showToast('Store saved ✓');
   if (window._storeIsGenericDefault) {
     window._storeIsGenericDefault = false;
     setTimeout(() => openModal('modal-generic-warning'), 300);
@@ -10300,7 +10311,7 @@ function moveToAisle(aisleIndex){
   }
   // Update local keywords + vote upstream
   applyKeywordVote(store, norm, prevAisleIndex, aisleIndex);
-  closeModal('modal-move-item'); renderListScreen(); showToast('Correction saved ✓');
+  invalidateAisleIndexCache(); closeModal('modal-move-item'); renderListScreen(); showToast('Correction saved ✓');
   persistActiveStore();
 }
 
