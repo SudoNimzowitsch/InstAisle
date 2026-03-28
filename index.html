@@ -1344,6 +1344,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="changePassword()" id="btn-change-pass">Update Password</button>
     </div>
     <div class="divider"></div>
+    <!-- Shopping Suggestions toggle hidden pre-rollout — feature not ready
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div>
         <div style="font-size:.88rem;font-weight:600;margin-bottom:2px">Shopping Suggestions</div>
@@ -1360,6 +1361,7 @@ textarea.input{resize:vertical;min-height:90px;}
       </button>
     </div>
     <div class="divider"></div>
+    -->
     <div class="divider"></div>
     <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:8px;color:var(--muted)" onclick="closeModal('modal-profile');clearCacheAndReload()">🔄 Clear cache &amp; hard reload</button>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
@@ -2062,8 +2064,9 @@ window.loadUserDoc = async function() {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
       const d = snap.data();
-      if (typeof d.suggestionsEnabled === 'boolean')
-        state.suggestionsEnabled = d.suggestionsEnabled;
+      // Suggestions hidden pre-rollout — ignore stored preference, keep off
+      // if (typeof d.suggestionsEnabled === 'boolean')
+      //   state.suggestionsEnabled = d.suggestionsEnabled;
       // Populate dismissed cache — filter to last 60 days
       const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
       const arr = d.dismissedSuggestions || [];
@@ -5159,7 +5162,7 @@ let state = {
   lists: {},
   corrections: {},
   editingStoreId: null,
-  suggestionsEnabled: true,
+  suggestionsEnabled: false, // hidden pre-rollout — toggle removed from profile modal
   _aislesFirstCheckDone: {},
   _historyCache: null,      // loaded once on login, array of history entries
   _dismissedCache: null,    // loaded once on login, Set of normalised item names
