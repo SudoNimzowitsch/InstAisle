@@ -8772,19 +8772,47 @@ function openSignBuilder() {
   choice.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:1100;background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;box-shadow:0 -4px 24px rgba(0,0,0,.2)';
   choice.innerHTML = `
     <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px"></div>
-    <div style="font-size:.88rem;font-weight:600;margin-bottom:14px;text-align:center">Build store from aisle signs</div>
-    <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="_signBuilderChoose('camera')">
-      📷 Take photos now <span style="font-size:.68rem;opacity:.7;display:block;margin-top:2px">GPS verified · goes straight to library</span>
-    </button>
-    <button class="btn btn-ghost btn-full" style="margin-bottom:10px" onclick="_signBuilderChoose('upload')">
-      📁 Upload from files <span style="font-size:.68rem;opacity:.7;display:block;margin-top:2px">Verified when you next shop there</span>
-    </button>
+    <div style="font-size:.88rem;font-weight:600;margin-bottom:16px;text-align:center">Build store from aisle signs</div>
+    <div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px">
+      <button style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;-webkit-tap-highlight-color:transparent"
+        onclick="_signBuilderChoose('camera')">
+        <div style="width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="#333"/>
+            <circle cx="12" cy="13" r="4" fill="#4a9eff"/>
+            <circle cx="12" cy="13" r="2.2" fill="#fff"/>
+          </svg>
+        </div>
+        <span style="font-size:.75rem;color:var(--muted)">Camera</span>
+        <span style="font-size:.62rem;color:var(--muted);opacity:.7;text-align:center;max-width:72px;line-height:1.3">GPS verified</span>
+      </button>
+      <button style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;-webkit-tap-highlight-color:transparent"
+        onclick="_signBuilderChoose('upload')">
+        <div style="width:56px;height:56px;border-radius:50%;background:#4a7eff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="rgba(255,255,255,.95)"/>
+          </svg>
+        </div>
+        <span style="font-size:.75rem;color:var(--muted)">Browse</span>
+        <span style="font-size:.62rem;color:var(--muted);opacity:.7;text-align:center;max-width:72px;line-height:1.3">Verify later</span>
+      </button>
+    </div>
     <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="document.getElementById('sign-builder-choice-sheet')?.remove()">Cancel</button>`;
+  // Dim backdrop — clicking it closes the sheet
+  const backdrop = document.createElement('div');
+  backdrop.id = 'sign-builder-backdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;z-index:1099;background:rgba(0,0,0,.45)';
+  backdrop.onclick = () => {
+    backdrop.remove();
+    document.getElementById('sign-builder-choice-sheet')?.remove();
+  };
+  document.body.appendChild(backdrop);
   document.body.appendChild(choice);
 }
 
 async function _signBuilderChoose(source) {
   document.getElementById('sign-builder-choice-sheet')?.remove();
+  document.getElementById('sign-builder-backdrop')?.remove();
   _signBuilder.source = source;
 
   if (source === 'upload') {
@@ -9120,6 +9148,8 @@ function _showSignBuilderSection(section) {
 
 function closeSignBuilder() {
   document.getElementById('modal-sign-builder')?.classList.remove('open');
+  document.getElementById('sign-builder-choice-sheet')?.remove();
+  document.getElementById('sign-builder-backdrop')?.remove();
 }
 
 // Compress a sign image to ~300KB max, 1024px wide — Gemini doesn't need more
@@ -11516,6 +11546,10 @@ boot();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/InstAisle/sw.js', { updateViaCache: 'none' }).catch(()=>{});
+    // Clean up any stray sign builder overlays from previous sessions
+    document.getElementById('sign-builder-choice-sheet')?.remove();
+    document.getElementById('sign-builder-backdrop')?.remove();
+    document.getElementById('modal-sign-builder')?.classList.remove('open');
   });
 }
 
