@@ -1229,7 +1229,10 @@ textarea.input{resize:vertical;min-height:90px;}
       <div class="divider" style="margin:0 0 10px"></div>
       <div class="section-header" style="margin-bottom:0;padding-bottom:10px">
         <span class="section-title">Aisles</span>
-        <button class="btn btn-sm btn-ghost" onclick="addAisleRow()">+ Aisle</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-sm btn-primary" onclick="openSignBuilder()" title="Build aisles from sign photos" style="font-size:.68rem;padding:3px 9px">📷 Signs</button>
+          <button class="btn btn-sm btn-ghost" onclick="addAisleRow()">+ Aisle</button>
+        </div>
       </div>
     </div>
     <!-- Scrollable aisle list -->
@@ -1237,6 +1240,43 @@ textarea.input{resize:vertical;min-height:90px;}
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
       <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign Builder Review Modal -->
+<div class="modal-overlay" id="modal-sign-builder" onclick="event.stopPropagation()" style="z-index:1002;display:flex;align-items:flex-end">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;width:100%;margin:0;padding-bottom:env(safe-area-inset-bottom,16px)">
+    <div class="modal-handle"></div>
+
+    <!-- Processing state -->
+    <div id="sign-builder-processing" style="display:none;padding:24px 0;text-align:center">
+      <div style="font-size:1.6rem;margin-bottom:12px">🏪</div>
+      <div style="font-size:.9rem;font-weight:600;margin-bottom:6px" id="sign-builder-status">Reading aisle signs…</div>
+      <div style="font-size:.72rem;color:var(--muted)" id="sign-builder-substatus">This usually takes under 10 seconds</div>
+    </div>
+
+    <!-- Name entry (camera path only) -->
+    <div id="sign-builder-name" style="display:none;padding:0 0 8px">
+      <div class="modal-title" style="margin-bottom:12px">What's this store called?</div>
+      <div class="input-wrap" style="margin-bottom:8px">
+        <label class="input-label">Store Name</label>
+        <input class="input" id="sign-builder-name-input" placeholder="e.g. Market Basket">
+      </div>
+      <div id="sign-builder-address-preview" style="font-size:.72rem;color:var(--muted);margin-bottom:16px;display:none"></div>
+      <button class="btn btn-primary btn-full" onclick="signBuilderConfirmName()">Continue →</button>
+      <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeSignBuilder()">Cancel</button>
+    </div>
+
+    <!-- Review state -->
+    <div id="sign-builder-review" style="display:none;flex:1;min-height:0;display:none;flex-direction:column">
+      <div class="modal-title" style="margin-bottom:4px" id="sign-builder-review-title">Review Your Store</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px" id="sign-builder-review-subtitle"></div>
+      <div style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px" id="sign-builder-aisle-list"></div>
+      <div style="padding-top:12px;border-top:1px solid var(--border);margin-top:8px">
+        <button class="btn btn-primary btn-full" onclick="signBuilderConfirmReview()" id="sign-builder-confirm-btn">✓ Build Store</button>
+        <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeSignBuilder()">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1294,6 +1334,9 @@ textarea.input{resize:vertical;min-height:90px;}
     <input type="file" id="file-input-browse" accept=".txt,.csv,.pdf" style="display:none" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
     <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
+    <!-- Store builder inputs — multi-image aisle sign capture -->
+    <input type="file" id="sign-capture-input" accept="image/*" capture="environment" style="display:none" multiple onchange="handleSignCapture(event)">
+    <input type="file" id="sign-upload-input" accept="image/*" style="display:none" multiple onchange="handleSignUpload(event)">
     <button class="btn btn-primary btn-full" onclick="processListInput()">✦ Organize list →</button>
   </div>
 </div>
@@ -1661,6 +1704,8 @@ async function loadUserData(uid) {
       library_chain_id:         d.library_chain_id         || null,
       library_address:          d.library_address          || null,
       library_aisles_snapshot:  d.library_aisles_snapshot  || null,
+      _userStoreId:             d._userStoreId             || null,
+      _libraryStatus:           d._libraryStatus           || null,
     });
     // Prefer new multi-list format; fall back to legacy flat array
     state.lists[snap.id] = d.lists_v2 || d.list || [];
@@ -1762,6 +1807,8 @@ async function _loadUserDataV2(uid) {
       library_chain_id:        d.library_chain_id        || null,
       library_address:         d.library_address         || null,
       library_aisles_snapshot: d.library_aisles_snapshot || null,
+      _userStoreId:            d._userStoreId            || null,
+      _libraryStatus:          d._libraryStatus          || null,
     });
     // Corrections are now per-item but keep legacy store corrections as fallback
     state.corrections[snap.id] = d.corrections || {};
@@ -2003,7 +2050,9 @@ async function seedDemoStore(uid) {
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
           library_address:         data.library_address         || null,
-          library_aisles_snapshot: data.library_aisles_snapshot || null };
+          library_aisles_snapshot: data.library_aisles_snapshot || null,
+          _userStoreId:            data._userStoreId            || null,
+          _libraryStatus:          data._libraryStatus          || null };
         state.lists[d.id] = data.lists_v2 || data.list || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -2322,6 +2371,8 @@ window.persistStore = async function(storeId) {
       library_chain_id:        store.library_chain_id        || null,
       library_address:         store.library_address         || null,
       library_aisles_snapshot: store.library_aisles_snapshot || null,
+      _userStoreId:            store._userStoreId            || null,
+      _libraryStatus:          store._libraryStatus          || null,
     };
     if (!_v2) {
       // V1 only: persist lists and corrections on the store doc
@@ -2913,7 +2964,9 @@ window.createStoreInFirestore = async function(storeData) {
     library_chain_id:    storeData.library_chain_id    || null,
     library_location_id: storeData.library_location_id || null,
     library_address:     storeData.library_address     || null,
-    library_aisles_snapshot: storeData.library_aisles_snapshot || null
+    library_aisles_snapshot: storeData.library_aisles_snapshot || null,
+    _userStoreId:        storeData._userStoreId        || null,
+    _libraryStatus:      storeData._libraryStatus      || null,
   });
   setSyncDot('ok');
   // subscribe
@@ -2929,7 +2982,9 @@ window.createStoreInFirestore = async function(storeData) {
           library_location_id:     data.library_location_id     || null,
           library_chain_id:        data.library_chain_id        || null,
           library_address:         data.library_address         || null,
-          library_aisles_snapshot: data.library_aisles_snapshot || null };
+          library_aisles_snapshot: data.library_aisles_snapshot || null,
+          _userStoreId:            data._userStoreId            || null,
+          _libraryStatus:          data._libraryStatus          || null };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
@@ -4546,6 +4601,132 @@ const STORE_LIBRARY = {
       ]
     },
 
+
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // BJ'S WHOLESALE CLUB
+    // Source: Curated — warehouse club, East Coast, ~240 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'bjs',
+      name: "BJ's Wholesale Club",
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#cc0000',
+      searchNames: ["bj's","bjs","bj's wholesale","bj's wholesale club"],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','fruit','berries'] },
+        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','turkey','pork chop','ribs','prime rib','tenderloin','hot dogs','sausage','bacon','ham','brisket','short rib'] },
+        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','charcuterie','cheese board','guacamole','hummus','salsa','rotisserie'] },
+        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','cheesecake'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','ice','frozen fruit','frozen shrimp','frozen fish'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
+        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried fruit'] },
+        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
+        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
+        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','bedding','towels','kitchen'] },
+        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SAM'S CLUB
+    // Source: Curated — Walmart-owned warehouse club, ~600 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'sams-club',
+      name: "Sam's Club",
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#0071ce',
+      searchNames: ["sam's club","sams club","sam's","samsclub"],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','fruit','berries'] },
+        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','turkey','pork chop','ribs','prime rib','tenderloin','hot dogs','sausage','bacon','ham','brisket'] },
+        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass'] },
+        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','charcuterie','cheese board','guacamole','hummus','salsa','rotisserie'] },
+        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','cheesecake'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','ice','frozen fruit','frozen shrimp','frozen fish'] },
+        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
+        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
+        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried fruit'] },
+        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
+        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
+        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
+        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','bedding','towels','kitchen'] },
+        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SHOPRITE
+    // Source: Curated — Wakefern cooperative, Northeast US, ~300 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'shoprite',
+      name: 'ShopRite',
+      confidence: 0.8,
+      type: 'grocery',
+      color: '#e31837',
+      searchNames: ['shoprite','shop rite','shoprite supermarkets'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','corn','grapes','berries','strawberry','blueberry','mango','pineapple','watermelon','herbs','cilantro','parsley','ginger','zucchini','squash','asparagus','raspberry','blackberry','grape','cantaloupe','peach','plum','pear','kiwi','cabbage','bell pepper','jalapeño','green beans','beets','radish','arugula','romaine','basil','mint','leek','eggplant','artichoke','brussels sprouts'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bacon','sausage','ham','salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab','chicken breast','chicken thighs','ground turkey','turkey breast','pork chops','ribs','chorizo','kielbasa','hot dogs','veal','duck','flank steak','skirt steak','chicken tenders','meatballs','halibut','mahi mahi','sea bass','trout','flounder','clams','mussels','oysters','calamari','smoked salmon','lox'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','mozzarella','parmesan','feta','brie','gouda','ricotta','cream','kefir','ice cream','whipped cream','plant-based butter','lactose-free milk','eggnog','buttermilk','chocolate milk','coffee creamer','non dairy creamer'] },
+        { name: 'Deli', keywords: ['deli turkey','deli ham','roast beef','salami','pepperoni','bologna','pastrami','corned beef','mortadella','prosciutto','swiss cheese','provolone','american cheese slices','prepared salads','potato salad','coleslaw','pasta salad','hummus','olives','pickles','rotisserie chicken','sub sandwiches','wraps','deli platters','tuna salad','egg salad','meatloaf','macaroni and cheese','mashed potatoes','soup','chili','spinach dip'] },
+        { name: 'Bakery & Bread', keywords: ['bread','sourdough','white bread','wheat bread','rye','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','danish','cake','cookies','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','donuts','cinnamon rolls','brownies','cupcakes','pie','pound cake','challah','pumpernickel'] },
+        { name: 'Cereal & Breakfast', keywords: ['cereal','granola','oatmeal','oats','granola bars','breakfast bars','pop tarts','syrup','maple syrup','pancake mix','waffle mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','captain crunch','instant oatmeal','honey','jam','jelly','peanut butter','almond butter','nutella','cream of wheat','dried fruit','raisins','cinnamon toast crunch'] },
+        { name: 'Canned & Jarred Goods', keywords: ['soup','chicken broth','vegetable broth','beef broth','canned tomato','tomato paste','tomato sauce','marinara','pasta sauce','canned beans','black beans','kidney beans','chickpeas','baked beans','canned corn','canned peas','canned fruit','canned tuna','canned salmon','sardines','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','pinto beans','cannellini beans','chicken noodle soup','bone broth','lentils','refried beans','tomato juice','cranberry sauce'] },
+        { name: 'Pasta, Rice & Grains', keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna','mac and cheese','noodles','rice','brown rice','white rice','quinoa','couscous','barley','stuffing mix','polenta','grits','jasmine rice','basmati rice','wild rice','oatmeal','rolled oats','farro','bulgur','rigatoni','orzo','egg noodles','ramen noodles','udon','soba','macaroni','bread crumbs','panko'] },
+        { name: 'Baking & Spices', keywords: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla extract','yeast','cornstarch','shortening','cake mix','brownie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','all-purpose flour','powdered sugar','cream of tartar','paprika','cumin','garlic powder','onion powder','oregano','basil','thyme','rosemary','nutmeg','turmeric','curry powder','cayenne','bay leaves','red pepper flakes'] },
+        { name: 'Condiments & Oils', keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing','olive oil','vegetable oil','canola oil','cooking spray','vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce','worcestershire','fish sauce','teriyaki','yellow mustard','dijon mustard','relish','ranch dressing','italian dressing','caesar dressing','thousand island','barbecue sauce','salsa','guacamole','hummus','pesto','pickles','olives','horseradish','honey mustard','jam','jelly','peanut butter','almond butter','maple syrup'] },
+        { name: 'Snacks & Chips', keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','mixed nuts','trail mix','dried fruit','raisins','fruit snacks','granola bars','cookies','candy','chocolate','gummies','beef jerky','oreos','gummy bears','licorice','hard candy','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','protein bars','energy bars'] },
+        { name: 'Beverages', keywords: ['soda','cola','sparkling water','seltzer','tonic water','water','spring water','bottled water','sports drinks','gatorade','energy drinks','red bull','monster','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','green tea','kombucha','coffee','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','diet soda','dr pepper','coconut water','tomato juice','v8','cold brew coffee','vitamin water'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','edamame','frozen vegetables','french fries','tater tots','frozen fruit','sorbet','gelato','frozen meals','frozen burritos','waffles','frozen waffles','frozen breakfast','frozen chicken','frozen fish','frozen shrimp','frozen dinners','pizza rolls','hot pockets','lean cuisine','frozen corn','frozen peas','frozen broccoli','frozen berries','frozen dumplings','pot stickers','pierogies','frozen pancakes','hash browns','onion rings','mozzarella sticks'] },
+        { name: 'Health & Beauty', keywords: ['vitamins','supplements','shampoo','conditioner','body wash','hand soap','bar soap','deodorant','antiperspirant','toothpaste','toothbrush','floss','mouthwash','lotion','moisturizer','sunscreen','razors','shaving cream','aspirin','ibuprofen','tylenol','cold medicine','cough drops','antacid','bandages','first aid','hand sanitizer','cotton balls','cotton swabs','pregnancy test','allergy medicine','naproxen','advil'] },
+        { name: 'Household & Paper', keywords: ['paper towels','toilet paper','napkins','paper plates','paper cups','trash bags','garbage bags','aluminum foil','plastic wrap','saran wrap','wax paper','freezer bags','sandwich bags','ziploc','storage bags','tissues','kleenex','parchment paper','plastic cups','straws','plastic utensils','light bulbs','batteries','laundry detergent','dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes','bleach','air freshener','sponges','scrub brush','rubber gloves','mop','broom'] },
+      ]
+    },
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ACME MARKETS
+    // Source: Curated — Albertsons banner, Mid-Atlantic/Northeast, ~170 locations
+    // ════════════════════════════════════════════════════════════════════════
+    {
+      id: 'acme',
+      name: 'Acme Markets',
+      confidence: 0.7,
+      type: 'grocery',
+      color: '#c41230',
+      searchNames: ['acme','acme markets','acme supermarket'],
+      dataSource: 'curated',
+      aisles: [
+        { name: 'Produce', keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','corn','grapes','berries','strawberry','blueberry','mango','pineapple','watermelon','herbs','cilantro','parsley','ginger','zucchini','squash','asparagus','raspberry','blackberry','grape','cantaloupe','peach','plum','pear','kiwi','cabbage','bell pepper','jalapeño','green beans','beets','radish','arugula','romaine','basil','mint','leek','eggplant','artichoke','brussels sprouts'] },
+        { name: 'Meat & Seafood', keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bacon','sausage','ham','salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab','chicken breast','chicken thighs','ground turkey','turkey breast','pork chops','ribs','chorizo','kielbasa','hot dogs','veal','duck','flank steak','skirt steak','chicken tenders','meatballs','halibut','mahi mahi','sea bass','trout','flounder','clams','mussels','oysters','smoked salmon','lox'] },
+        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','mozzarella','parmesan','feta','brie','gouda','ricotta','kefir','ice cream','whipped cream','coffee creamer','non dairy creamer'] },
+        { name: 'Deli', keywords: ['deli turkey','deli ham','roast beef','salami','pepperoni','bologna','pastrami','corned beef','prosciutto','prepared salads','potato salad','coleslaw','hummus','olives','pickles','rotisserie chicken','sub sandwiches','wraps','tuna salad','egg salad','soup','chili','macaroni and cheese','mashed potatoes'] },
+        { name: 'Bakery', keywords: ['bread','sourdough','white bread','wheat bread','rye','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','danish','cake','cookies','baguette','ciabatta','brioche','dinner rolls','hamburger buns','donuts','cinnamon rolls','brownies','cupcakes','pie','challah','pumpernickel'] },
+        { name: 'Cereal & Breakfast', keywords: ['cereal','granola','oatmeal','oats','granola bars','syrup','maple syrup','pancake mix','waffle mix','corn flakes','frosted flakes','cheerios','captain crunch','instant oatmeal','honey','jam','jelly','peanut butter','almond butter','nutella','cream of wheat','dried fruit','raisins'] },
+        { name: 'Canned Goods & Soups', keywords: ['soup','chicken broth','vegetable broth','beef broth','canned tomato','tomato paste','tomato sauce','marinara','pasta sauce','canned beans','black beans','kidney beans','chickpeas','baked beans','canned corn','canned peas','canned fruit','canned tuna','canned salmon','sardines','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','pinto beans','chicken noodle soup','bone broth','lentils','refried beans','tomato juice','cranberry sauce','bouillon'] },
+        { name: 'Pasta, Rice & Grains', keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna','mac and cheese','noodles','rice','brown rice','white rice','quinoa','couscous','barley','polenta','grits','jasmine rice','basmati rice','wild rice','oatmeal','rolled oats','farro','bulgur','rigatoni','orzo','egg noodles','ramen noodles','udon','soba','macaroni','bread crumbs','panko','stuffing mix'] },
+        { name: 'Baking & Spices', keywords: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla extract','yeast','cornstarch','shortening','cake mix','brownie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','all-purpose flour','powdered sugar','paprika','cumin','garlic powder','onion powder','oregano','basil','thyme','rosemary','nutmeg','turmeric','curry powder','cayenne','red pepper flakes'] },
+        { name: 'Condiments & Dressings', keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing','olive oil','vegetable oil','canola oil','cooking spray','vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce','worcestershire','fish sauce','teriyaki','yellow mustard','dijon mustard','relish','ranch dressing','italian dressing','caesar dressing','thousand island','barbecue sauce','salsa','guacamole','hummus','pesto','pickles','olives','jam','jelly','peanut butter','maple syrup'] },
+        { name: 'Snacks', keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','mixed nuts','trail mix','dried fruit','fruit snacks','granola bars','cookies','candy','chocolate','gummies','beef jerky','oreos','hard candy','microwave popcorn','kettle chips','veggie chips','pork rinds','protein bars','energy bars'] },
+        { name: 'Beverages', keywords: ['soda','cola','sparkling water','seltzer','water','spring water','bottled water','sports drinks','gatorade','energy drinks','red bull','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','green tea','kombucha','coffee','ground coffee','instant coffee','cold brew','hot tea','herbal tea','black tea','diet soda','coconut water','tomato juice','v8','vitamin water'] },
+        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','edamame','frozen vegetables','french fries','tater tots','frozen fruit','sorbet','gelato','frozen meals','frozen burritos','waffles','frozen breakfast','frozen chicken','frozen fish','frozen shrimp','frozen dinners','frozen corn','frozen peas','frozen broccoli','frozen berries','frozen dumplings','pot stickers','pierogies','hash browns','onion rings'] },
+        { name: 'Health, Beauty & Baby', keywords: ['vitamins','supplements','shampoo','conditioner','body wash','hand soap','deodorant','toothpaste','toothbrush','floss','mouthwash','lotion','moisturizer','sunscreen','razors','shaving cream','aspirin','ibuprofen','tylenol','cold medicine','cough drops','antacid','bandages','first aid','hand sanitizer','allergy medicine','diapers','wipes','baby food','baby formula'] },
+        { name: 'Household', keywords: ['paper towels','toilet paper','napkins','paper plates','trash bags','aluminum foil','plastic wrap','saran wrap','freezer bags','sandwich bags','ziploc','storage bags','tissues','parchment paper','light bulbs','batteries','laundry detergent','dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes','bleach','air freshener','sponges','rubber gloves','mop','broom'] },
+      ]
+    },
 
     // ════════════════════════════════════════════════════════════════════════
     // SPROUTS FARMERS MARKET
@@ -8557,6 +8738,464 @@ function discardScan(i){
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════════════════
+// STORE BUILDER FROM AISLE SIGN PHOTOS
+// ══════════════════════════════════════════════════════════════════════════
+
+const CF_BASE = 'https://us-central1-instaisle-e8d6b.cloudfunctions.net';
+
+// State for the sign builder flow
+let _signBuilder = {
+  source: null,        // 'camera' | 'upload'
+  gps: null,           // { lat, lng } from geolocation API
+  files: [],           // File objects selected by user
+  aisles: [],          // assembled aisles from processAisleSigns response
+  reverseGeocodedAddress: null,
+  gpsVerified: false,
+  storeName: '',
+  storeAddress: '',
+  storeCity: '',
+  storeState: '',
+};
+
+// ── Entry point — called from 📷 Signs button in store modal ──────────────
+function openSignBuilder() {
+  // Reset state
+  _signBuilder = { source:null, gps:null, files:[], aisles:[],
+                   reverseGeocodedAddress:null, gpsVerified:false,
+                   storeName:'', storeAddress:'', storeCity:'', storeState:'' };
+
+  // Show a small picker: camera or upload
+  const choice = document.createElement('div');
+  choice.id = 'sign-builder-choice-sheet';
+  choice.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:1100;background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;box-shadow:0 -4px 24px rgba(0,0,0,.2)';
+  choice.innerHTML = `
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px"></div>
+    <div style="font-size:.88rem;font-weight:600;margin-bottom:14px;text-align:center">Build store from aisle signs</div>
+    <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="_signBuilderChoose('camera')">
+      📷 Take photos now <span style="font-size:.68rem;opacity:.7;display:block;margin-top:2px">GPS verified · goes straight to library</span>
+    </button>
+    <button class="btn btn-ghost btn-full" style="margin-bottom:10px" onclick="_signBuilderChoose('upload')">
+      📁 Upload from files <span style="font-size:.68rem;opacity:.7;display:block;margin-top:2px">Verified when you next shop there</span>
+    </button>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="document.getElementById('sign-builder-choice-sheet')?.remove()">Cancel</button>`;
+  document.body.appendChild(choice);
+}
+
+async function _signBuilderChoose(source) {
+  document.getElementById('sign-builder-choice-sheet')?.remove();
+  _signBuilder.source = source;
+
+  if (source === 'upload') {
+    // Batch upload: ask for name + address first, then files
+    _signBuilderShowNameAddress();
+    return;
+  }
+
+  // Camera path: get GPS first, then open camera
+  _signBuilder.gps = await _getGPS().catch(() => null);
+  document.getElementById('sign-capture-input').value = '';
+  document.getElementById('sign-capture-input').click();
+}
+
+// Batch upload: collect name + address before file picker
+function _signBuilderShowNameAddress() {
+  // Reuse the sign builder modal with a custom inner layout
+  const modal = document.getElementById('modal-sign-builder');
+  _showSignBuilderSection('name');
+
+  const nameInput = document.getElementById('sign-builder-name-input');
+  nameInput.value = document.getElementById('store-name-input')?.value || '';
+  nameInput.placeholder = 'e.g. Market Basket';
+
+  // Swap the button to a two-field form for batch path
+  const addrPrev = document.getElementById('sign-builder-address-preview');
+  addrPrev.innerHTML = `
+    <div class="input-wrap" style="margin-bottom:8px;margin-top:8px">
+      <label class="input-label" style="font-size:.66rem">Address</label>
+      <input class="input" id="sign-builder-addr-input" placeholder="123 Main St" style="font-size:.82rem;padding:7px 10px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="input-wrap" style="flex:1">
+        <label class="input-label" style="font-size:.66rem">City</label>
+        <input class="input" id="sign-builder-city-input" placeholder="Attleboro" style="font-size:.82rem;padding:7px 10px">
+      </div>
+      <div class="input-wrap" style="width:64px">
+        <label class="input-label" style="font-size:.66rem">State</label>
+        <input class="input" id="sign-builder-state-input" placeholder="MA" maxlength="2" style="font-size:.82rem;padding:7px 10px;text-transform:uppercase">
+      </div>
+    </div>`;
+  addrPrev.style.display = '';
+
+  // Replace the Continue button to go to file picker instead
+  const btn = modal.querySelector('#sign-builder-name button.btn-primary');
+  if (btn) {
+    btn.textContent = 'Choose Photos →';
+    btn.onclick = () => {
+      const name = document.getElementById('sign-builder-name-input')?.value.trim();
+      const addr = document.getElementById('sign-builder-addr-input')?.value.trim();
+      const city = document.getElementById('sign-builder-city-input')?.value.trim();
+      const st   = document.getElementById('sign-builder-state-input')?.value.trim().toUpperCase();
+      if (!name) { showToast('Please enter a store name'); return; }
+      if (!addr || !city || !st) { showToast('Please enter a complete address'); return; }
+      _signBuilder.storeName    = name;
+      _signBuilder.storeAddress = addr;
+      _signBuilder.storeCity    = city;
+      _signBuilder.storeState   = st;
+      modal.classList.remove('open');
+      document.getElementById('sign-upload-input').value = '';
+      document.getElementById('sign-upload-input').click();
+    };
+  }
+
+  modal.classList.add('open');
+}
+
+// Called when camera path photos are captured
+function handleSignCapture(e) {
+  const files = [...(e.target.files || [])];
+  if (!files.length) return;
+  _signBuilder.files = files;
+  _runSignBuilder();
+}
+
+// Called when batch upload files are selected
+function handleSignUpload(e) {
+  const files = [...(e.target.files || [])];
+  if (!files.length) return;
+  _signBuilder.files = files;
+  document.getElementById('modal-sign-builder').classList.add('open');
+  _runSignBuilder();
+}
+
+// ── Core processing ───────────────────────────────────────────────────────
+async function _runSignBuilder() {
+  _showSignBuilderSection('processing');
+  const statusEl    = document.getElementById('sign-builder-status');
+  const substatusEl = document.getElementById('sign-builder-substatus');
+
+  statusEl.textContent    = `Processing ${_signBuilder.files.length} sign${_signBuilder.files.length!==1?'s':''}…`;
+  substatusEl.textContent = 'Compressing images…';
+
+  try {
+    // Compress all images client-side first
+    const images = await Promise.all(_signBuilder.files.map(f => _compressSignImage(f)));
+    substatusEl.textContent = 'Reading signs with AI…';
+
+    const user = window._currentUser;
+    if (!user) { closeSignBuilder(); showToast('Please sign in first'); return; }
+    const token = await user.getIdToken();
+
+    const res = await fetch(`${CF_BASE}/processAisleSigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        images,
+        chainId: pendingLibraryMeta?.chain_id || state.editingStoreId
+                  ? state.stores.find(s => s.id === state.editingStoreId)?.library_chain_id || null
+                  : null,
+        source:  _signBuilder.source,
+        gps:     _signBuilder.gps,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    _signBuilder.aisles                 = data.aisles || [];
+    _signBuilder.reverseGeocodedAddress = data.reverse_geocoded_address || null;
+    _signBuilder.gpsVerified            = data.gps_verified || false;
+
+    if (_signBuilder.aisles.length === 0) {
+      closeSignBuilder();
+      showToast('No aisle signs detected — try clearer photos');
+      return;
+    }
+
+    substatusEl.textContent = 'Done!';
+
+    // Camera path: ask for store name next
+    if (_signBuilder.source === 'camera') {
+      _showSignBuilderSection('name');
+      const nameInput = document.getElementById('sign-builder-name-input');
+      // Pre-fill from store name input if editing
+      nameInput.value = document.getElementById('store-name-input')?.value || '';
+      const addrEl = document.getElementById('sign-builder-address-preview');
+      if (_signBuilder.reverseGeocodedAddress) {
+        addrEl.textContent = '📍 ' + _signBuilder.reverseGeocodedAddress;
+        addrEl.style.display = '';
+      } else {
+        addrEl.style.display = 'none';
+      }
+    } else {
+      // Batch path: go straight to review
+      _showSignBuilderReview();
+    }
+
+  } catch (err) {
+    console.error('_runSignBuilder error:', err);
+    closeSignBuilder();
+    showToast('Error reading signs — please try again');
+  }
+}
+
+// Camera path: user entered store name, proceed to review
+function signBuilderConfirmName() {
+  const name = document.getElementById('sign-builder-name-input')?.value.trim();
+  if (!name) { showToast('Please enter a store name'); return; }
+  _signBuilder.storeName = name;
+  if (_signBuilder.reverseGeocodedAddress) {
+    // Parse "123 Main St, City, ST 12345" into components
+    const parts = _signBuilder.reverseGeocodedAddress.split(',').map(p => p.trim());
+    _signBuilder.storeAddress = parts[0] || '';
+    _signBuilder.storeCity    = parts[1] || '';
+    _signBuilder.storeState   = (parts[2] || '').split(' ')[0] || '';
+  }
+  _showSignBuilderReview();
+}
+
+// ── Review screen ─────────────────────────────────────────────────────────
+function _showSignBuilderReview() {
+  _showSignBuilderSection('review');
+  const aisles      = _signBuilder.aisles;
+  const total       = aisles.length;
+  const fromPhoto   = aisles.filter(a => a.source === 'photo').length;
+  const lowConf     = aisles.filter(a => a.confidence < 0.7).length;
+  const hasNumbers  = aisles.some(a => a.aisle_index !== null);
+
+  document.getElementById('sign-builder-review-title').textContent =
+    (_signBuilder.storeName || 'Your Store');
+  document.getElementById('sign-builder-review-subtitle').textContent =
+    `${total} aisle${total!==1?'s':''} · ${fromPhoto} from photos` +
+    (lowConf ? ` · ⚠️ ${lowConf} low confidence` : '');
+
+  const listEl = document.getElementById('sign-builder-aisle-list');
+  listEl.innerHTML = aisles.map((aisle, i) => {
+    const idx    = aisle.aisle_index !== null ? `A${aisle.aisle_index}` : `#${i+1}`;
+    const badge  = aisle.source === 'photo'
+      ? (aisle.confidence < 0.7 ? '⚠️' : '📷')
+      : '📋';
+    const kwPrev = (aisle.keywords || []).slice(0, 4).join(', ')
+      + (aisle.keywords.length > 4 ? ` +${aisle.keywords.length - 4}` : '');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.65rem;font-weight:700;color:var(--blue);flex-shrink:0;width:28px">${idx}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.8rem;font-weight:500">${esc(aisle.suggested_name || 'Aisle')}</div>
+        <div style="font-size:.65rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(kwPrev)}</div>
+      </div>
+      <span style="font-size:.8rem;flex-shrink:0">${badge}</span>
+    </div>`;
+  }).join('');
+
+  // Reordering note if no numbers
+  if (!hasNumbers) {
+    listEl.insertAdjacentHTML('afterbegin',
+      `<div style="font-size:.68rem;color:var(--muted);background:var(--bg);border-radius:6px;padding:7px 10px;margin-bottom:8px">
+        No aisle numbers detected. Aisles are ordered by upload sequence — you can reorder them in the store editor after building.
+      </div>`);
+  }
+}
+
+// ── Confirm → write store ─────────────────────────────────────────────────
+async function signBuilderConfirmReview() {
+  const btn = document.getElementById('sign-builder-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Building…';
+
+  try {
+    const user = window._currentUser;
+    if (!user) throw new Error('Not signed in');
+    const token = await user.getIdToken();
+
+    // Geocode address if batch path (no GPS coords yet)
+    let lat = _signBuilder.gps?.lat || null;
+    let lng = _signBuilder.gps?.lng || null;
+
+    if (!lat || !lng) {
+      // Geocode the user-supplied address via OpenCage
+      const addrStr = [_signBuilder.storeAddress, _signBuilder.storeCity, _signBuilder.storeState].filter(Boolean).join(', ');
+      if (addrStr) {
+        try {
+          const geo = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(addrStr)}&key=f6fbe292a2fa43be9860c7b05df59840&limit=1&no_annotations=1`);
+          const gdata = await geo.json();
+          const r = gdata?.results?.[0]?.geometry;
+          if (r) { lat = r.lat; lng = r.lng; }
+        } catch(e) { console.warn('geocode failed:', e); }
+      }
+    }
+
+    if (!lat || !lng) {
+      showToast('Could not determine store location — please check the address');
+      btn.disabled = false;
+      btn.textContent = '✓ Build Store';
+      return;
+    }
+
+    // Get chain_id from current store context
+    const chainId = pendingLibraryMeta?.chain_id
+      || (state.editingStoreId
+          ? state.stores.find(s => s.id === state.editingStoreId)?.library_chain_id
+          : null)
+      || null;
+
+    const res = await fetch(`${CF_BASE}/assembleStore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        userId:      user.uid,
+        name:        _signBuilder.storeName,
+        address:     _signBuilder.storeAddress,
+        city:        _signBuilder.storeCity,
+        state:       _signBuilder.storeState,
+        lat, lng,
+        chainId,
+        source:      _signBuilder.source,
+        gpsVerified: _signBuilder.gpsVerified,
+        aisles:      _signBuilder.aisles.map((a, i) => ({
+          aisle_index: a.aisle_index ?? (i + 1),
+          name:        a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
+          keywords:    a.keywords || [],
+          source:      a.source || 'photo',
+        })),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `Server error ${res.status}`);
+    }
+
+    const result = await res.json();
+
+    // Store the user store ID and library status so saveStore can persist them
+    window._pendingUserStoreId   = result.store_id;
+    window._pendingLibraryStatus = result.library_status;
+
+    // Apply the assembled aisles into tempAisles so the store modal reflects them
+    tempAisles = _signBuilder.aisles.map((a, i) => ({
+      name:     a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
+      keywords: [...(a.keywords || [])],
+      aisle_index: a.aisle_index ?? (i + 1),
+    }));
+
+    // Update store name if it was set here
+    if (_signBuilder.storeName) {
+      const nameInp = document.getElementById('store-name-input');
+      if (nameInp) nameInp.value = _signBuilder.storeName;
+    }
+
+    closeSignBuilder();
+    renderAisleRows();
+
+    // If editing an existing store, auto-save
+    if (state.editingStoreId) _autoSaveStore();
+
+    const msg = result.library_status === 'published'
+      ? `Store built ✓ Added to the InstAisle library`
+      : `Store built ✓ Will join the library when you shop there`;
+    showToast(msg);
+
+  } catch(err) {
+    console.error('signBuilderConfirmReview error:', err);
+    btn.disabled = false;
+    btn.textContent = '✓ Build Store';
+    showToast('Error building store — please try again');
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function _showSignBuilderSection(section) {
+  const modal = document.getElementById('modal-sign-builder');
+  modal.classList.add('open');
+  ['processing', 'name', 'review'].forEach(s => {
+    const el = document.getElementById('sign-builder-' + s);
+    if (el) el.style.display = s === section ? (s === 'review' ? 'flex' : 'block') : 'none';
+  });
+}
+
+function closeSignBuilder() {
+  document.getElementById('modal-sign-builder')?.classList.remove('open');
+}
+
+// Compress a sign image to ~300KB max, 1024px wide — Gemini doesn't need more
+function _compressSignImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const MAX = 1024;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const scale = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], mimeType: 'image/jpeg' });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Get device GPS coordinates (resolves to null if unavailable/denied)
+function _getGPS() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      ()  => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  });
+}
+
+// ── Check-off hook for batch-upload store verification ────────────────────
+// Called from toggleCheck() when an item is newly checked.
+// If the current store is in 'pending' library status, fire verifyStoreByCheckoff.
+async function _maybeVerifyStoreOnCheckoff(store) {
+  if (!store || !store._userStoreId) return;
+  if (store._libraryStatus !== 'pending') return;
+  if (!navigator.geolocation) return;
+
+  const gps = await _getGPS().catch(() => null);
+  if (!gps) return;
+
+  const user = window._currentUser;
+  if (!user) return;
+  const token = await user.getIdToken().catch(() => null);
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${CF_BASE}/verifyStoreByCheckoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ userId: user.uid, storeId: store._userStoreId, gps }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.verified) {
+      store._libraryStatus = 'published';
+      showToast('📍 Store added to the InstAisle library!');
+    }
+  } catch(e) {
+    // Silent fail — verification is best-effort
+    console.warn('verifyStoreByCheckoff:', e.message);
+  }
+}
+// ══════════════════════════════════════════════════════════════════════════
+
 async function scanAisleImage(b64, mime){
   const user=window._currentUser;
   if(!user){ showToast('Please sign in first'); return []; }
@@ -9145,8 +9784,12 @@ async function saveStore(){
       library_chain_id:    pendingLibraryMeta?.chain_id    || null,
       library_location_id: pendingLibraryMeta?.location_id || null,
       library_address:     pendingLibraryMeta?.address     || null,
-      library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null
+      library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null,
+      _userStoreId:  window._pendingUserStoreId  || null,
+      _libraryStatus: window._pendingLibraryStatus || null,
     };
+    window._pendingUserStoreId  = null;
+    window._pendingLibraryStatus = null;
     state.stores.push(newStore);
     if (!_isV2()) { state.lists[id]=[]; migrateListsIfNeeded(id); }
     state.corrections[id]={};
@@ -10102,6 +10745,9 @@ function toggleCheck(idx){
     });
     var checkedCount = aisleItems.filter(function(i){ return i.checked; }).length;
     if (checkedCount === 1) window.maybeSuggest(store, aisleKey);
+
+    // Batch-upload store verification — fire-and-forget, no await
+    _maybeVerifyStoreOnCheckoff(store);
   }
 
   // Schedule aisle collapse if this check completed the aisle
