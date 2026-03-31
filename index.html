@@ -959,6 +959,17 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<!-- Remove Cluster Confirm -->
+<div class="modal-overlay" id="modal-remove-cluster" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center;font-size:1.1rem">Remove Keywords?</div>
+    <p class="text-muted" style="text-align:center;margin-bottom:20px;font-size:.88rem" id="remove-cluster-msg"></p>
+    <button class="btn btn-danger btn-full" onclick="_confirmRemoveCluster()" style="margin-bottom:8px">Remove</button>
+    <button class="btn btn-ghost btn-full" onclick="_cancelRemoveCluster()">Cancel</button>
+  </div>
+</div>
+
 
 <!-- Uncheck All Confirm -->
 <div class="modal-overlay" id="modal-uncheck-all" style="z-index:200">
@@ -10052,13 +10063,11 @@ function renderAisleRows(){
       </div>
       <div class="aisle-drag-body">
       <div class="aisle-row-body" style="display:${_exp?'block':'none'}">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer" onclick="toggleKwSection(${i})">
-        <div style="font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Keywords</div>
-        <span id="kw-toggle-${i}" style="font-size:.7rem;color:var(--muted);line-height:1">＋</span>
+      <div style="margin-bottom:8px">
+        <div id="cluster-pills-${i}">${renderClusterPills(i)}</div>
       </div>
-      <div id="kw-collapsible-${i}" style="display:none">
-        <div class="chips" id="chips-${i}" data-aisle="${i}">${renderChips(i)}</div>
-      </div>
+      <!-- Hidden chips container — maintains removeKw/addKw data contract -->
+      <div class="chips" id="chips-${i}" data-aisle="${i}" style="display:none">${renderChips(i)}</div>
       <div class="kw-section">
         <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="openTemplatePicker(${i})">
           ✦ Import from template
@@ -10164,7 +10173,120 @@ function toggleAdvancedKw(i) {
   if (btn) btn.textContent = open ? 'More options ▾' : 'More options ▴';
 }
 
+// ── Cluster view for aisle keywords ─────────────────────────────────────
+// Groups an aisle's keywords back into their source clusters for display.
+// Keywords that don't belong to any cluster go into an "Other" group.
+// Returns: [{ clusterName, keywords[], isOther }]
+function _getAisleClusters(aisleIdx) {
+  const aisle = tempAisles[aisleIdx];
+  if (!aisle || !aisle.keywords?.length) return [];
+
+  const aisleKws = new Set(aisle.keywords.map(k => k.toLowerCase().trim()));
+  const claimed  = new Set();
+  const result   = [];
+
+  // Walk all templates and their clusters — find clusters with significant
+  // overlap with this aisle's keyword set
+  for (const template of GROCERY_TEMPLATES) {
+    for (const cluster of template.clusters) {
+      const clusterKws = cluster.keywords.map(k => k.toLowerCase());
+      const hits = clusterKws.filter(k => aisleKws.has(k));
+      // Require at least 3 hits OR >20% of the cluster to count as present
+      if (hits.length >= 3 || hits.length / clusterKws.length >= 0.2) {
+        result.push({
+          clusterName: cluster.name,
+          templateName: template.name,
+          keywords: hits,
+          isOther: false,
+        });
+        hits.forEach(k => claimed.add(k));
+      }
+    }
+  }
+
+  // Remaining keywords not claimed by any cluster → "Other"
+  const unclaimed = aisle.keywords.filter(k => !claimed.has(k.toLowerCase().trim()));
+  if (unclaimed.length > 0) {
+    result.push({ clusterName: 'Other', templateName: null, keywords: unclaimed, isOther: true });
+  }
+
+  return result;
+}
+
+// Render cluster pills for an aisle — shows cluster names with keyword count
+// and a remove button that removes all keywords in that cluster from the aisle.
+function renderClusterPills(i) {
+  const clusters = _getAisleClusters(i);
+  if (!clusters.length) {
+    return `<span style="font-size:.68rem;color:var(--muted)">No keywords yet — import from template or scan a photo</span>`;
+  }
+
+  return clusters.map((c, ci) => {
+    const label   = esc(c.clusterName);
+    const count   = c.keywords.length;
+    const bgColor = c.isOther ? 'var(--bg)' : 'var(--card)';
+    const border  = c.isOther ? '1px dashed var(--border)' : '1px solid var(--border)';
+    return `<div style="display:inline-flex;align-items:center;gap:5px;margin:2px 3px 2px 0;
+                        background:${bgColor};border:${border};border-radius:16px;
+                        padding:3px 8px 3px 10px;font-size:.7rem;color:var(--text)">
+      <span title="${count} keyword${count!==1?'s':''}">${label}</span>
+      <span style="font-size:.62rem;color:var(--muted);margin-left:1px">${count}</span>
+      <span style="cursor:pointer;color:var(--muted);font-size:.75rem;padding:0 1px;line-height:1"
+            title="Remove ${label} keywords"
+            onclick="event.stopPropagation();_removeClusterFromAisle(${i},${ci})">×</span>
+    </div>`;
+  }).join('');
+}
+
+function _removeClusterFromAisle(aisleIdx, clusterIdx) {
+  const clusters = _getAisleClusters(aisleIdx);
+  const cluster  = clusters[clusterIdx];
+  if (!cluster) return;
+
+  // Store pending removal for the confirm handler
+  _pendingClusterRemoval = { aisleIdx, clusterIdx, cluster };
+
+  // Show confirmation modal
+  const modal = document.getElementById('modal-remove-cluster');
+  document.getElementById('remove-cluster-msg').textContent =
+    `Remove "${cluster.clusterName}" and its ${cluster.keywords.length} keyword${cluster.keywords.length !== 1 ? 's' : ''} from this aisle?`;
+  modal.classList.add('open');
+}
+
+let _pendingClusterRemoval = null;
+
+function _confirmRemoveCluster() {
+  const modal = document.getElementById('modal-remove-cluster');
+  modal.classList.remove('open');
+  if (!_pendingClusterRemoval) return;
+  const { aisleIdx, cluster } = _pendingClusterRemoval;
+  _pendingClusterRemoval = null;
+
+  const toRemove = new Set(cluster.keywords.map(k => k.toLowerCase().trim()));
+  tempAisles[aisleIdx].keywords = tempAisles[aisleIdx].keywords
+    .filter(k => !toRemove.has(k.toLowerCase().trim()));
+  const pillsEl = document.getElementById('cluster-pills-' + aisleIdx);
+  if (pillsEl) pillsEl.innerHTML = renderClusterPills(aisleIdx);
+  refreshChips(aisleIdx);
+  if (state.editingStoreId) _autoSaveStore();
+  showToast(`Removed "${cluster.clusterName}" keywords`);
+}
+
+function _cancelRemoveCluster() {
+  document.getElementById('modal-remove-cluster').classList.remove('open');
+  _pendingClusterRemoval = null;
+}
+
 function toggleKwSection(i) {
+  const panel  = document.getElementById('kw-collapsible-' + i);
+  const toggle = document.getElementById('kw-toggle-' + i);
+  if (!panel) return;
+  const open = panel.style.display === 'block';
+  panel.style.display  = open ? 'none' : 'block';
+  toggle.textContent   = open ? '＋' : '－';
+}
+
+
   const panel  = document.getElementById('kw-collapsible-' + i);
   const toggle = document.getElementById('kw-toggle-' + i);
   if (!panel) return;
@@ -10181,8 +10303,9 @@ function renderChips(i){
 
 function refreshChips(i){
   const el=document.getElementById('chips-'+i);
-  if(!el) return;
-  el.innerHTML=renderChips(i);
+  if(el) el.innerHTML=renderChips(i);
+  const pillsEl=document.getElementById('cluster-pills-'+i);
+  if(pillsEl) pillsEl.innerHTML=renderClusterPills(i);
 }
 
 function switchKwTab(i, tab){
