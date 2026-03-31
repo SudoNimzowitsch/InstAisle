@@ -10704,12 +10704,52 @@ async function signBuilderConfirmReview() {
     window._pendingUserStoreId   = result.store_id;
     window._pendingLibraryStatus = result.library_status;
 
-    // Apply the assembled aisles into tempAisles so the store modal reflects them
-    tempAisles = _signBuilder.aisles.map((a, i) => ({
-      name:     a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
-      keywords: [...(a.keywords || [])],
+    // Apply the assembled aisles into tempAisles
+    // In edit mode: merge with existing aisles (additive — preserve uncovered aisles)
+    // In new store mode: replace entirely
+    const newAisles = _signBuilder.aisles.map((a, i) => ({
+      name:        a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
+      keywords:    [...(a.keywords || [])],
       aisle_index: a.aisle_index ?? (i + 1),
     }));
+
+    if (state.editingStoreId) {
+      // Merge: update existing aisles by aisle_index where matched, append new ones
+      const updatedIndices = new Set();
+      for (const newAisle of newAisles) {
+        const existingIdx = tempAisles.findIndex(a =>
+          a.aisle_index !== undefined && a.aisle_index === newAisle.aisle_index
+        );
+        if (existingIdx !== -1) {
+          // Update in place — photo data wins over old data
+          tempAisles[existingIdx] = { ...tempAisles[existingIdx], ...newAisle };
+          updatedIndices.add(existingIdx);
+        } else {
+          // No matching index — insert at the correct position if numbered,
+          // or append if not
+          if (newAisle.aisle_index !== null) {
+            const insertAt = tempAisles.findIndex(a =>
+              (a.aisle_index ?? Infinity) > newAisle.aisle_index
+            );
+            if (insertAt === -1) tempAisles.push(newAisle);
+            else tempAisles.splice(insertAt, 0, newAisle);
+          } else {
+            tempAisles.push(newAisle);
+          }
+        }
+      }
+      const updatedCount = newAisles.length;
+      const preservedCount = tempAisles.length - updatedCount;
+      showToast(`Updated ${updatedCount} aisle${updatedCount !== 1 ? 's' : ''} ✓` +
+        (preservedCount > 0 ? ` · ${preservedCount} unchanged` : ''));
+    } else {
+      // New store — replace entirely
+      tempAisles = newAisles;
+      const msg = result.library_status === 'published'
+        ? `Store built ✓ Added to the InstAisle library`
+        : `Store built ✓ Will join the library when you shop there`;
+      showToast(msg);
+    }
 
     // Update store name if it was set here
     if (_signBuilder.storeName) {
@@ -10722,11 +10762,6 @@ async function signBuilderConfirmReview() {
 
     // If editing an existing store, auto-save
     if (state.editingStoreId) _autoSaveStore();
-
-    const msg = result.library_status === 'published'
-      ? `Store built ✓ Added to the InstAisle library`
-      : `Store built ✓ Will join the library when you shop there`;
-    showToast(msg);
 
   } catch(err) {
     console.error('signBuilderConfirmReview error:', err);
