@@ -10828,30 +10828,49 @@ async function signBuilderConfirmReview() {
     }));
 
     if (state.editingStoreId) {
-      // Merge: update existing aisles by aisle_index where matched, append new ones
-      const updatedIndices = new Set();
+      // Merge: update existing aisles by aisle_index where matched,
+      // fall back to position-based replacement when aisle_index is absent
+      // (stores built from templates don't have aisle_index set)
+      const usedPositions = new Set();
+
       for (const newAisle of newAisles) {
-        const existingIdx = tempAisles.findIndex(a =>
-          a.aisle_index !== undefined && a.aisle_index === newAisle.aisle_index
-        );
-        if (existingIdx !== -1) {
-          // Update in place — photo data wins over old data
-          tempAisles[existingIdx] = { ...tempAisles[existingIdx], ...newAisle };
-          updatedIndices.add(existingIdx);
-        } else {
-          // No matching index — insert at the correct position if numbered,
-          // or append if not
-          if (newAisle.aisle_index !== null) {
-            const insertAt = tempAisles.findIndex(a =>
-              (a.aisle_index ?? Infinity) > newAisle.aisle_index
-            );
-            if (insertAt === -1) tempAisles.push(newAisle);
-            else tempAisles.splice(insertAt, 0, newAisle);
-          } else {
-            tempAisles.push(newAisle);
-          }
+        // First try: match by aisle_index
+        const byIndex = newAisle.aisle_index !== null
+          ? tempAisles.findIndex((a, pos) =>
+              !usedPositions.has(pos) &&
+              a.aisle_index !== undefined &&
+              a.aisle_index !== null &&
+              a.aisle_index === newAisle.aisle_index
+            )
+          : -1;
+
+        if (byIndex !== -1) {
+          tempAisles[byIndex] = { ...tempAisles[byIndex], ...newAisle };
+          usedPositions.add(byIndex);
+          continue;
         }
+
+        // Second try: match by position (aisle_index - 1 maps to array position)
+        // e.g. sign photo for aisle 3 updates tempAisles[2]
+        const byPosition = newAisle.aisle_index !== null
+          ? newAisle.aisle_index - 1
+          : -1;
+
+        if (byPosition >= 0 && byPosition < tempAisles.length && !usedPositions.has(byPosition)) {
+          tempAisles[byPosition] = { ...tempAisles[byPosition], ...newAisle };
+          usedPositions.add(byPosition);
+          continue;
+        }
+
+        // No match — this is a genuinely new aisle, insert in order
+        const insertAt = tempAisles.findIndex((a, pos) =>
+          !usedPositions.has(pos) &&
+          (a.aisle_index ?? Infinity) > (newAisle.aisle_index ?? Infinity)
+        );
+        if (insertAt === -1) tempAisles.push(newAisle);
+        else tempAisles.splice(insertAt, 0, newAisle);
       }
+
       const updatedCount = newAisles.length;
       const preservedCount = tempAisles.length - updatedCount;
       showToast(`Updated ${updatedCount} aisle${updatedCount !== 1 ? 's' : ''} ✓` +
