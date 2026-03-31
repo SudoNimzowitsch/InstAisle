@@ -10238,6 +10238,8 @@ function renderClusterPills(i) {
   }).join('');
 }
 
+let _pendingClusterRemoval = null;
+
 function _removeClusterFromAisle(aisleIdx, clusterIdx) {
   const clusters = _getAisleClusters(aisleIdx);
   const cluster  = clusters[clusterIdx];
@@ -10252,8 +10254,6 @@ function _removeClusterFromAisle(aisleIdx, clusterIdx) {
     `Remove "${cluster.clusterName}" and its ${cluster.keywords.length} keyword${cluster.keywords.length !== 1 ? 's' : ''} from this aisle?`;
   modal.classList.add('open');
 }
-
-let _pendingClusterRemoval = null;
 
 function _confirmRemoveCluster() {
   const modal = document.getElementById('modal-remove-cluster');
@@ -10278,15 +10278,6 @@ function _cancelRemoveCluster() {
 }
 
 function toggleKwSection(i) {
-  const panel  = document.getElementById('kw-collapsible-' + i);
-  const toggle = document.getElementById('kw-toggle-' + i);
-  if (!panel) return;
-  const open = panel.style.display === 'block';
-  panel.style.display  = open ? 'none' : 'block';
-  toggle.textContent   = open ? '＋' : '－';
-}
-
-
   const panel  = document.getElementById('kw-collapsible-' + i);
   const toggle = document.getElementById('kw-toggle-' + i);
   if (!panel) return;
