@@ -1246,7 +1246,8 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="store-modal-scroll">
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
-      <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px;margin-bottom:144px" onclick="saveStore()">Save Store</button>
+      <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+      <div id="store-fab-spacer" style="display:none;height:144px;flex-shrink:0"></div>
     </div>
   </div>
 </div>
@@ -13308,6 +13309,20 @@ function _showStoreFabs() {
   if (addItems) { addItems.textContent = '＋ Aisle';  addItems.onclick = addAisleRow; }
   fab.style.zIndex = '150';
   fab.style.display = 'flex';
+
+  // New store: Save button is visible — show a spacer beneath it so it
+  // can scroll above the FABs even when content is short.
+  // Edit store: Save button is hidden, last aisle is the bottom element —
+  // use scroll padding so aisles can scroll above the FABs.
+  const spacer   = document.getElementById('store-fab-spacer');
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  if (state.editingStoreId) {
+    if (spacer)   spacer.style.display = 'none';
+    if (scrollEl) scrollEl.style.paddingBottom = '144px';
+  } else {
+    if (spacer)   spacer.style.display = 'block';
+    if (scrollEl) scrollEl.style.paddingBottom = '36px';
+  }
 }
 
 function _hideStoreFabs() {
@@ -13318,7 +13333,10 @@ function _hideStoreFabs() {
   if (newList)  { newList.textContent  = '＋ New list';  newList.onclick  = topbarNewList; }
   if (addItems) { addItems.textContent = '＋ Add items'; addItems.onclick = openEditList; }
   fab.style.zIndex = '20';
-  // Only keep FABs visible if we're on the list screen
+  const spacer   = document.getElementById('store-fab-spacer');
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  if (spacer)   spacer.style.display = 'none';
+  if (scrollEl) scrollEl.style.paddingBottom = '36px';
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
 }
