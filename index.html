@@ -10552,21 +10552,42 @@ function _signBuilderShowNameAddress() {
   nameInput.value = document.getElementById('store-name-input')?.value || '';
   nameInput.placeholder = 'e.g. Market Basket';
 
+  // Prefill address from existing store when editing
+  let prefillAddr = '', prefillCity = '', prefillState = '';
+  if (state.editingStoreId) {
+    const existingStore = (state.stores || []).find(s => s.id === state.editingStoreId);
+    if (existingStore) {
+      if (existingStore.address) {
+        // User-contributed store — has raw fields
+        prefillAddr  = existingStore.address || '';
+        prefillCity  = existingStore.city    || '';
+        prefillState = existingStore.state   || '';
+      } else if (existingStore.library_address) {
+        // Library store — parse "123 Main St, City, ST 01234" or "123 Main St, City, ST"
+        const parts = existingStore.library_address.split(',').map(s => s.trim());
+        prefillAddr  = parts[0] || '';
+        prefillCity  = parts[1] || '';
+        // State may be "MA 01234" — take just the state code
+        prefillState = (parts[2] || '').split(' ')[0] || '';
+      }
+    }
+  }
+
   // Swap the button to a two-field form for batch path
   const addrPrev = document.getElementById('sign-builder-address-preview');
   addrPrev.innerHTML = `
     <div class="input-wrap" style="margin-bottom:8px;margin-top:8px">
       <label class="input-label" style="font-size:.66rem">Address</label>
-      <input class="input" id="sign-builder-addr-input" placeholder="123 Main St" style="font-size:.82rem;padding:7px 10px">
+      <input class="input" id="sign-builder-addr-input" placeholder="123 Main St" style="font-size:.82rem;padding:7px 10px" value="${esc(prefillAddr)}">
     </div>
     <div style="display:flex;gap:8px">
       <div class="input-wrap" style="flex:1">
         <label class="input-label" style="font-size:.66rem">City</label>
-        <input class="input" id="sign-builder-city-input" placeholder="Attleboro" style="font-size:.82rem;padding:7px 10px">
+        <input class="input" id="sign-builder-city-input" placeholder="Attleboro" style="font-size:.82rem;padding:7px 10px" value="${esc(prefillCity)}">
       </div>
       <div class="input-wrap" style="width:64px">
         <label class="input-label" style="font-size:.66rem">State</label>
-        <input class="input" id="sign-builder-state-input" placeholder="MA" maxlength="2" style="font-size:.82rem;padding:7px 10px;text-transform:uppercase">
+        <input class="input" id="sign-builder-state-input" placeholder="MA" maxlength="2" style="font-size:.82rem;padding:7px 10px;text-transform:uppercase" value="${esc(prefillState)}">
       </div>
     </div>`;
   addrPrev.style.display = '';
