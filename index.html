@@ -1717,6 +1717,9 @@ async function loadUserData(uid) {
       library_aisles_snapshot:  d.library_aisles_snapshot  || null,
       _userStoreId:             d._userStoreId             || null,
       _libraryStatus:           d._libraryStatus           || null,
+      address:                  d.address                  || null,
+      city:                     d.city                     || null,
+      state:                    d.state                    || null,
     });
     // Prefer new multi-list format; fall back to legacy flat array
     state.lists[snap.id] = d.lists_v2 || d.list || [];
@@ -2384,6 +2387,10 @@ window.persistStore = async function(storeId) {
       library_aisles_snapshot: store.library_aisles_snapshot || null,
       _userStoreId:            store._userStoreId            || null,
       _libraryStatus:          store._libraryStatus          || null,
+      // User-contributed address fields (set by sign builder)
+      address:                 store.address                 || null,
+      city:                    store.city                    || null,
+      state:                   store.state                   || null,
     };
     if (!_v2) {
       // V1 only: persist lists and corrections on the store doc
@@ -10909,6 +10916,18 @@ async function signBuilderConfirmReview() {
     if (_signBuilder.storeName) {
       const nameInp = document.getElementById('store-name-input');
       if (nameInp) nameInp.value = _signBuilder.storeName;
+    }
+
+    // Persist address fields locally so they prefill next time
+    if (_signBuilder.storeAddress) {
+      const storeToUpdate = state.editingStoreId
+        ? state.stores.find(s => s.id === state.editingStoreId)
+        : null;
+      if (storeToUpdate) {
+        storeToUpdate.address = _signBuilder.storeAddress;
+        storeToUpdate.city    = _signBuilder.storeCity;
+        storeToUpdate.state   = _signBuilder.storeState;
+      }
     }
 
     closeSignBuilder();
