@@ -9942,6 +9942,7 @@ function openNewStore(){
   _storeSnapshot = null;
   renderStoreModal();
   openModal('modal-store');
+  _showStoreFabs();
 }
 
 function hasUnsavedStoreChanges() {
@@ -9979,6 +9980,7 @@ function unsavedSave() {
 function unsavedDiscard() {
   document.getElementById('modal-unsaved-changes').classList.remove('open');
   document.getElementById('modal-store').classList.remove('open');
+  _hideStoreFabs();
   const screen = document.querySelector('.screen.active')?.id?.replace('screen-','') || 'list';
   history.pushState({ type:'screen', screen }, '', '');
 }
@@ -10019,6 +10021,7 @@ function editStore(id){
   nameInput._autoSaveHandler = () => _autoSaveStore();
   nameInput.addEventListener('input', nameInput._autoSaveHandler);
   openModal('modal-store');
+  _showStoreFabs();
 }
 
 function renderStoreModal(){
@@ -13289,16 +13292,37 @@ function openModal(id) {
 function closeModal(id) {
   const el = document.getElementById(id);
   if (!el || !el.classList.contains('open')) return;
-  // Blur any focused input and kill all selections before closing
   if (document.activeElement && document.activeElement !== document.body) {
     document.activeElement.blur();
   }
   if (window.getSelection) window.getSelection().removeAllRanges();
   el.classList.remove('open');
-  // If the current history state is for this modal, go back
+  if (id === 'modal-store') _hideStoreFabs();
   if (history.state?.type === 'modal' && history.state?.modalId === id) {
     history.back();
   }
+}
+
+function _showStoreFabs() {
+  const fab = document.getElementById('fab-stack');
+  if (!fab) return;
+  const newList  = document.getElementById('fab-new-list');
+  const addItems = document.getElementById('fab-add-items');
+  if (newList)  { newList.textContent  = '📷 Signs';  newList.onclick  = openSignBuilder; }
+  if (addItems) { addItems.textContent = '＋ Aisle';  addItems.onclick = addAisleRow; }
+  fab.style.display = 'flex';
+}
+
+function _hideStoreFabs() {
+  const fab = document.getElementById('fab-stack');
+  if (!fab) return;
+  const newList  = document.getElementById('fab-new-list');
+  const addItems = document.getElementById('fab-add-items');
+  if (newList)  { newList.textContent  = '＋ New list';  newList.onclick  = topbarNewList; }
+  if (addItems) { addItems.textContent = '＋ Add items'; addItems.onclick = openEditList; }
+  // Only keep FABs visible if we're on the list screen
+  const onList = document.querySelector('.screen#screen-list.active');
+  fab.style.display = onList ? 'flex' : 'none';
 }
 function showToast(msg){
   const t=document.getElementById('toast');
