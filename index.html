@@ -448,7 +448,7 @@ textarea.input{resize:vertical;min-height:90px;}
   padding-bottom:0;margin:0 -20px;padding:0 20px 0;
 }
 .store-modal-scroll{
-  flex:1;overflow-y:auto;padding:12px 0 110px;
+  flex:1;overflow-y:auto;padding:12px 0 36px;
 }
 #store-color-picker.color-picker{margin-top:0;}
 
@@ -13306,8 +13306,22 @@ function _showStoreFabs() {
   const addItems = document.getElementById('fab-add-items');
   if (newList)  { newList.textContent  = '📷 Signs';  newList.onclick  = openSignBuilder; }
   if (addItems) { addItems.textContent = '＋ Aisle';  addItems.onclick = addAisleRow; }
-  fab.style.zIndex = '150'; // above modal overlay (z-index:100) but below sub-modals (200)
+  fab.style.zIndex = '150';
   fab.style.display = 'flex';
+
+  // Set scroll padding so content can scroll up to just above the top FAB pill.
+  // We measure after a frame so the FAB is laid out.
+  requestAnimationFrame(() => {
+    const fabRect = fab.getBoundingClientRect();
+    const scrollEl = document.querySelector('.store-modal-scroll');
+    const modalEl  = document.querySelector('#modal-store .modal');
+    if (scrollEl && modalEl) {
+      const modalRect = modalEl.getBoundingClientRect();
+      // Distance from bottom of modal to top of FAB stack
+      const clearance = modalRect.bottom - fabRect.top + 12;
+      scrollEl.style.paddingBottom = Math.max(clearance, 36) + 'px';
+    }
+  });
 }
 
 function _hideStoreFabs() {
@@ -13318,6 +13332,9 @@ function _hideStoreFabs() {
   if (newList)  { newList.textContent  = '＋ New list';  newList.onclick  = topbarNewList; }
   if (addItems) { addItems.textContent = '＋ Add items'; addItems.onclick = openEditList; }
   fab.style.zIndex = '20';
+  // Reset scroll padding
+  const scrollEl = document.querySelector('.store-modal-scroll');
+  if (scrollEl) scrollEl.style.paddingBottom = '';
   // Only keep FABs visible if we're on the list screen
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
