@@ -1246,7 +1246,7 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="store-modal-scroll">
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
-      <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+      <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px;margin-bottom:144px" onclick="saveStore()">Save Store</button>
     </div>
   </div>
 </div>
@@ -13308,12 +13308,6 @@ function _showStoreFabs() {
   if (addItems) { addItems.textContent = '＋ Aisle';  addItems.onclick = addAisleRow; }
   fab.style.zIndex = '150';
   fab.style.display = 'flex';
-
-  // Pad the scroll area so content can scroll up just above the FAB stack.
-  // FAB stack height ≈ 2 buttons × 52px + 12px gap = 116px, sitting 20px from bottom.
-  // Add a little breathing room (8px) so the last element clears the top pill cleanly.
-  const scrollEl = document.querySelector('.store-modal-scroll');
-  if (scrollEl) scrollEl.style.paddingBottom = (116 + 20 + 8) + 'px';
 }
 
 function _hideStoreFabs() {
@@ -13324,9 +13318,6 @@ function _hideStoreFabs() {
   if (newList)  { newList.textContent  = '＋ New list';  newList.onclick  = topbarNewList; }
   if (addItems) { addItems.textContent = '＋ Add items'; addItems.onclick = openEditList; }
   fab.style.zIndex = '20';
-  // Reset scroll padding
-  const scrollEl = document.querySelector('.store-modal-scroll');
-  if (scrollEl) scrollEl.style.paddingBottom = '';
   // Only keep FABs visible if we're on the list screen
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
