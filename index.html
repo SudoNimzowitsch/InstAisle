@@ -13310,6 +13310,7 @@ function _showStoreFabs() {
   const addItems = document.getElementById('fab-add-items');
   if (newList)  { newList.textContent  = '📷 Signs';  newList.onclick  = openSignBuilder; }
   if (addItems) { addItems.textContent = '＋ Aisle';  addItems.onclick = addAisleRow; }
+  fab.style.zIndex = '150'; // above modal overlay (z-index:100) but below sub-modals (200)
   fab.style.display = 'flex';
 }
 
@@ -13320,6 +13321,7 @@ function _hideStoreFabs() {
   const addItems = document.getElementById('fab-add-items');
   if (newList)  { newList.textContent  = '＋ New list';  newList.onclick  = topbarNewList; }
   if (addItems) { addItems.textContent = '＋ Add items'; addItems.onclick = openEditList; }
+  fab.style.zIndex = '20';
   // Only keep FABs visible if we're on the list screen
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
