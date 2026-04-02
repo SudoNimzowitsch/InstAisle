@@ -10671,9 +10671,9 @@ function _signBuilderShowCaptureReview() {
     thumbsEl.appendChild(wrap);
   });
 
-  // Hide retake button if only 1 photo (retaking it would leave 0)
+  // Always show retake — retaking opens the camera immediately so count never hits 0
   const retakeBtn = document.querySelector('[onclick="_signBuilderRetakeLast()"]');
-  if (retakeBtn) retakeBtn.style.display = count > 1 ? 'block' : 'none';
+  if (retakeBtn) retakeBtn.style.display = 'block';
 }
 
 function _signBuilderAddAnother() {
@@ -10683,9 +10683,11 @@ function _signBuilderAddAnother() {
 }
 
 function _signBuilderRetakeLast() {
-  if (_signBuilder.files.length <= 1) return;
   _signBuilder.files.pop();
-  _signBuilderShowCaptureReview();
+  // Re-open camera immediately — the new shot will be appended via handleSignCapture
+  const input = document.getElementById('sign-capture-input');
+  input.value = '';
+  input.click();
 }
 
 function _signBuilderDone() {
