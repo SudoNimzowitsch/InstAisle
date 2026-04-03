@@ -2416,6 +2416,8 @@ window.persistStore = async function(storeId) {
       address:                 store.address                 || null,
       city:                    store.city                    || null,
       state:                   store.state                   || null,
+      lat:                     store.lat                     || null,
+      lng:                     store.lng                     || null,
     };
     if (!_v2) {
       // V1 only: persist lists and corrections on the store doc
@@ -9918,7 +9920,9 @@ async function addStoreFromLibrary() {
     ? { chain_id: chain.id || null,
         location_id: chain._placeId ? sanitizeLocId(chain._placeId) : null,
         address: _looksLikeRealAddress(chain._placeAddress) ? chain._placeAddress : null,
-        aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })) }
+        aisles_snapshot: aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+        lat: chain._placeLat || null,
+        lng: chain._placeLng || null }
     : null;
   document.getElementById('store-modal-title').textContent = 'New Store';
   const _addrElLib = document.getElementById('store-modal-address'); if (_addrElLib) _addrElLib.style.display = 'none';
@@ -11028,6 +11032,17 @@ async function signBuilderConfirmReview() {
       }
     }
 
+    // Persist GPS coords onto the store in state so the proximity check works on future edits
+    if (_signBuilder.gps?.lat && _signBuilder.gps?.lng) {
+      const storeToUpdate = state.editingStoreId
+        ? state.stores.find(s => s.id === state.editingStoreId)
+        : null;
+      if (storeToUpdate && !storeToUpdate.lat) {
+        storeToUpdate.lat = _signBuilder.gps.lat;
+        storeToUpdate.lng = _signBuilder.gps.lng;
+      }
+    }
+
     closeSignBuilder();
     renderAisleRows();
 
@@ -11724,6 +11739,8 @@ async function saveStore(){
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null,
       _userStoreId:  window._pendingUserStoreId  || null,
       _libraryStatus: window._pendingLibraryStatus || null,
+      lat: pendingLibraryMeta?.lat || null,
+      lng: pendingLibraryMeta?.lng || null,
     };
     window._pendingUserStoreId  = null;
     window._pendingLibraryStatus = null;
