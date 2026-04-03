@@ -10588,7 +10588,7 @@ async function _signBuilderChoose(source) {
       }
       const dist = haversineMeters(_signBuilder.gps.lat, _signBuilder.gps.lng, existingStore.lat, existingStore.lng);
       if (dist > 300) {
-        showToast('You appear to be ' + Math.round(dist) + 'm from this store. Sign photos must be taken on-site.');
+        showToast('Sign photos must be taken on-site.');
         return;
       }
     }
