@@ -10556,6 +10556,23 @@ async function _signBuilderChoose(source) {
 
   // Camera path: get GPS first, then open camera
   _signBuilder.gps = await _getGPS().catch(() => null);
+
+  // If editing an existing store that has coordinates, verify the user is nearby
+  if (state.editingStoreId) {
+    const existingStore = (state.stores || []).find(s => s.id === state.editingStoreId);
+    if (existingStore?.lat && existingStore?.lng) {
+      if (!_signBuilder.gps?.lat || !_signBuilder.gps?.lng) {
+        showToast('Could not get your location \u2014 sign uploads require GPS to confirm you\'re at this store');
+        return;
+      }
+      const dist = haversineMeters(_signBuilder.gps.lat, _signBuilder.gps.lng, existingStore.lat, existingStore.lng);
+      if (dist > 300) {
+        showToast('You appear to be ' + Math.round(dist) + 'm from this store. Sign photos must be taken on-site.');
+        return;
+      }
+    }
+  }
+
   document.getElementById('sign-capture-input').value = '';
   document.getElementById('sign-capture-input').click();
 }
