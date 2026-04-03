@@ -1728,6 +1728,8 @@ async function loadUserData(uid) {
       address:                  d.address                  || null,
       city:                     d.city                     || null,
       state:                    d.state                    || null,
+      lat:                      d.lat                      || null,
+      lng:                      d.lng                      || null,
     });
     // Prefer new multi-list format; fall back to legacy flat array
     state.lists[snap.id] = d.lists_v2 || d.list || [];
@@ -1785,7 +1787,12 @@ async function loadUserData(uid) {
           library_location_id: data.library_location_id || null,
           library_chain_id: data.library_chain_id || null,
           library_address: data.library_address || null,
-          library_aisles_snapshot: data.library_aisles_snapshot || null };
+          library_aisles_snapshot: data.library_aisles_snapshot || null,
+          address: data.address || null,
+          city:    data.city    || null,
+          state:   data.state   || null,
+          lat:     data.lat     || null,
+          lng:     data.lng     || null };
         if (!window._isSaving) state.lists[d.id] = data.lists_v2 || data.list || [];
         const _prevCorr = JSON.stringify(state.corrections[d.id]);
         state.corrections[d.id] = data.corrections || {};
@@ -1831,6 +1838,11 @@ async function _loadUserDataV2(uid) {
       library_aisles_snapshot: d.library_aisles_snapshot || null,
       _userStoreId:            d._userStoreId            || null,
       _libraryStatus:          d._libraryStatus          || null,
+      address:                 d.address                 || null,
+      city:                    d.city                    || null,
+      state:                   d.state                   || null,
+      lat:                     d.lat                     || null,
+      lng:                     d.lng                     || null,
     });
     // Corrections are now per-item but keep legacy store corrections as fallback
     state.corrections[snap.id] = d.corrections || {};
@@ -1903,6 +1915,11 @@ async function _loadUserDataV2(uid) {
           library_chain_id:        data.library_chain_id        || null,
           library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null,
+          address: data.address || null,
+          city:    data.city    || null,
+          state:   data.state   || null,
+          lat:     data.lat     || null,
+          lng:     data.lng     || null,
         };
         const _prevCorr2 = JSON.stringify(state.corrections[d.id]);
         state.corrections[d.id] = data.corrections || {};
