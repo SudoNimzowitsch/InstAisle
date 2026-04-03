@@ -3012,6 +3012,8 @@ window.createStoreInFirestore = async function(storeData) {
     library_aisles_snapshot: storeData.library_aisles_snapshot || null,
     _userStoreId:        storeData._userStoreId        || null,
     _libraryStatus:      storeData._libraryStatus      || null,
+    lat:                 storeData.lat                 || null,
+    lng:                 storeData.lng                 || null,
   });
   setSyncDot('ok');
   // subscribe
@@ -3029,7 +3031,9 @@ window.createStoreInFirestore = async function(storeData) {
           library_address:         data.library_address         || null,
           library_aisles_snapshot: data.library_aisles_snapshot || null,
           _userStoreId:            data._userStoreId            || null,
-          _libraryStatus:          data._libraryStatus          || null };
+          _libraryStatus:          data._libraryStatus          || null,
+          lat:                     data.lat                     || null,
+          lng:                     data.lng                     || null };
         state.lists[d.id]       = data.list        || [];
         state.corrections[d.id] = data.corrections || {};
         renderAll();
