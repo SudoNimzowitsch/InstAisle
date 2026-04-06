@@ -11008,38 +11008,46 @@ async function signBuilderConfirmReview() {
           : null)
       || null;
 
-    const res = await fetch(`${CF_BASE}/assembleStore`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({
-        userId:      user.uid,
-        name:        _signBuilder.storeName,
-        address:     _signBuilder.storeAddress,
-        city:        _signBuilder.storeCity,
-        state:       _signBuilder.storeState,
-        lat, lng,
-        chainId,
-        source:      _signBuilder.source,
-        gpsVerified: _signBuilder.gpsVerified,
-        aisles:      _signBuilder.aisles.map((a, i) => ({
-          aisle_index: a.aisle_index ?? (i + 1),
-          name:        a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
-          keywords:    a.keywords || [],
-          source:      a.source || 'photo',
-        })),
-      }),
-    });
+    // ── Edit path: skip assembleStore (no new store needed), apply aisles directly
+    if (state.editingStoreId) {
+      const existingStore = state.stores.find(s => s.id === state.editingStoreId);
+      // Mark as published — user is editing their own existing store,
+      // no geographic verification needed
+      window._pendingLibraryStatus = 'published';
+      window._pendingUserStoreId   = existingStore?._userStoreId || null;
+    } else {
+      // ── New store path: call assembleStore to create store record + library entry
+      const res = await fetch(`${CF_BASE}/assembleStore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+          userId:      user.uid,
+          name:        _signBuilder.storeName,
+          address:     _signBuilder.storeAddress,
+          city:        _signBuilder.storeCity,
+          state:       _signBuilder.storeState,
+          lat, lng,
+          chainId,
+          source:      _signBuilder.source,
+          gpsVerified: _signBuilder.gpsVerified,
+          aisles:      _signBuilder.aisles.map((a, i) => ({
+            aisle_index: a.aisle_index ?? (i + 1),
+            name:        a.suggested_name || ('Aisle ' + (a.aisle_index ?? i + 1)),
+            keywords:    a.keywords || [],
+            source:      a.source || 'photo',
+          })),
+        }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `Server error ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `Server error ${res.status}`);
+      }
+
+      const result = await res.json();
+      window._pendingUserStoreId   = result.store_id;
+      window._pendingLibraryStatus = result.library_status;
     }
-
-    const result = await res.json();
-
-    // Store the user store ID and library status so saveStore can persist them
-    window._pendingUserStoreId   = result.store_id;
-    window._pendingLibraryStatus = result.library_status;
 
     // Apply the assembled aisles into tempAisles
     // In edit mode: merge with existing aisles (additive — preserve uncovered aisles)
@@ -11820,6 +11828,15 @@ async function saveStore(){
   if(state.editingStoreId){
     const store=state.stores.find(s=>s.id===state.editingStoreId);
     store.name=name; store.color=tempColor; store.aisles=aisles;
+    // Apply library status from assembleStore result (e.g. GPS-verified on camera path)
+    if (window._pendingLibraryStatus) {
+      store._libraryStatus = window._pendingLibraryStatus;
+      window._pendingLibraryStatus = null;
+    }
+    if (window._pendingUserStoreId) {
+      store._userStoreId = window._pendingUserStoreId;
+      window._pendingUserStoreId = null;
+    }
     if(getActiveListItems(store.id)?.length){
       setActiveListItems(store.id, getActiveListItems(store.id).map(item=>{
         if (_isV2()) {
