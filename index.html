@@ -10771,7 +10771,7 @@ async function _runSignBuilder() {
   try {
     // Compress all images client-side first
     const images = await Promise.all(_signBuilder.files.map(f => _compressSignImage(f)));
-    substatusEl.textContent = 'Reading signs with AI…';
+    substatusEl.textContent = 'Reading signs…';
 
     const user = window._currentUser;
     if (!user) { closeSignBuilder(); showToast('Please sign in first'); return; }
