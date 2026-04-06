@@ -10970,6 +10970,14 @@ async function signBuilderConfirmReview() {
     let lat = _signBuilder.gps?.lat || null;
     let lng = _signBuilder.gps?.lng || null;
 
+    // When editing an existing store, use its saved coordinates if available
+    // but don't block the build if they're missing — coordinates are only
+    // required for new stores (library entry creation + GPS verification)
+    if ((!lat || !lng) && state.editingStoreId) {
+      const existingStore = state.stores.find(s => s.id === state.editingStoreId);
+      if (existingStore?.lat) { lat = existingStore.lat; lng = existingStore.lng; }
+    }
+
     if (!lat || !lng) {
       // Geocode the user-supplied address via OpenCage
       const addrStr = [_signBuilder.storeAddress, _signBuilder.storeCity, _signBuilder.storeState].filter(Boolean).join(', ');
@@ -10984,10 +10992,13 @@ async function signBuilderConfirmReview() {
     }
 
     if (!lat || !lng) {
-      showToast('Could not determine store location — please check the address');
-      btn.disabled = false;
-      btn.textContent = '✓ Build Store';
-      return;
+      if (!state.editingStoreId) {
+        showToast('Could not determine store location — please check the address');
+        btn.disabled = false;
+        btn.textContent = '✓ Build Store';
+        return;
+      }
+      // Editing without coords is fine — proceed without location data
     }
 
     // Get chain_id from current store context
