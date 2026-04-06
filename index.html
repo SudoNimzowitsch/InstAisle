@@ -10574,7 +10574,20 @@ async function _signBuilderChoose(source) {
   _signBuilder.source = source;
 
   if (source === 'upload') {
-    // Batch upload: ask for name + address first, then files
+    // When editing an existing store, name and address are already known — go straight to files
+    if (state.editingStoreId) {
+      const existingStore = (state.stores || []).find(s => s.id === state.editingStoreId);
+      if (existingStore) {
+        _signBuilder.storeName    = existingStore.name;
+        _signBuilder.storeAddress = existingStore.address || '';
+        _signBuilder.storeCity    = existingStore.city    || '';
+        _signBuilder.storeState   = existingStore.state   || '';
+      }
+      document.getElementById('sign-upload-input').value = '';
+      document.getElementById('sign-upload-input').click();
+      return;
+    }
+    // New store: ask for name + address first, then files
     _signBuilderShowNameAddress();
     return;
   }
