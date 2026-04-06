@@ -1041,6 +1041,17 @@ textarea.input{resize:vertical;min-height:90px;}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-library-duplicate" style="z-index:200">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:4px;font-size:1.4rem">📚</div>
+    <div class="modal-title" style="text-align:center;font-size:1rem;margin-bottom:8px">Already in the library</div>
+    <p class="text-muted" style="text-align:center;font-size:.85rem;margin-bottom:20px" id="library-duplicate-msg"></p>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="_libraryDuplicateUseLibrary()">Use library version</button>
+    <button class="btn btn-ghost btn-full btn-sm" style="color:var(--muted)" onclick="document.getElementById('modal-library-duplicate').classList.remove('open')">Keep my version</button>
+  </div>
+</div>
+
 <!-- Rename List Modal -->
 <div class="modal-overlay" id="modal-rename-list" style="z-index:200">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:320px">
@@ -2453,10 +2464,10 @@ window.persistStore = async function(storeId) {
       }
     }
     // Contribute changes to library (non-blocking, best-effort)
-    if (window.contributeToLibrary) {
+    // Only contribute to shared library if this store has been verified
+    // (GPS-confirmed via sign upload, or checkoff-confirmed within range)
+    if (store._libraryStatus === 'published' && window.contributeToLibrary) {
       window.contributeToLibrary(store).catch(e => console.warn('[library] contribution error:', e.message));
-    } else {
-      console.warn('[library] contributeToLibrary not available yet');
     }
   } catch(e) {
     console.error('Sync error', e);
@@ -9817,6 +9828,60 @@ function _duplicateStoreReplace() {
   showToast('Store updated from library ✓');
 }
 
+// ── Library duplicate detection ───────────────────────────────────────────
+// Called after a new store is saved. If the store has lat/lng and no
+// library_location_id, checks nearby tile data for a likely match.
+
+function _nameSimiliarity(a, b) {
+  // Simple word-overlap ratio — strip common words like "the", "&", punctuation
+  const stop = new Set(['the','a','an','and','&','of','at','on']);
+  const words = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(w => w && !stop.has(w));
+  const wa = new Set(words(a)), wb = new Set(words(b));
+  let overlap = 0;
+  for (const w of wa) if (wb.has(w)) overlap++;
+  return overlap / Math.max(wa.size, wb.size, 1);
+}
+
+function _checkLibraryDuplicate(store) {
+  if (!store.lat || !store.lng) return;            // no coordinates — can't check
+  if (store.library_location_id) return;           // already linked to library
+  if (!_libNearbyResult?.length) return;           // no tile data loaded
+
+  const DIST_THRESHOLD = 250;   // metres
+  const NAME_THRESHOLD = 0.5;   // word overlap ratio
+
+  const match = _libNearbyResult.find(s => {
+    if (!s.lat || !s.lng) return false;
+    const dist = haversineMeters(store.lat, store.lng, s.lat, s.lng);
+    if (dist > DIST_THRESHOLD) return false;
+    return _nameSimiliarity(store.name || '', s.name || '') >= NAME_THRESHOLD;
+  });
+
+  if (!match) return;
+
+  const modal = document.getElementById('modal-library-duplicate');
+  document.getElementById('library-duplicate-msg').textContent =
+    '"' + (match.name || 'This store') + '" is already in the InstAisle library. ' +
+    'Use the library version to get the most up-to-date aisle layout?';
+  modal._libraryMatch = match;
+  modal._userStoreId  = store.id;
+  modal.classList.add('open');
+}
+
+function _libraryDuplicateUseLibrary() {
+  const modal = document.getElementById('modal-library-duplicate');
+  const match    = modal._libraryMatch;
+  const storeId  = modal._userStoreId;
+  modal.classList.remove('open');
+  if (!match || !storeId) return;
+  // Swap the user's store for the library version
+  const store = state.stores.find(s => s.id === storeId);
+  if (!store) return;
+  // Reuse the existing addStoreFromLibrary machinery by treating match as a chain entry
+  _libSelectedChain = { ...match, _placeId: match.place_id || match.location_id };
+  addStoreFromLibrary();
+}
+
 async function addStoreFromLibrary() {
   if (!_libSelectedChain) return;
   const chain = _libSelectedChain;
@@ -11784,7 +11849,10 @@ async function saveStore(){
     }
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
-    if(window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
+    // Only contribute to library once verified — new stores start as pending
+    if(newStore._libraryStatus === 'published' && window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
+    // Warn if this store looks like it already exists in the library
+    _checkLibraryDuplicate(newStore);
   }
   invalidateAisleIndexCache(); closeModal('modal-store'); renderAll(); switchScreen('list'); showToast('Store saved ✓');
   if (window._storeIsGenericDefault) {
