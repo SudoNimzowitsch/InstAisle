@@ -11156,8 +11156,21 @@ async function signBuilderConfirmReview() {
     closeSignBuilder();
     renderAisleRows();
 
-    // If editing an existing store, auto-save
-    if (state.editingStoreId) _autoSaveStore();
+    // If editing an existing store, apply pending library status then auto-save
+    if (state.editingStoreId) {
+      const store = state.stores.find(s => s.id === state.editingStoreId);
+      if (store) {
+        if (window._pendingLibraryStatus) {
+          store._libraryStatus = window._pendingLibraryStatus;
+          window._pendingLibraryStatus = null;
+        }
+        if (window._pendingUserStoreId) {
+          store._userStoreId = window._pendingUserStoreId;
+          window._pendingUserStoreId = null;
+        }
+      }
+      _autoSaveStore();
+    }
 
   } catch(err) {
     console.error('signBuilderConfirmReview error:', err);
