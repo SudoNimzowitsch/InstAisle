@@ -9844,8 +9844,7 @@ function showLibraryPreview(name, meta, chain, qualityTier) {
   document.getElementById('lib-selected-meta').textContent =
     meta + (aisleCnt ? ' · ' + aisleCnt + ' aisles' : '');
 
-  // Render collapsible aisle list
-  const container = document.getElementById('lib-aisle-preview');
+  // Render collapsible aisle list (container already declared above)
   if (!aisleCnt) { container.innerHTML = ''; }
   else {
     container.innerHTML = aisles.map((a, i) => `
