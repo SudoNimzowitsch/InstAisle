@@ -668,7 +668,7 @@ textarea.input{resize:vertical;min-height:90px;}
   border-radius: 24px 24px 0 0;
   width: 100%; max-width: 430px;
   padding: 28px 24px 36px;
-  max-height: 88vh; overflow-y: auto;
+  max-height: 92vh; overflow-y: auto;
   animation: obSlideUp .35s cubic-bezier(.22,1,.36,1);
 }
 @keyframes obSlideUp {
@@ -13791,10 +13791,11 @@ if ('serviceWorker' in navigator) {
   };
 
   window.maybeShowOnboarding = function(isNewUser) {
-    try {
-      if (localStorage.getItem('instaisle_onboarded')) return;
-    } catch(e) {}
-    if (!isNewUser) return;
+    // DEBUG: show onboarding to every user every time — remove before ship
+    // try {
+    //   if (localStorage.getItem('instaisle_onboarded')) return;
+    // } catch(e) {}
+    // if (!isNewUser) return;
     buildDots();
     showSlide(0);
     const overlay = document.getElementById('onboarding-overlay');
@@ -13823,34 +13824,58 @@ if ('serviceWorker' in navigator) {
         </div>
         <h2 class="ob-title">Welcome to InstAisle</h2>
         <p class="ob-body">InstAisle organizes your grocery list <strong>by aisle</strong> — so you move through the store once, in order, without backtracking.</p>
-        <div class="ob-demo" style="padding:10px 12px">
-          <div class="aisle-group" style="margin-bottom:12px">
+        <div class="ob-demo" style="padding:8px 10px;font-size:0;transform:scale(0.82);transform-origin:top center;margin-bottom:-28px">
+          <div style="font-size:initial">
+          <div class="aisle-group" style="margin-bottom:8px">
             <div class="aisle-group-header" style="background:rgba(74,222,128,.12);color:#4ade80">
               🛒 Dairy &amp; Eggs <span class="aisle-count">1 left</span>
             </div>
             <div class="list-item checked">
-              <div class="drag-handle">⠿</div>
               <div class="item-check done"><span style="font-size:.7rem;color:#0a1a12">✓</span></div>
               <div class="item-name">Milk</div>
               <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
             </div>
+            <div class="list-item checked">
+              <div class="item-check done"><span style="font-size:.7rem;color:#0a1a12">✓</span></div>
+              <div class="item-name">Eggs</div>
+              <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
+            </div>
             <div class="list-item">
-              <div class="drag-handle">⠿</div>
               <div class="item-check"></div>
               <div class="item-name">Butter</div>
               <div class="item-aisle-badge" style="background:rgba(74,222,128,.18);color:#4ade80">A1</div>
             </div>
           </div>
-          <div class="aisle-group" style="margin-bottom:0">
+          <div class="aisle-group" style="margin-bottom:8px">
             <div class="aisle-group-header" style="background:rgba(96,165,250,.12);color:#60a5fa">
               🛒 Bakery <span class="aisle-count">2 left</span>
             </div>
             <div class="list-item">
-              <div class="drag-handle">⠿</div>
               <div class="item-check"></div>
               <div class="item-name">Sourdough</div>
               <div class="item-aisle-badge" style="background:rgba(96,165,250,.18);color:#60a5fa">A2</div>
             </div>
+            <div class="list-item">
+              <div class="item-check"></div>
+              <div class="item-name">Bagels</div>
+              <div class="item-aisle-badge" style="background:rgba(96,165,250,.18);color:#60a5fa">A2</div>
+            </div>
+          </div>
+          <div class="aisle-group" style="margin-bottom:0">
+            <div class="aisle-group-header" style="background:rgba(251,191,36,.12);color:#fbbf24">
+              🛒 Snacks &amp; Drinks <span class="aisle-count">3 left</span>
+            </div>
+            <div class="list-item">
+              <div class="item-check"></div>
+              <div class="item-name">Sparkling Water</div>
+              <div class="item-aisle-badge" style="background:rgba(251,191,36,.18);color:#fbbf24">A3</div>
+            </div>
+            <div class="list-item">
+              <div class="item-check"></div>
+              <div class="item-name">Granola Bars</div>
+              <div class="item-aisle-badge" style="background:rgba(251,191,36,.18);color:#fbbf24">A3</div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
