@@ -1645,6 +1645,9 @@ onAuthStateChanged(auth, async (user) => {
     if (window._isNewSignup) {
       window._isNewSignup = false;
       setTimeout(() => window.maybeShowOnboarding(true), 600);
+    } else {
+      // DEBUG: show onboarding to all users — remove before ship
+      setTimeout(() => window.maybeShowOnboarding(true), 600);
     }
   } else {
     window._currentUser = null;
