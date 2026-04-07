@@ -13747,7 +13747,7 @@ if ('serviceWorker' in navigator) {
 // ONBOARDING FLOW
 // ══════════════════════════════
 (function() {
-  const TOTAL = 5;
+  const TOTAL = 4;
   let _current = 0;
 
   function buildDots() {
@@ -13870,7 +13870,7 @@ if ('serviceWorker' in navigator) {
               <div class="nearby-meta">
                 <span class="nearby-dist">0.4 mi</span>
                 <span class="nearby-open open">Open</span>
-                <span class="nearby-match-pill">✓ community data · 18 aisles</span>
+                <span class="nearby-match-pill sign">📷 Scan verified · 18 aisles</span>
               </div>
             </div>
           </div>
@@ -13881,7 +13881,7 @@ if ('serviceWorker' in navigator) {
               <div class="nearby-meta">
                 <span class="nearby-dist">1.2 mi</span>
                 <span class="nearby-open open">Open</span>
-                <span class="nearby-match-pill">22 aisles</span>
+                <span class="nearby-match-pill community">👥 Community data · 22 aisles</span>
               </div>
             </div>
           </div>
@@ -13891,7 +13891,7 @@ if ('serviceWorker' in navigator) {
               <div class="nearby-address">905 Walnut St, Newton</div>
               <div class="nearby-meta">
                 <span class="nearby-dist">2.1 mi</span>
-                <span class="nearby-match-pill">14 aisles</span>
+                <span class="nearby-match-pill template">📋 Template only · 14 aisles</span>
               </div>
             </div>
           </div>
@@ -13904,7 +13904,7 @@ if ('serviceWorker' in navigator) {
           <div class="ob-icon">🤝</div>
         </div>
         <h2 class="ob-title">You Help Everyone</h2>
-        <p class="ob-body">When you edit a store's aisles — renaming, reordering, or adding items — your changes are shared with the community. Every correction makes the app better for everyone.</p>
+        <p class="ob-body">When you scan aisle signs or edit a store's layout, your changes can be shared with the community. Every improvement makes the app more accurate for everyone who shops there.</p>
         <div class="ob-demo ob-demo-community">
           <div class="ob-contrib-row">
             <div class="ob-contrib-avatar">A</div>
@@ -13948,39 +13948,6 @@ if ('serviceWorker' in navigator) {
             <div class="ob-scan-kw">oats</div>
             <div class="ob-scan-kw ob-kw-new">+ breakfast bars</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Slide 5: Suggestions -->
-      <div class="ob-slide" data-index="4">
-        <div class="ob-icon-wrap">
-          <div class="ob-icon">✨</div>
-        </div>
-        <h2 class="ob-title">Smart Suggestions</h2>
-        <p class="ob-body">After a few shopping trips, InstAisle can remember what you buy where and suggest items as you check aisles. <strong>This feature is off by default</strong> — you can turn it on anytime in your profile settings.</p>
-        <div class="ob-demo" style="padding:10px 12px">
-          <div class="aisle-group" style="margin-bottom:0">
-            <div class="aisle-group-header" style="background:rgba(251,191,36,.12);color:#fbbf24">
-              🛒 Personal Care <span class="aisle-count">2 left</span>
-            </div>
-            <div class="list-item suggested">
-              <span class="suggested-label">Suggested</span>
-              <div class="item-name">Shampoo</div>
-              <button class="dismiss-suggestion">✕</button>
-            </div>
-            <div class="list-item suggested">
-              <span class="suggested-label">Suggested</span>
-              <div class="item-name">Toothpaste</div>
-              <button class="dismiss-suggestion">✕</button>
-            </div>
-            <div class="list-item">
-              <div class="drag-handle">⠿</div>
-              <div class="item-check"></div>
-              <div class="item-name">Deodorant</div>
-              <div class="item-aisle-badge" style="background:rgba(251,191,36,.18);color:#fbbf24">A5</div>
-            </div>
-          </div>
-          <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:8px">Based on your past 3 visits here. Tap to add, ✕ to dismiss.</p>
         </div>
         <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
       </div>
