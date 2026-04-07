@@ -2415,7 +2415,14 @@ window.persistStore = async function(storeId) {
     // In V2 mode the store doc only holds structure — lists live in their own collection
     const _v2 = window._useNewListStructure === true;
     const updatePayload = {
-      name: store.name, color: store.color, aisles: store.aisles,
+      name: store.name, color: store.color,
+      aisles: store.aisles.map(a => ({
+        name:        a.name,
+        keywords:    a.keywords || [],
+        aisle_index: a.aisle_index ?? null,
+        source:      a.source || 'user_labeled',
+        sign_ts:     a.sign_ts || null,
+      })),
       // Always persist library provenance
       library_location_id:     store.library_location_id     || null,
       library_chain_id:        store.library_chain_id        || null,
@@ -2778,7 +2785,12 @@ window.contributeToLibrary = async function(store) {
   // ── CASE 1: No real data — donate full aisle set immediately ─────────
   if (dataStatus === 'none' || !libAisles) {
     await setDoc(locRef, {
-      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      aisles:                store.aisles.map(a => ({
+        name:     a.name,
+        keywords: [...a.keywords],
+        source:   a.source || 'user_labeled',
+        sign_ts:  a.sign_ts || null,
+      })),
       data_status:           'live',
       first_contributor_uid: uid,
       first_contribution_ts: serverTimestamp(),
@@ -2850,10 +2862,11 @@ window.contributeToLibrary = async function(store) {
         }
       }
 
-      // Removed keywords — pending (unless grace period)
+      // Removed keywords — immediate if user aisle came from any photo source, pending otherwise
+      const userIsSign = userAisle.source === 'sign_verified' || userAisle.source === 'sign_uploaded';
       for (const kw of libKws) {
         if (!userKws.has(kw)) {
-          if (withinGrace) {
+          if (withinGrace || userIsSign) {
             const key = 'remove_kw_' + normaliseForMatch(match.name) + '_' + normaliseForMatch(kw);
             immediateUpdates[key] = { action: 'remove_keyword', aisle_name: match.name, keyword: kw };
           } else {
@@ -2902,7 +2915,14 @@ window.contributeToLibrary = async function(store) {
   for (const libAisle of libAisles) {
     const match = store.aisles.find(ua => aisleNamesMatch(ua.name, libAisle.name));
     if (!match) {
-      if (withinGrace) {
+      // Sign-verified stores can delete aisles immediately (reorganised store)
+      // but only if the incoming user has at least one sign_verified aisle at this index
+      const signReplacesThis = store.aisles.some(ua =>
+        (ua.source === 'sign_verified' || ua.source === 'sign_uploaded') &&
+        ua.aisle_index !== null &&
+        ua.aisle_index === libAisle.aisle_index
+      );
+      if (withinGrace || signReplacesThis) {
         immediateUpdates['delete_aisle_' + normaliseForMatch(libAisle.name)] = {
           action: 'delete', aisle_name: libAisle.name
         };
@@ -2923,10 +2943,19 @@ window.contributeToLibrary = async function(store) {
     const userA = store.aisles[i];
     if (!aisleNamesMatch(libA.name, userA.name) &&
         !libAisles.find(la => aisleNamesMatch(la.name, userA.name))) {
-      // This looks like a rename
-      if (withinGrace) {
+      // Photo-sourced renames win over manual labels; between two photos, most recent wins.
+      // sign_verified > sign_uploaded > user_labeled/template
+      const sourceRank = s => s === 'sign_verified' ? 2 : s === 'sign_uploaded' ? 1 : 0;
+      const userRank   = sourceRank(userA.source);
+      const libRank    = sourceRank(libA.source);
+      const userSignTs = userA.sign_ts || 0;
+      const libSignTs  = libA.sign_ts  || 0;
+      // User wins if higher rank, or same photo rank and more recent timestamp
+      const signWins = userRank > 0 && (userRank > libRank || (userRank === libRank && userSignTs >= libSignTs));
+      if (withinGrace || signWins) {
         immediateUpdates['rename_' + i] = {
-          action: 'rename', index: i, old_name: libA.name, new_name: userA.name
+          action: 'rename', index: i, old_name: libA.name, new_name: userA.name,
+          source: userA.source, sign_ts: userA.sign_ts || null,
         };
       } else {
         pendingChanges.push({
@@ -2941,10 +2970,10 @@ window.contributeToLibrary = async function(store) {
 
   // ── Apply immediate updates to library ────────────────────────────────
   if (Object.keys(immediateUpdates).length) {
-    let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords] }));
+    let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords], source: a.source || 'user_labeled', sign_ts: a.sign_ts || null }));
     for (const upd of Object.values(immediateUpdates)) {
       if (upd.action === 'add') {
-        updatedAisles.push(upd.aisle);
+        updatedAisles.push({ source: 'user_labeled', sign_ts: null, ...upd.aisle });
       } else if (upd.action === 'add_keyword') {
         const a = updatedAisles.find(a => a.name === upd.aisle_name);
         if (a && !a.keywords.includes(upd.keyword)) a.keywords.push(upd.keyword);
@@ -2954,7 +2983,11 @@ window.contributeToLibrary = async function(store) {
       } else if (upd.action === 'delete') {
         updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, upd.aisle_name));
       } else if (upd.action === 'rename') {
-        if (updatedAisles[upd.index]) updatedAisles[upd.index].name = upd.new_name;
+        if (updatedAisles[upd.index]) {
+          updatedAisles[upd.index].name    = upd.new_name;
+          updatedAisles[upd.index].source  = upd.source  || updatedAisles[upd.index].source;
+          updatedAisles[upd.index].sign_ts = upd.sign_ts || updatedAisles[upd.index].sign_ts;
+        }
       }
     }
     await updateDoc(locRef, { aisles: updatedAisles });
@@ -11053,10 +11086,20 @@ async function signBuilderConfirmReview() {
     // Apply the assembled aisles into tempAisles
     // In edit mode: merge with existing aisles (additive — preserve uncovered aisles)
     // In new store mode: replace entirely
+    const _signTs = Date.now(); // timestamp for all aisles from this sign session
+    // Determine aisle source tier based on how the sign builder was invoked:
+    //   sign_verified — camera path (GPS-confirmable, taken in-store)
+    //   sign_uploaded — file upload path (photo but no GPS verification)
+    //   user_labeled  — no photo involved
+    const _aisleSource = _signBuilder.source === 'camera' ? 'sign_verified'
+                       : _signBuilder.source === 'upload'  ? 'sign_uploaded'
+                       : 'user_labeled';
     const newAisles = _signBuilder.aisles.map((a, i) => ({
       name:        a.suggested_name || (a.aisle_index != null ? ('Aisle ' + a.aisle_index) : ('Aisle ' + (i + 1))),
       keywords:    [...(a.keywords || [])],
       aisle_index: a.aisle_index ?? null,  // keep null rather than synthesizing a number
+      source:      a.source === 'photo' ? _aisleSource : 'user_labeled',
+      sign_ts:     a.source === 'photo' ? _signTs : null,
     }));
 
     if (state.editingStoreId) {
