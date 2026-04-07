@@ -665,11 +665,14 @@ textarea.input{resize:vertical;min-height:90px;}
   position: relative; z-index: 1;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px 24px 0 0;
+  border-radius: 0;
   width: 100%; max-width: 430px;
+  height: 100vh; height: 100dvh;
   padding: 28px 24px 36px;
-  max-height: 92vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+  overflow: hidden;
   animation: obSlideUp .35s cubic-bezier(.22,1,.36,1);
+  box-sizing: border-box;
 }
 @keyframes obSlideUp {
   from { transform: translateY(100%); opacity: 0; }
@@ -679,6 +682,7 @@ textarea.input{resize:vertical;min-height:90px;}
 /* Dots */
 .ob-dots {
   display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
+  flex-shrink: 0;
 }
 .ob-dot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -689,11 +693,25 @@ textarea.input{resize:vertical;min-height:90px;}
   background: linear-gradient(90deg, var(--green), var(--blue));
 }
 
-/* Slides */
-.ob-slides { position: relative; }
-.ob-slide { display: none; animation: obFadeIn .3s ease; }
-.ob-slide.active { display: block; }
-@keyframes obFadeIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+/* Slides — overflow viewport, translate to show current */
+.ob-slides {
+  flex: 1; overflow: hidden; position: relative;
+  display: flex;
+}
+.ob-slide {
+  min-width: 100%; flex-shrink: 0;
+  overflow-y: auto;
+  opacity: 0; transition: opacity .25s ease;
+  pointer-events: none;
+}
+.ob-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ob-slides-inner {
+  display: flex; width: 100%;
+  transition: transform .35s cubic-bezier(.22,1,.36,1);
+}
 
 /* Icon */
 .ob-icon-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
@@ -822,7 +840,7 @@ textarea.input{resize:vertical;min-height:90px;}
 /* Nav */
 .ob-nav {
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 20px;
+  margin-top: 20px; flex-shrink: 0;
 }
 .ob-btn-skip {
   font-size: .82rem; color: var(--muted); background: none; border: none;
@@ -13771,6 +13789,8 @@ if ('serviceWorker' in navigator) {
     document.querySelectorAll('.ob-dot').forEach((d, i) => {
       d.classList.toggle('active', i === idx);
     });
+    const inner = document.getElementById('ob-slides-inner');
+    if (inner) inner.style.transform = 'translateX(' + (-idx * 100) + '%)';
     const nextBtn = document.getElementById('ob-btn-next');
     const skipBtn = document.getElementById('ob-btn-skip');
     if (nextBtn) nextBtn.style.display = idx === TOTAL - 1 ? 'none' : 'block';
@@ -13781,6 +13801,32 @@ if ('serviceWorker' in navigator) {
   window.obNext = function() {
     if (_current < TOTAL - 1) showSlide(_current + 1);
   };
+
+  // ── Swipe support ──────────────────────────────────────────────
+  function initSwipe() {
+    const slides = document.getElementById('ob-slides');
+    if (!slides) return;
+    let startX = 0, startY = 0, isDragging = false, isHoriz = null;
+    slides.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isDragging = true; isHoriz = null;
+    }, { passive: true });
+    slides.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (isHoriz === null) isHoriz = Math.abs(dx) > Math.abs(dy);
+      if (isHoriz) e.preventDefault();
+    }, { passive: false });
+    slides.addEventListener('touchend', e => {
+      if (!isDragging || !isHoriz) { isDragging = false; return; }
+      const dx = e.changedTouches[0].clientX - startX;
+      isDragging = false;
+      if (dx < -50 && _current < TOTAL - 1) showSlide(_current + 1);
+      else if (dx > 50 && _current > 0) showSlide(_current - 1);
+    });
+  }
 
   window.closeOnboarding = function() {
     const overlay = document.getElementById('onboarding-overlay');
@@ -13801,6 +13847,7 @@ if ('serviceWorker' in navigator) {
     // if (!isNewUser) return;
     buildDots();
     showSlide(0);
+    initSwipe();
     const overlay = document.getElementById('onboarding-overlay');
     if (overlay) overlay.style.display = 'flex';
   };
@@ -13818,7 +13865,7 @@ if ('serviceWorker' in navigator) {
     <div class="ob-dots" id="ob-dots"></div>
 
     <!-- Slides -->
-    <div class="ob-slides" id="ob-slides">
+    <div class="ob-slides" id="ob-slides"><div class="ob-slides-inner" id="ob-slides-inner">
 
       <!-- Slide 1: Welcome / Core concept -->
       <div class="ob-slide" data-index="0">
@@ -13980,7 +14027,7 @@ if ('serviceWorker' in navigator) {
         <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
       </div>
 
-    </div><!-- /ob-slides -->
+    </div></div><!-- /ob-slides-inner /ob-slides -->
 
     <!-- Navigation -->
     <div class="ob-nav">
