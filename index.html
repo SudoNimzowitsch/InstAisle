@@ -519,8 +519,15 @@ textarea.input{resize:vertical;min-height:90px;}
 .nearby-open.closed{background:rgba(248,113,113,.12);color:var(--red);}
 .nearby-match-pill{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:8px;
   background:rgba(74,222,128,.15);color:var(--green);flex-shrink:0;white-space:nowrap;}
+.nearby-match-pill.sign{background:rgba(74,222,128,.15);color:var(--green);}
+.nearby-match-pill.community{background:rgba(96,165,250,.15);color:#60a5fa;}
+.nearby-match-pill.template{background:rgba(251,191,36,.12);color:#d97706;}
 .nearby-no-match-pill{font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:8px;
   background:var(--surface);color:var(--muted);flex-shrink:0;white-space:nowrap;}
+.lib-quality-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;
+  border-radius:8px;margin-bottom:10px;font-size:.73rem;line-height:1.4;}
+.lib-quality-banner.warn{background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.3);color:#92620a;}
+.lib-quality-banner .lib-qb-icon{font-size:.95rem;flex-shrink:0;margin-top:1px;}
 .lib-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--surface);
   border:1px solid var(--border);border-radius:10px;margin-top:4px;overflow:hidden;
   box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:100;}
@@ -9688,9 +9695,24 @@ function renderNearbyPage() {
       : matchStoreToLibrary(store.name);
     const isSelected = _libSelectedChain?._placeId === store.place_id;
 
-    const matchPill = chain
-      ? '<span class="nearby-match-pill">✓ ' + esc(chain.name) + ' data</span>'
-      : '<span class="nearby-no-match-pill">No template</span>';
+    // On selected card, show actual quality tier if we have it; otherwise chain match state
+    let matchPill;
+    if (isSelected && _libSelectedChain?._qualityTier) {
+      const qt = _libSelectedChain._qualityTier;
+      if (qt === 'sign') {
+        matchPill = '<span class="nearby-match-pill sign">📷 Scan verified</span>';
+      } else if (qt === 'community') {
+        matchPill = '<span class="nearby-match-pill community">👥 Community data</span>';
+      } else if (qt === 'template') {
+        matchPill = '<span class="nearby-match-pill template">📋 Template only</span>';
+      } else {
+        matchPill = '<span class="nearby-no-match-pill">No data</span>';
+      }
+    } else {
+      matchPill = chain
+        ? '<span class="nearby-match-pill template">📋 ' + esc(chain.name) + ' template</span>'
+        : '<span class="nearby-no-match-pill">No template</span>';
+    }
 
     const card = document.createElement('div');
     card.className = 'nearby-card' + (isSelected ? ' selected' : '');
@@ -9750,12 +9772,24 @@ async function fetchLocationContribution(placeId) {
     if (!locSnap.exists()) return null;
     const data = locSnap.data();
     if (data.data_status === 'live' && data.aisles?.length) {
-      return data.aisles;
+      return { aisles: data.aisles, dataStatus: data.data_status };
     }
   } catch(e) {
     console.warn('[library] fetchLocationContribution error:', e.message);
   }
   return null;
+}
+
+// Determine the quality tier of a set of library aisles:
+//   'sign'      — at least one aisle is sign_verified (camera, GPS-confirmed)
+//   'community' — has user_labeled contributions but no sign_verified
+//   'template'  — all aisles are template-sourced (chain or generic)
+//   'none'      — no aisle data
+function _aisleQualityTier(aisles) {
+  if (!aisles || !aisles.length) return 'none';
+  if (aisles.some(a => a.source === 'sign_verified')) return 'sign';
+  if (aisles.some(a => a.source === 'sign_uploaded' || a.source === 'user_labeled')) return 'community';
+  return 'template';
 }
 
 async function selectNearbyStore(placeId) {
@@ -9766,34 +9800,49 @@ async function selectNearbyStore(placeId) {
     ? getAllLibraryStores().find(c => c.id === store.chain_id)
     : matchStoreToLibrary(store.name);
   // Check Firestore for user-contributed aisle data for this specific location
-  const contributed = await fetchLocationContribution(placeId);
-  const aisles = contributed || chain?.aisles || [];
-  const hasContribution = !!contributed;
+  const contribution = await fetchLocationContribution(placeId);
+  const aisles = contribution?.aisles || chain?.aisles || [];
+  const hasContribution = !!contribution;
+  const qualityTier = hasContribution
+    ? _aisleQualityTier(contribution.aisles)
+    : (chain ? 'template' : 'none');
   _libSelectedChain = chain
     ? { ...chain, aisles, _placeId: placeId, _placeName: store.name,
         _placeAddress: store.address, _placeLat: store.lat, _placeLng: store.lng,
-        _hasContribution: hasContribution }
+        _hasContribution: hasContribution, _qualityTier: qualityTier }
     : { _placeId: placeId, _placeName: store.name, _placeAddress: store.address,
         _placeLat: store.lat, _placeLng: store.lng,
         id: null, name: store.name, color: STORE_COLORS[0], aisles,
-        _hasContribution: hasContribution };
+        _hasContribution: hasContribution, _qualityTier: qualityTier };
   renderNearbyList();
-  const metaText = hasContribution
-    ? store.address + ' · ✓ community data'
-    : store.address;
-  showLibraryPreview(store.name, metaText, { ...chain, aisles });
+  showLibraryPreview(store.name, store.address, { ...chain, aisles }, qualityTier);
 }
 
 // selectLibChain removed — browse tab eliminated in unified search refactor
 
-function showLibraryPreview(name, meta, chain) {
+function showLibraryPreview(name, meta, chain, qualityTier) {
   const preview = document.getElementById('lib-selected-preview');
   document.getElementById('lib-selected-name').textContent = name;
   const aisles   = chain?.aisles || [];
   const aisleCnt = aisles.length;
-  const srcLabel = chain?.dataSource === 'real' ? '✅ Official store data' : '📋 Curated typical layout';
+
+  // Quality banner — only shown for template/none tier to prompt sign scanning
+  const bannerEl = document.getElementById('lib-quality-banner');
+  if (bannerEl) bannerEl.remove(); // clear previous
+  const container = document.getElementById('lib-aisle-preview');
+  if (qualityTier === 'template' || qualityTier === 'none') {
+    const banner = document.createElement('div');
+    banner.id = 'lib-quality-banner';
+    banner.className = 'lib-quality-banner warn';
+    banner.innerHTML = '<span class="lib-qb-icon">📋</span>' +
+      '<span>This store has a <strong>template layout</strong> — aisle names are estimates, ' +
+      'not verified for this location. After adding, scan aisle signs to make it accurate.</span>';
+    container.parentNode.insertBefore(banner, container);
+  }
+
+  // Meta line: address · aisle count (no srcLabel clutter)
   document.getElementById('lib-selected-meta').textContent =
-    meta + (chain && aisleCnt ? ' · ' + aisleCnt + ' aisles · ' + srcLabel : '');
+    meta + (aisleCnt ? ' · ' + aisleCnt + ' aisles' : '');
 
   // Render collapsible aisle list
   const container = document.getElementById('lib-aisle-preview');
