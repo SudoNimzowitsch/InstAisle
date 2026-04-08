@@ -13753,7 +13753,7 @@ if ('serviceWorker' in navigator) {
 // ONBOARDING FLOW
 // ══════════════════════════════
 (function() {
-  const TOTAL = 5;
+  const TOTAL = 6;
   let _current = 0;
 
   function buildDots() {
@@ -14047,27 +14047,88 @@ if ('serviceWorker' in navigator) {
         </div>
       </div>
 
-      <!-- Slide 5: Scan an aisle sign -->
+      <!-- Slide 5: Photo list parser -->
       <div class="ob-slide" data-index="4">
         <div class="ob-icon-wrap">
-          <div class="ob-icon">📷</div>
+          <div class="ob-icon">📋</div>
         </div>
-        <h2 class="ob-title">Scan an Aisle Sign</h2>
-        <p class="ob-body">Tap the camera icon on any aisle to photograph the shelf label. InstAisle reads it and fills in the keywords automatically — no typing needed.</p>
-        <div class="ob-demo ob-demo-scan">
-          <div class="ob-scan-frame">
-            <div class="ob-scan-sign">
-              <span class="ob-scan-number" style="font-family:'Outfit',sans-serif">Aisle 7</span>
-              <span class="ob-scan-text" style="font-family:'Outfit',sans-serif">Cereal · Granola · Oats · Breakfast Bars · Hot Cereal</span>
+        <h2 class="ob-title">Snap Your List</h2>
+        <p class="ob-body">Have a handwritten list? Take a photo and InstAisle will read it, sort every item by aisle, and have you ready to shop in seconds.</p>
+        <div class="ob-demo" style="padding:0;overflow:hidden;border-radius:14px">
+          <div style="transform:scale(0.82);transform-origin:top center;margin-bottom:-44px">
+            <div style="display:flex;justify-content:center;padding:10px 0 0">
+              <div style="width:36px;height:4px;border-radius:2px;background:var(--border)"></div>
             </div>
-            <div style="font-size:.6rem;color:#555;margin-top:6px;font-style:italic"></div>
-            <div class="ob-scan-line"></div>
+            <div style="padding:12px 16px 10px">
+              <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:12px">Edit List</div>
+              <!-- Items textarea -->
+              <div style="font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Items</div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.82rem;color:var(--muted);min-height:72px;line-height:1.7;font-style:italic">
+                Bananas<br>Chicken breast<br>Greek yogurt<br>Olive oil
+              </div>
+              <!-- Upload zone -->
+              <div style="display:flex;gap:12px;justify-content:center;margin:14px 0 10px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                  <div style="width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="#333"/>
+                      <circle cx="12" cy="13" r="4" fill="#4a9eff"/>
+                      <circle cx="12" cy="13" r="2.2" fill="#fff"/>
+                    </svg>
+                  </div>
+                  <span style="font-size:.75rem;color:var(--muted)">Camera</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                  <div style="width:56px;height:56px;border-radius:50%;background:#4a7eff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="rgba(255,255,255,.95)"/>
+                    </svg>
+                  </div>
+                  <span style="font-size:.75rem;color:var(--muted)">Browse</span>
+                </div>
+              </div>
+              <div style="background:var(--green);color:#0a1a12;border-radius:10px;padding:12px;text-align:center;font-size:.95rem;font-weight:700;font-family:'Outfit',sans-serif">✦ Organize list →</div>
+            </div>
           </div>
-          <div class="ob-scan-result">
-            <div class="ob-scan-kw">cereal</div>
-            <div class="ob-scan-kw">granola</div>
-            <div class="ob-scan-kw">oats</div>
-            <div class="ob-scan-kw ob-kw-new">+ breakfast bars</div>
+        </div>
+      </div>
+
+      <!-- Slide 6: List sharing -->
+      <div class="ob-slide" data-index="5">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">🔗</div>
+        </div>
+        <h2 class="ob-title">Shop Together</h2>
+        <p class="ob-body">Share your list with anyone — they'll see the same aisle-sorted view in real time, so you can split up and cover the store together.</p>
+        <div class="ob-demo" style="padding:0;overflow:hidden;border-radius:14px">
+          <div style="transform:scale(0.82);transform-origin:top center;margin-bottom:-44px">
+            <div style="display:flex;justify-content:center;padding:10px 0 0">
+              <div style="width:36px;height:4px;border-radius:2px;background:var(--border)"></div>
+            </div>
+            <div style="padding:12px 16px 16px">
+              <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:4px">Share List</div>
+              <div style="font-size:.82rem;color:var(--muted);margin-bottom:16px">Weekly Shop · Market Basket</div>
+              <!-- Share link box -->
+              <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px;line-height:1.5">Anyone with this link can view and edit this list in real time.</div>
+              <div style="display:flex;gap:8px;margin-bottom:16px">
+                <div style="flex:1;font-size:.75rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">instaisle.online/s/xk92m…</div>
+                <div style="flex-shrink:0;padding:8px 14px;border-radius:8px;background:var(--green);color:#0a1a12;font-size:.88rem;font-weight:700;font-family:'Outfit',sans-serif">Copy</div>
+              </div>
+              <!-- Shared with -->
+              <div style="font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Shared with</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+                  <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#0a1a12;flex-shrink:0">S</div>
+                  <span style="font-size:.82rem;color:var(--text)">sarah@example.com</span>
+                  <span style="margin-left:auto;font-size:.65rem;color:#4ade80;font-weight:600">● Live</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+                  <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0">M</div>
+                  <span style="font-size:.82rem;color:var(--text)">mike@example.com</span>
+                  <span style="margin-left:auto;font-size:.65rem;color:var(--muted)">Joined</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <button class="ob-btn-start" onclick="window.closeOnboarding()">Start shopping →</button>
