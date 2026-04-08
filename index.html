@@ -13753,7 +13753,7 @@ if ('serviceWorker' in navigator) {
 // ONBOARDING FLOW
 // ══════════════════════════════
 (function() {
-  const TOTAL = 4;
+  const TOTAL = 5;
   let _current = 0;
 
   function buildDots() {
@@ -13956,36 +13956,68 @@ if ('serviceWorker' in navigator) {
         </div>
       </div>
 
-      <!-- Slide 3: Community contributions -->
+      <!-- Slide 3: Customize your store -->
       <div class="ob-slide" data-index="2">
+        <div class="ob-icon-wrap">
+          <div class="ob-icon">✏️</div>
+        </div>
+        <h2 class="ob-title">Make It Yours</h2>
+        <p class="ob-body">You can customize any store in the library, or build your own by scanning aisle signs or adding template aisles manually.</p>
+        <div class="ob-demo" style="padding:10px 12px">
+          <!-- Mock store edit modal -->
+          <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Market Basket · 5 aisles</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+              <span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">Dairy &amp; Eggs</span>
+              <span style="font-size:.65rem;padding:2px 7px;border-radius:6px;background:rgba(74,222,128,.12);color:#4ade80;font-weight:600">📷 Verified</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+              <span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">Bakery</span>
+              <span style="font-size:.65rem;padding:2px 7px;border-radius:6px;background:rgba(74,222,128,.12);color:#4ade80;font-weight:600">📷 Verified</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:2px solid var(--green);border-radius:8px;padding:8px 10px">
+              <span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">Aisle 3</span>
+              <span style="font-size:.7rem;color:var(--muted)">📷 Scan to name</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text);cursor:default">
+              📷 Scan Signs
+            </button>
+            <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text);cursor:default">
+              ＋ Add Aisle
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4: Community + item routing training -->
+      <div class="ob-slide" data-index="3">
         <div class="ob-icon-wrap">
           <div class="ob-icon">🤝</div>
         </div>
         <h2 class="ob-title">You Help Everyone</h2>
-        <p class="ob-body">When you scan aisle signs or edit a store's layout, your changes can be shared with the community. Every improvement makes the app more accurate for everyone who shops there.</p>
-        <div class="ob-demo ob-demo-community">
-          <div class="ob-contrib-row">
-            <div class="ob-contrib-avatar">A</div>
-            <div class="ob-contrib-text">
-              <span class="ob-contrib-name">You</span> renamed "Aisle 4" →
-              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+        <p class="ob-body">When you scan signs or edit aisles, your improvements are shared with the community. And when you move a miscategorized item to the right aisle, you're training the app for all shoppers at that store.</p>
+        <div class="ob-demo" style="padding:10px 12px">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+              <span style="font-size:1rem">📷</span>
+              <span style="font-size:.75rem;color:var(--text)">Scanned signs improve the layout <strong style="color:#4ade80">for everyone</strong></span>
             </div>
-            <span class="ob-contrib-tag ob-tag-live">Live</span>
-          </div>
-          <div class="ob-contrib-row">
-            <div class="ob-contrib-avatar ob-av2">B</div>
-            <div class="ob-contrib-text">
-              <span class="ob-contrib-name">Another shopper</span> confirmed
-              <span class="ob-contrib-highlight">Dairy &amp; Eggs</span>
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+              <span style="font-size:1rem">↕️</span>
+              <span style="font-size:.75rem;color:var(--text)">Moving an item to the right aisle <strong style="color:#60a5fa">trains the app</strong></span>
             </div>
-            <span class="ob-contrib-tag ob-tag-conf">✓ Confirmed</span>
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+              <span style="font-size:1rem">✏️</span>
+              <span style="font-size:.75rem;color:var(--text)">Aisle edits are shared with the <strong style="color:#a78bfa">community</strong></span>
+            </div>
           </div>
-          <p class="ob-contrib-caption">2 shoppers agree — the app is updated for everyone at this store.</p>
         </div>
       </div>
 
-      <!-- Slide 4: Photo scan -->
-      <div class="ob-slide" data-index="3">
+      <!-- Slide 5: Scan an aisle sign -->
+      <div class="ob-slide" data-index="4">
         <div class="ob-icon-wrap">
           <div class="ob-icon">📷</div>
         </div>
