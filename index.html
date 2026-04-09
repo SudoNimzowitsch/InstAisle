@@ -696,8 +696,9 @@ textarea.input{resize:vertical;min-height:90px;}
 
 /* Slides */
 .ob-slides { flex: 1; overflow-y: auto; position: relative; }
-.ob-slide { display: none; }
+.ob-slide { display: none; pointer-events: none; user-select: none; -webkit-user-select: none; }
 .ob-slide.active { display: block; }
+.ob-nav button, .ob-btn-start { pointer-events: auto; }
 
 /* Icon */
 .ob-icon-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
