@@ -1448,7 +1448,6 @@ textarea.input{resize:vertical;min-height:90px;}
     <div class="divider"></div>
     -->
     <div class="divider"></div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-bottom:8px;color:var(--muted)" onclick="closeModal('modal-profile');clearCacheAndReload()">🔄 Clear cache &amp; hard reload</button>
     <button class="btn btn-danger btn-full" onclick="signOut()">Sign Out</button>
   </div>
 </div>
@@ -1649,9 +1648,6 @@ onAuthStateChanged(auth, async (user) => {
     }
     if (window._isNewSignup) {
       window._isNewSignup = false;
-      setTimeout(() => window.maybeShowOnboarding(true), 600);
-    } else {
-      // DEBUG: show onboarding to all users — remove before ship
       setTimeout(() => window.maybeShowOnboarding(true), 600);
     }
   } else {
@@ -13825,11 +13821,10 @@ if ('serviceWorker' in navigator) {
   };
 
   window.maybeShowOnboarding = function(isNewUser) {
-    // DEBUG: show onboarding to every user every time — remove before ship
-    // try {
-    //   if (localStorage.getItem('instaisle_onboarded')) return;
-    // } catch(e) {}
-    // if (!isNewUser) return;
+    try {
+      if (localStorage.getItem('instaisle_onboarded')) return;
+    } catch(e) {}
+    if (!isNewUser) return;
     buildDots();
     showSlide(0);
     initSwipe();
