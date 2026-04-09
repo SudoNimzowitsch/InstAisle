@@ -9730,8 +9730,8 @@ function renderNearbyPage() {
       '<div class="nearby-card-info">' +
         '<div class="nearby-name">' + esc(store.name) + '</div>' +
         '<div class="nearby-address">' + esc(store.address) + '</div>' +
-        '<div class="nearby-meta"><span class="nearby-dist">' + formatDistance(store.distance) + '</span></div>' +
-      '</div>' + matchPill;
+        '<div class="nearby-meta"><span class="nearby-dist">' + formatDistance(store.distance) + '</span>' + matchPill + '</div>' +
+      '</div>';
     inner.appendChild(card);
   });
 
@@ -13925,33 +13925,31 @@ if ('serviceWorker' in navigator) {
         <div class="ob-demo" style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
           <div class="nearby-card selected">
             <div class="nearby-card-info">
-              <div class="nearby-name">Market Basket</div>
-              <div class="nearby-address">880 Walnut St, Newtonville</div>
-              <div class="nearby-meta">
-                <span class="nearby-dist">0.4 mi</span>
-                <span class="nearby-open open">Open</span>
-                <span class="nearby-match-pill sign">📷 Scan verified · 18 aisles</span>
-              </div>
-            </div>
-          </div>
-          <div class="nearby-card">
-            <div class="nearby-card-info">
               <div class="nearby-name">Whole Foods Market</div>
-              <div class="nearby-address">15 Washington St, Newton</div>
+              <div class="nearby-address">261 Waterman St, Providence, RI</div>
               <div class="nearby-meta">
-                <span class="nearby-dist">1.2 mi</span>
-                <span class="nearby-open open">Open</span>
-                <span class="nearby-match-pill community">👥 Community data · 22 aisles</span>
+                <span class="nearby-dist">0.5 mi</span>
+                <span class="nearby-match-pill template">📋 Whole Foods template</span>
               </div>
             </div>
           </div>
           <div class="nearby-card">
             <div class="nearby-card-info">
-              <div class="nearby-name">Trader Joe's</div>
-              <div class="nearby-address">905 Walnut St, Newton</div>
+              <div class="nearby-name">CVS Pharmacy</div>
+              <div class="nearby-address">481 Angell St, Providence, RI</div>
               <div class="nearby-meta">
-                <span class="nearby-dist">2.1 mi</span>
-                <span class="nearby-match-pill template">📋 Template only · 14 aisles</span>
+                <span class="nearby-dist">0.6 mi</span>
+                <span class="nearby-match-pill template">📋 CVS template</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nearby-card-info">
+              <div class="nearby-name">Eastside Mart</div>
+              <div class="nearby-address">980 Hope St, Providence, RI</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">0.8 mi</span>
+                <span class="nearby-no-match-pill">No template</span>
               </div>
             </div>
           </div>
