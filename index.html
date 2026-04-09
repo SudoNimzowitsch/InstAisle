@@ -245,6 +245,7 @@ textarea.input{resize:vertical;min-height:90px;}
 .tpl-card-name{font-size:.78rem;font-weight:600;color:var(--text);margin-bottom:2px;}
 .tpl-card-count{font-size:.62rem;color:var(--muted);}
 .tpl-search{margin-bottom:12px;}
+.tpl-card-active{border-color:var(--green)!important;background:rgba(74,222,128,.06)!important;}
 
 .aisle-img-zone{
   border:2px dashed var(--border);border-radius:10px;padding:18px 14px;
@@ -1324,15 +1325,22 @@ textarea.input{resize:vertical;min-height:90px;}
 </div>
 
 <!-- Template Picker (must be after modal-store in DOM to stack above it) -->
-<div class="modal-overlay" id="modal-template-picker" onclick="event.stopPropagation();document.getElementById('modal-template-picker').classList.remove('open')" style="z-index:1001">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;display:flex;flex-direction:column">
+<div class="modal-overlay" id="modal-template-picker" onclick="event.stopPropagation();_closeTplPicker()" style="z-index:1001">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;display:flex;flex-direction:column">
     <div class="modal-handle"></div>
-    <div class="modal-title" style="margin-bottom:12px">Import Aisle Template</div>
+    <div class="modal-title" style="margin-bottom:12px">Import from Template</div>
     <input class="input tpl-search" id="tpl-search-input" placeholder="Search templates…" oninput="renderTemplatePicker()">
     <div style="overflow-y:auto;flex:1">
       <div class="tpl-grid" id="tpl-grid"></div>
+      <!-- Expanded cluster view — shown when a template is selected -->
+      <div id="tpl-cluster-view" style="display:none;padding:4px 0"></div>
     </div>
-    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="document.getElementById('modal-template-picker').classList.remove('open')">Cancel</button>
+    <!-- Footer — hidden until a template is expanded -->
+    <div id="tpl-footer" style="display:none;padding-top:10px;border-top:1px solid var(--border);margin-top:8px;display:none">
+      <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="_tplAddSelected()">✦ Add selected</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="_tplAddAll()">Add all</button>
+    </div>
+    <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" id="tpl-cancel-btn" onclick="_closeTplPicker()">Cancel</button>
   </div>
 </div>
 
@@ -1375,7 +1383,6 @@ textarea.input{resize:vertical;min-height:90px;}
     <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFileUpload(event)">
     <input type="file" id="file-input-browse" accept=".txt,.csv,.pdf" style="display:none" onchange="handleFileUpload(event)">
     <!-- Hidden input for aisle photo scans; id set dynamically before click -->
-    <input type="file" id="aisle-img-input" accept="image/*" capture="environment" style="display:none" onchange="handleAisleImageUpload(event)">
     <!-- Store builder inputs — multi-image aisle sign capture -->
     <input type="file" id="sign-capture-input" accept="image/*" capture="environment" style="display:none" multiple onchange="handleSignCapture(event)">
     <input type="file" id="sign-upload-input" accept="image/*" style="display:none" multiple onchange="handleSignUpload(event)">
@@ -10234,7 +10241,6 @@ function renderAisleRows(){
   tempAisles.forEach((aisle, i) => { if (aisle.colorIdx === undefined) aisle.colorIdx = i; });
   document.getElementById('aisle-rows').innerHTML=tempAisles.map((aisle,i)=>{
     const color=AISLE_COLORS[aisle.colorIdx%AISLE_COLORS.length];
-    const pending=pendingScannedKws[i];
     const _exp = _expandedAisles.has(i);
     const _kwc = aisle.keywords.length;
     const _dn  = aisle.name.trim() || `Aisle ${i+1}`;
@@ -10265,29 +10271,7 @@ function renderAisleRows(){
         <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="openTemplatePicker(${i})">
           ✦ Import from template
         </button>
-        <div id="advanced-toggle-${i}" style="text-align:center;margin-bottom:4px">
-          <button class="btn btn-sm btn-ghost" style="font-size:.68rem;color:var(--muted);padding:2px 10px"
-            onclick="toggleAdvancedKw(${i})">More options ▾</button>
-        </div>
-        <div id="advanced-kw-${i}" style="display:none">
-          <div class="kw-tabs">
-            <button class="kw-tab active" id="tab-bulk-${i}" onclick="switchKwTab(${i},'bulk')">Add keywords</button>
-            <button class="kw-tab" id="tab-scan-${i}" onclick="switchKwTab(${i},'scan')">📷 Scan photo</button>
-          </div>
-          <div class="kw-panel active" id="panel-bulk-${i}">
-            <textarea class="kw-bulk" id="kw-bulk-${i}"
-              placeholder="Paste keywords separated by commas or line breaks:&#10;brown eggs, 2% milk&#10;instant ramen"></textarea>
-            <button class="kw-bulk-btn" onclick="addBulkKw(${i})">+ Add all keywords</button>
-          </div>
-          <div class="kw-panel" id="panel-scan-${i}">
-            <div class="aisle-img-zone" id="scan-zone-${i}" onclick="triggerAisleScan(${i})">
-              <div style="font-size:1.4rem;margin-bottom:6px">📸</div>
-              <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take an aisle photo</div>
-              <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>
-            </div>
-            ${pending ? renderScanResult(i, pending) : ''}
-          </div>
-        </div>
+
       </div>
       </div>
       </div>
@@ -10357,14 +10341,7 @@ function toggleAisleExpanded(i) {
   renderAisleRows();
 }
 
-function toggleAdvancedKw(i) {
-  const panel = document.getElementById('advanced-kw-' + i);
-  const btn = document.querySelector(`#advanced-toggle-${i} button`);
-  if (!panel) return;
-  const open = panel.style.display === 'block';
-  panel.style.display = open ? 'none' : 'block';
-  if (btn) btn.textContent = open ? 'More options ▾' : 'More options ▴';
-}
+
 
 // ── Cluster view for aisle keywords ─────────────────────────────────────
 // Groups an aisle's keywords back into their source clusters for display.
@@ -10411,7 +10388,7 @@ function _getAisleClusters(aisleIdx) {
 function renderClusterPills(i) {
   const clusters = _getAisleClusters(i);
   if (!clusters.length) {
-    return `<span style="font-size:.68rem;color:var(--muted)">No keywords yet — import from template or scan a photo</span>`;
+    return `<span style="font-size:.68rem;color:var(--muted)">No items yet — import from template</span>`;
   }
 
   return clusters.map((c, ci) => {
@@ -10492,13 +10469,7 @@ function refreshChips(i){
   if(pillsEl) pillsEl.innerHTML=renderClusterPills(i);
 }
 
-function switchKwTab(i, tab){
-  ['bulk','scan'].forEach(t=>{
-    document.getElementById('tab-'+t+'-'+i)?.classList.toggle('active', t===tab);
-    document.getElementById('panel-'+t+'-'+i)?.classList.toggle('active', t===tab);
-  });
-  if(tab==='bulk') document.getElementById('kw-bulk-'+i)?.focus();
-}
+
 
 function addKw(i){
   const inp=document.getElementById('kw-'+i);
@@ -10512,18 +10483,7 @@ function addKw(i){
   if (state.editingStoreId) _autoSaveStore();
 }
 
-function addBulkKw(i){
-  const ta=document.getElementById('kw-bulk-'+i);
-  if(!ta) return;
-  // Split on commas OR newlines only — preserves spaces within keywords
-  const vals=ta.value.split(/[,\n]+/).map(v=>v.trim().toLowerCase()).filter(Boolean);
-  let added=0;
-  vals.forEach(v=>{ if(v && !tempAisles[i].keywords.includes(v)){ tempAisles[i].keywords.push(v); added++; } });
-  ta.value='';
-  refreshChips(i);
-  showToast(`${added} keyword${added!==1?'s':''} added`);
-  if (state.editingStoreId) _autoSaveStore();
-}
+
 
 function removeKw(i,kw){
   tempAisles[i].keywords=tempAisles[i].keywords.filter(k=>k!==kw);
@@ -10533,118 +10493,9 @@ function removeKw(i,kw){
 
 // ── AISLE IMAGE SCANNING ──
 
-function triggerAisleScan(i){
-  syncNames();
-  aisleImgTargetIdx=i;
-  const inp=document.getElementById('aisle-img-input');
-  inp.value='';
-  inp.click();
-}
 
-async function handleAisleImageUpload(e){
-  const f=e.target.files[0]; if(!f) return;
-  e.target.value='';
-  const i=aisleImgTargetIdx;
-  if(i===null||i===undefined) return;
 
-  // Show image preview + spinner in scan zone
-  const zone=document.getElementById('scan-zone-'+i);
-  if(!zone) return;
 
-  const dataUrl=await fileToDataUrl(f);
-  const b64=dataUrl.split(',')[1];
-  const mime=f.type||'image/jpeg';
-
-  zone.classList.add('scanning');
-  const _isPano = (()=>{ try { const _i=new Image(); _i.src=dataUrl; return _i.naturalWidth > _i.naturalHeight*2; } catch(e){ return false; } })();
-  zone.innerHTML=`
-    <img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
-    <div class="aisle-img-spinner"></div>
-    <div style="font-size:.7rem;color:var(--blue)">Scanning ${f.type&&f.name&&f.name.toLowerCase().includes('pano')?'panorama':'shelves'}…</div>`;
-
-  try {
-    const keywords=await scanAisleImage(b64, mime);
-    pendingScannedKws[i]=keywords;
-    zone.classList.remove('scanning');
-    zone.classList.add('has-preview');
-    zone.onclick=null; // disable re-trigger while result showing
-
-    // Show preview + result row below zone
-    zone.innerHTML=`<img class="aisle-img-thumb" src="${dataUrl}" alt="Aisle photo">
-      <div style="font-size:.68rem;color:var(--muted);margin-top:4px">
-        Found <strong style="color:var(--green)">${keywords.length}</strong> items — review below before adding
-      </div>`;
-
-    // Re-render result row in panel
-    const panel=document.getElementById('panel-scan-'+i);
-    if(panel){
-      // Remove old result row if present, then append new one
-      panel.querySelector('.scan-result-row')?.remove();
-      panel.insertAdjacentHTML('beforeend', renderScanResult(i, keywords));
-    }
-  } catch(err){
-    console.error(err);
-    zone.classList.remove('scanning');
-    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">⚠️</div>
-      <div style="font-size:.75rem;color:var(--red)">Scan failed — tap to try again</div>`;
-    zone.onclick=()=>triggerAisleScan(i);
-    showToast('Could not read image');
-  }
-}
-
-function renderScanResult(i, keywords){
-  if(!keywords||!keywords.length) return `<div style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:8px">No items detected — try a clearer photo</div>`;
-  // Show first few as a preview list, then accept/discard buttons
-  const preview=keywords.slice(0,8).map(k=>`<span style="font-size:.68rem;color:var(--text)">${esc(k)}</span>`).join(', ')
-    +(keywords.length>8?` <span style="color:var(--muted)">+${keywords.length-8} more</span>`:'');
-  return `<div class="scan-result-row">
-    <div>
-      <div class="scan-result-label" style="margin-bottom:4px">✦ Detected: ${preview}</div>
-    </div>
-  </div>
-  <div style="display:flex;gap:6px;margin-top:8px">
-    <button class="scan-accept-btn" style="flex:1" onclick="acceptScanKws(${i})">✓ Add ${keywords.length} keyword${keywords.length!==1?'s':''}</button>
-    <button class="scan-discard-btn" onclick="discardScan(${i})">Discard</button>
-  </div>`;
-}
-
-function acceptScanKws(i){
-  const kws=pendingScannedKws[i]||[];
-  let added=0;
-  kws.forEach(k=>{ if(!tempAisles[i].keywords.includes(k)){ tempAisles[i].keywords.push(k); added++; } });
-  delete pendingScannedKws[i];
-  // Reset scan zone, re-render chips, switch to 'one' tab
-  refreshChips(i);
-  const panel=document.getElementById('panel-scan-'+i);
-  const zone=document.getElementById('scan-zone-'+i);
-  if(zone){
-    zone.classList.remove('has-preview','scanning');
-    zone.onclick=()=>triggerAisleScan(i);
-    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
-      <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
-      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
-  }
-  if(panel) panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
-  showToast(`${added} keyword${added!==1?'s':''} added from photo ✓`);
-  switchKwTab(i,'bulk');
-  if (state.editingStoreId) _autoSaveStore();
-}
-
-function discardScan(i){
-  delete pendingScannedKws[i];
-  const zone=document.getElementById('scan-zone-'+i);
-  if(zone){
-    zone.classList.remove('has-preview','scanning');
-    zone.onclick=()=>triggerAisleScan(i);
-    zone.innerHTML=`<div style="font-size:1.4rem;margin-bottom:6px">📸</div>
-      <div style="font-size:.75rem;font-weight:600;margin-bottom:3px">Take or upload an aisle photo</div>
-      <div style="font-size:.68rem">AI will identify what's on the shelves and add keywords automatically</div>`;
-  }
-  const panel=document.getElementById('panel-scan-'+i);
-  if(panel){
-    panel.querySelectorAll('.scan-result-row,.scan-accept-btn,.scan-discard-btn').forEach(el=>el.remove());
-  }
-}
 
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -11366,48 +11217,7 @@ async function _maybeVerifyStoreOnCheckoff(store) {
 }
 // ══════════════════════════════════════════════════════════════════════════
 
-async function scanAisleImage(b64, mime){
-  const user=window._currentUser;
-  if(!user){ showToast('Please sign in first'); return []; }
-  const token=await user.getIdToken();
 
-  // Resize before sending — panoramas get a wider cap to preserve their detail
-  const resizedB64=await new Promise(resolve=>{
-    const img=new Image();
-    img.onload=()=>{
-      let w=img.width, h=img.height;
-      const isPanorama = w > h * 2; // aspect ratio > 2:1 = panoramic
-      const MAX_W = isPanorama ? 3072 : 1024; // preserve panorama width
-      const MAX_H = isPanorama ? 1024 : 1024;
-      if (w > MAX_W || h > MAX_H) {
-        const scaleW = MAX_W / w;
-        const scaleH = MAX_H / h;
-        const scale  = Math.min(scaleW, scaleH);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-      }
-      const c=document.createElement('canvas'); c.width=w; c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(c.toDataURL('image/jpeg',0.88).split(',')[1]);
-    };
-    img.src=`data:${mime};base64,${b64}`;
-  });
-
-  const res=await fetch(
-    'https://us-central1-instaisle-e8d6b.cloudfunctions.net/scanAisleImage',
-    {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({imageBase64:resizedB64, mimeType:'image/jpeg'})
-    }
-  );
-  if(!res.ok){
-    const err=await res.json().catch(()=>({}));
-    throw new Error(err?.error||`Server error ${res.status}`);
-  }
-  const data=await res.json();
-  return Array.isArray(data.keywords)?data.keywords:[];
-}
 
 function fileToDataUrl(file){
   return new Promise((resolve,reject)=>{
@@ -11425,10 +11235,20 @@ let _tplTargetAisle = null;
 
 function openTemplatePicker(aisleIdx) {
   _tplTargetAisle = aisleIdx;
+  _tplExpandedIdx = null;
   document.getElementById('tpl-search-input').value = '';
+  document.getElementById('tpl-cluster-view').style.display = 'none';
+  document.getElementById('tpl-footer').style.display = 'none';
+  document.getElementById('tpl-cancel-btn').textContent = 'Cancel';
   renderTemplatePicker();
-  // Open without pushing history — we're layered on top of modal-store
   document.getElementById('modal-template-picker').classList.add('open');
+}
+
+let _tplExpandedIdx = null;
+
+function _closeTplPicker() {
+  document.getElementById('modal-template-picker').classList.remove('open');
+  _tplExpandedIdx = null;
 }
 
 function renderTemplatePicker() {
@@ -11440,55 +11260,121 @@ function renderTemplatePicker() {
   const grid = document.getElementById('tpl-grid');
   grid.innerHTML = filtered.map(t => {
     const idx = GROCERY_TEMPLATES.indexOf(t);
-    return `<button class="tpl-card" data-tpl-idx="${idx}">
+    const isExpanded = idx === _tplExpandedIdx;
+    return `<button class="tpl-card${isExpanded ? ' tpl-card-active' : ''}" data-tpl-idx="${idx}">
       <div class="tpl-card-name">${esc(t.name)}</div>
-      <div class="tpl-card-count">${t.keywords.length} keywords</div>
+      <div class="tpl-card-count">${t.clusters?.length || 0} sections · ${t.keywords.length} items</div>
     </button>`;
   }).join('') ||
     '<p class="text-muted" style="text-align:center;padding:16px;grid-column:1/-1">No templates match.</p>';
   grid.onclick = e => {
     const card = e.target.closest('.tpl-card');
-    if (card) importTemplate(parseInt(card.dataset.tplIdx, 10));
+    if (!card) return;
+    const idx = parseInt(card.dataset.tplIdx, 10);
+    if (_tplExpandedIdx === idx) {
+      // Collapse
+      _tplExpandedIdx = null;
+      document.getElementById('tpl-cluster-view').style.display = 'none';
+      document.getElementById('tpl-footer').style.display = 'none';
+      document.getElementById('tpl-cancel-btn').textContent = 'Cancel';
+    } else {
+      _tplExpandedIdx = idx;
+      _renderTplClusters(idx);
+    }
+    renderTemplatePicker();
   };
 }
 
-function importTemplate(tplIdx) {
-  const i = _tplTargetAisle;
-  if (i === null || !tempAisles[i]) return;
+function _renderTplClusters(tplIdx) {
   const tpl = GROCERY_TEMPLATES[tplIdx];
   if (!tpl) return;
+  const view = document.getElementById('tpl-cluster-view');
+  const footer = document.getElementById('tpl-footer');
+  view.style.display = 'block';
+  footer.style.display = 'block';
+  document.getElementById('tpl-cancel-btn').textContent = '← Back';
+  document.getElementById('tpl-cancel-btn').onclick = () => {
+    _tplExpandedIdx = null;
+    view.style.display = 'none';
+    footer.style.display = 'none';
+    document.getElementById('tpl-cancel-btn').textContent = 'Cancel';
+    document.getElementById('tpl-cancel-btn').onclick = _closeTplPicker;
+    renderTemplatePicker();
+  };
+  view.innerHTML = `
+    <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:8px 0 10px">${esc(tpl.name)} </div>
+    ${(tpl.clusters || []).map((c, ci) => `
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+        <input type="checkbox" data-ci="${ci}" checked style="margin-top:2px;accent-color:var(--green);width:16px;height:16px;flex-shrink:0">
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:2px">${esc(c.name)}</div>
+          <div style="font-size:.65rem;color:var(--muted)">${c.keywords.length} items</div>
+        </div>
+      </label>`).join('')}`;
+}
 
-  // Set name if aisle is still using the default generated name
-  const currentName = tempAisles[i].name.trim();
-  const defaultName = `Aisle ${i + 1}`;
-  if (!currentName || currentName === defaultName) {
-    tempAisles[i].name = tpl.name;
-  }
-
-  // Merge keywords (no duplicates, case-insensitive)
+function _tplAddSelected() {
+  const i = _tplTargetAisle;
+  if (i === null || !tempAisles[i] || _tplExpandedIdx === null) return;
+  const tpl = GROCERY_TEMPLATES[_tplExpandedIdx];
+  if (!tpl) return;
+  const checked = new Set(
+    [...document.querySelectorAll('#tpl-cluster-view input[type=checkbox]:checked')]
+      .map(cb => parseInt(cb.dataset.ci, 10))
+  );
   const existing = new Set(tempAisles[i].keywords.map(k => k.toLowerCase()));
-  const added = [];
+  let added = 0;
+  (tpl.clusters || []).forEach((c, ci) => {
+    if (!checked.has(ci)) return;
+    c.keywords.forEach(k => {
+      if (!existing.has(k.toLowerCase())) {
+        tempAisles[i].keywords.push(k);
+        existing.add(k.toLowerCase());
+        added++;
+      }
+    });
+  });
+  _applyTplName(i, tpl);
+  _closeTplPicker();
+  _expandedAisles.add(i);
+  renderAisleRows();
+  if (state.editingStoreId) _autoSaveStore();
+  showToast(`Added ${added} items from "${tpl.name}"`);
+}
+
+function _tplAddAll() {
+  const i = _tplTargetAisle;
+  if (i === null || !tempAisles[i] || _tplExpandedIdx === null) return;
+  const tpl = GROCERY_TEMPLATES[_tplExpandedIdx];
+  if (!tpl) return;
+  const existing = new Set(tempAisles[i].keywords.map(k => k.toLowerCase()));
+  let added = 0;
   tpl.keywords.forEach(k => {
     if (!existing.has(k.toLowerCase())) {
       tempAisles[i].keywords.push(k);
       existing.add(k.toLowerCase());
-      added.push(k);
+      added++;
     }
   });
-
-  // Close without history.back() — no history entry was pushed when opening
-  const tplEl = document.getElementById('modal-template-picker');
-  if (tplEl) tplEl.classList.remove('open');
-  _expandedAisles.add(i); // keep the aisle expanded so user sees the result
+  _applyTplName(i, tpl);
+  _closeTplPicker();
+  _expandedAisles.add(i);
   renderAisleRows();
+  if (state.editingStoreId) _autoSaveStore();
+  showToast(`Added ${added} items from "${tpl.name}"`);
+}
 
-  // Expand the keywords section for this aisle so user can see what was added
-  const panel = document.getElementById('kw-collapsible-' + i);
-  const toggle = document.getElementById('kw-toggle-' + i);
-  if (panel) { panel.style.display = 'block'; }
-  if (toggle) { toggle.textContent = '－'; }
+function _applyTplName(i, tpl) {
+  const currentName = tempAisles[i].name.trim();
+  const defaultName = `Aisle ${i + 1}`;
+  if (!currentName || currentName === defaultName) tempAisles[i].name = tpl.name;
+}
 
-  showToast(`Imported ${added.length} keywords from "${tpl.name}"`);
+function importTemplate(tplIdx) {
+  // Legacy entry point — now just opens the cluster picker
+  _tplExpandedIdx = tplIdx;
+  _renderTplClusters(tplIdx);
+  renderTemplatePicker();
   if (state.editingStoreId) _autoSaveStore();
 }
 
