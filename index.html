@@ -10520,7 +10520,8 @@ const CF_BASE = 'https://us-central1-instaisle-e8d6b.cloudfunctions.net';
 let _signBuilder = {
   source: null,        // 'camera' | 'upload'
   gps: null,           // { lat, lng } from geolocation API
-  files: [],           // File objects selected by user
+  files: [],           // File objects (nulled after compression)
+  images: [],          // pre-compressed { data, mimeType } objects
   aisles: [],          // assembled aisles from processAisleSigns response
   reverseGeocodedAddress: null,
   gpsVerified: false,
@@ -10533,7 +10534,7 @@ let _signBuilder = {
 // ── Entry point — called from 📷 Signs button in store modal ──────────────
 function openSignBuilder() {
   // Reset state
-  _signBuilder = { source:null, gps:null, files:[], aisles:[],
+  _signBuilder = { source:null, gps:null, files:[], images:[], aisles:[],
                    reverseGeocodedAddress:null, gpsVerified:false,
                    storeName:'', storeAddress:'', storeCity:'', storeState:'' };
 
@@ -10706,8 +10707,20 @@ function _signBuilderShowNameAddress() {
 function handleSignCapture(e) {
   const files = [...(e.target.files || [])];
   if (!files.length) return;
-  // Accumulate rather than replace — supports multi-shot flow
+  // Accumulate — supports multi-shot flow
   _signBuilder.files = _signBuilder.files.concat(files);
+  // Compress the new photo(s) in the background while user reviews thumbnails
+  files.forEach((file, i) => {
+    const idx = _signBuilder.files.length - files.length + i;
+    _compressSignImage(file).then(compressed => {
+      _signBuilder.images[idx] = compressed;
+      // Null out raw file reference once compressed — free the memory
+      _signBuilder.files[idx] = null;
+    }).catch(() => {
+      // Compression failed — will retry in _runSignBuilder
+      _signBuilder.images[idx] = null;
+    });
+  });
   _signBuilderShowCaptureReview();
 }
 
@@ -10768,6 +10781,7 @@ function handleSignUpload(e) {
   const files = [...(e.target.files || [])];
   if (!files.length) return;
   _signBuilder.files = files;
+  _signBuilder.images = new Array(files.length).fill(null); // will compress in _runSignBuilder
   document.getElementById('modal-sign-builder').classList.add('open');
   _runSignBuilder();
 }
@@ -10782,8 +10796,18 @@ async function _runSignBuilder() {
   substatusEl.textContent = 'Compressing images…';
 
   try {
-    // Compress all images client-side first
-    const images = await Promise.all(_signBuilder.files.map(f => _compressSignImage(f)));
+    // Camera path: images pre-compressed in background after each shot — just use them.
+    // Upload path: compress all in parallel now (no memory issue reported there).
+    let images;
+    if (_signBuilder.source === 'camera') {
+      // Use pre-compressed images; compress any that lost the race in parallel
+      images = await Promise.all(_signBuilder.images.map((img, i) =>
+        img ? Promise.resolve(img) : _compressSignImage(_signBuilder.files[i])
+      ));
+    } else {
+      // Upload path — parallel compression as before
+      images = await Promise.all(_signBuilder.files.map(f => _compressSignImage(f)));
+    }
     substatusEl.textContent = 'Reading signs…';
 
     const user = window._currentUser;
@@ -11164,7 +11188,7 @@ function _compressSignImage(file) {
       const img = new Image();
       img.onerror = reject;
       img.onload = () => {
-        const MAX = 1024;
+        const MAX = 800;
         let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
           const scale = Math.min(MAX / w, MAX / h);
