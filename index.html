@@ -8985,6 +8985,7 @@ let _libSelectedChain = null;    // currently highlighted chain in library modal
 let _libNearbyResult  = [];      // cached nearby search results
 let _libNearbyLoaded  = false;
 let _userLocationCache = null;   // {lat, lng} preloaded on login
+let _libAnchorCoords  = null;    // {lat, lng} of the current library search — may differ from GPS
 
 async function openLibraryModal() {
   _libSelectedChain = null;
@@ -9468,9 +9469,13 @@ function _mergeIntoCache(stores) {
 // then re-run any active name filter or refresh the visible list
 function _onOuterTilesLoaded() {
   _removeLoadingMoreFooter();
-  // Always rebuild _libNearbyResult with the now-complete cache
-  if (_userLocationCache) {
-    const { lat, lng } = _userLocationCache;
+  // Always rebuild _libNearbyResult with the now-complete cache.
+  // Use _libAnchorCoords (the searched location) not _userLocationCache (GPS) —
+  // these differ when the user has manually searched a location, and using GPS
+  // here was what caused outer-tile stores to sort from the wrong city.
+  const anchor = _libAnchorCoords || _userLocationCache;
+  if (anchor) {
+    const { lat, lng } = anchor;
     const withDist = (_storeLocationCache || [])
       .filter(s => s.lat && s.lng)
       .map(s => ({ ...s, distance: haversineMeters(lat, lng, s.lat, s.lng) }))
@@ -9517,6 +9522,7 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
 
 // Shared helper: load tiles for area, sort by distance, populate _libNearbyResult
 async function computeNearbyFromCoords(lat, lng) {
+  _libAnchorCoords = { lat, lng }; // record the search origin — _onOuterTilesLoaded reads this
   const allStores = await loadStoreLocations(lat, lng);
   if (!allStores.length) {
     if (!_storeLocationCache || !_storeLocationCache.length) return false;
