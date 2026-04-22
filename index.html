@@ -9087,9 +9087,9 @@ async function _commitLocationSearch() {
     const TOO_BROAD = new Set(['country', 'state', 'region', 'continent']);
     results = results.filter(r => !TOO_BROAD.has(r.components?._type));
 
-    // Sort by confidence (1–10). OpenCage doesn't always put its best match
-    // first for ambiguous neighborhood queries.
-    results.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+    // Do NOT sort by confidence — OpenCage's confidence score favors small
+    // exact-match towns over major cities (Boston, IN scores higher than
+    // Boston, MA). Trust OpenCage's own relevance ordering instead.
 
     if (!results.length) {
       statusEl.textContent = 'Location not found. Try a city, neighborhood, or full address.';
