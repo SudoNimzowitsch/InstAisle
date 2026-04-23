@@ -3152,7 +3152,9 @@ async function _grantTrustedStatus(locId, reason) {
 
 // ── Shopper path: GPS-verified check-off threshold ────────────────────────
 const _shopCheckCount = {}; // storeId → items checked this session
+const _shopGpsCooldownUntil = {}; // storeId → timestamp before which _getGPS should not fire
 const TRUSTED_SHOPPER_THRESHOLD = 5;
+const TRUSTED_SHOPPER_SPEED_MPH = 60; // assumed max travel speed for cooldown calculation
 
 async function _maybeGrantTrustedOnCheckoff(store) {
   if (!store?.library_location_id || !window._currentUser) return;
@@ -3163,9 +3165,26 @@ async function _maybeGrantTrustedOnCheckoff(store) {
   _shopCheckCount[store.id] = (_shopCheckCount[store.id] || 0) + 1;
   if (_shopCheckCount[store.id] < TRUSTED_SHOPPER_THRESHOLD) return;
 
+  // Respect distance-derived cooldown from the last GPS attempt
+  if (_shopGpsCooldownUntil[store.id] && Date.now() < _shopGpsCooldownUntil[store.id]) return;
+
   const gps = await _getGPS().catch(() => null);
-  if (!gps || !store.lat || !store.lng) return;
-  if (haversineMeters(gps.lat, gps.lng, store.lat, store.lng) > 300) return;
+
+  if (!gps || !store.lat || !store.lng) {
+    // No GPS fix — try again in 60s
+    _shopGpsCooldownUntil[store.id] = Date.now() + 60_000;
+    return;
+  }
+
+  const distMeters = haversineMeters(gps.lat, gps.lng, store.lat, store.lng);
+
+  if (distMeters > 300) {
+    // Too far — set cooldown proportional to distance: (miles / 60mph) → ms
+    const distMiles = distMeters / 1609.34;
+    const cooldownMs = (distMiles / TRUSTED_SHOPPER_SPEED_MPH) * 3_600_000;
+    _shopGpsCooldownUntil[store.id] = Date.now() + cooldownMs;
+    return;
+  }
 
   await _grantTrustedStatus(locId, 'shopper');
   showToast("🏅 You're now a trusted contributor for this store!");
