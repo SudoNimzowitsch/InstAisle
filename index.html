@@ -1286,6 +1286,7 @@ textarea.input{resize:vertical;min-height:90px;}
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
       <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
+      <button class="btn btn-ghost btn-full btn-sm" id="store-publish-btn" style="display:none;margin-top:8px;color:var(--green);border-color:var(--green)" onclick="publishStoreToLibrary(state.stores.find(s=>s.id===state.editingStoreId))">⬆ Publish My Version to Library</button>
       <div id="store-fab-spacer" style="display:none;height:144px;flex-shrink:0"></div>
     </div>
   </div>
@@ -1619,7 +1620,7 @@ import { getAuth, onAuthStateChanged, signOut as fbSignOut,
                                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, collection, setDoc, getDoc, onSnapshot,
          updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
-         addDoc, orderBy, limit }
+         addDoc, orderBy, limit, runTransaction }
                                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ══════════════════════════════════════════════════════════════
@@ -1651,7 +1652,7 @@ window._fb = { auth, db, fbSignOut, createUserWithEmailAndPassword,
                reauthenticateWithCredential, EmailAuthProvider,
                doc, collection, setDoc, getDoc, onSnapshot,
                updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, arrayUnion, arrayRemove,
-               addDoc, orderBy, limit };
+               addDoc, orderBy, limit, runTransaction };
 
 // ── Auth state listener ──
 onAuthStateChanged(auth, async (user) => {
@@ -1714,10 +1715,18 @@ async function loadUserData(uid) {
     if (flagSnap.exists()) {
       // Per-user flag takes priority over global flag
       const userFlagSnap = await getDoc(doc(db, 'users', uid));
-      if (userFlagSnap.exists() && userFlagSnap.data().useNewListStructure !== undefined) {
-        _useNewLists = userFlagSnap.data().useNewListStructure;
+      if (userFlagSnap.exists()) {
+        const uData = userFlagSnap.data();
+        if (uData.useNewListStructure !== undefined) {
+          _useNewLists = uData.useNewListStructure;
+        } else {
+          _useNewLists = flagSnap.data().useNewListStructure === true;
+        }
+        // Cache super-user status globally — set via Firebase console on users/{uid}.is_super_user
+        window._isSuperUser = uData.is_super_user === true;
       } else {
         _useNewLists = flagSnap.data().useNewListStructure === true;
+        window._isSuperUser = false;
       }
     }
   } catch(e) {
@@ -2795,11 +2804,19 @@ window.contributeToLibrary = async function(store) {
   if (!locSnap.exists()) {
     // Document doesn't exist yet — create it with contributed aisle data
     await setDoc(locRef, {
-      aisles:                store.aisles.map(a => ({ name: a.name, keywords: [...a.keywords] })),
+      aisles:                store.aisles.map(a => ({
+        name:        a.name,
+        keywords:    [...a.keywords],
+        source:      a.source      || 'user_labeled',
+        sign_ts:     a.sign_ts     || null,
+        aisle_index: a.aisle_index ?? null,
+      })),
       data_status:           'live',
       first_contributor_uid: uid,
       first_contribution_ts: serverTimestamp(),
     });
+    // Builder of the library entry gets trusted status automatically
+    _grantTrustedStatus(locId, 'builder');
     return;
   }
 
@@ -2816,10 +2833,11 @@ window.contributeToLibrary = async function(store) {
   if (dataStatus === 'none' || !libAisles) {
     await setDoc(locRef, {
       aisles:                store.aisles.map(a => ({
-        name:     a.name,
-        keywords: [...a.keywords],
-        source:   a.source || 'user_labeled',
-        sign_ts:  a.sign_ts || null,
+        name:        a.name,
+        keywords:    [...a.keywords],
+        source:      a.source      || 'user_labeled',
+        sign_ts:     a.sign_ts     || null,
+        aisle_index: a.aisle_index ?? null,
       })),
       data_status:           'live',
       first_contributor_uid: uid,
@@ -2858,7 +2876,8 @@ window.contributeToLibrary = async function(store) {
       });
 
       if (overlappingLibAisle) {
-        // Possible duplicate with different name — flag for user prompt
+        // Possible duplicate with different name — flag for user prompt only.
+        // Do NOT add immediately; wait for user to confirm it's truly distinct.
         if (!state._pendingNameConflicts) state._pendingNameConflicts = [];
         state._pendingNameConflicts.push({
           locId,
@@ -2868,11 +2887,6 @@ window.contributeToLibrary = async function(store) {
           lib_keywords:     [...overlappingLibAisle.keywords],
           overlap:          keywordOverlapRatio(userAisle.keywords, overlappingLibAisle.keywords),
         });
-        // Tentatively add the user's aisle — if they confirm it's the same,
-        // the prompt handler will merge it instead
-        immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
-          action: 'add', aisle: { name: userAisle.name, keywords: [...userAisle.keywords] }
-        };
       } else {
         // Genuinely new aisle — add immediately
         immediateUpdates['add_aisle_' + normaliseForMatch(userAisle.name)] = {
@@ -2998,29 +3012,45 @@ window.contributeToLibrary = async function(store) {
 
   // (contributor list tracking removed — was never implemented)
 
-  // ── Apply immediate updates to library ────────────────────────────────
+  // ── Apply immediate updates inside a transaction to prevent concurrent stomps ──
   if (Object.keys(immediateUpdates).length) {
-    let updatedAisles = libAisles.map(a => ({ name: a.name, keywords: [...a.keywords], source: a.source || 'user_labeled', sign_ts: a.sign_ts || null }));
-    for (const upd of Object.values(immediateUpdates)) {
-      if (upd.action === 'add') {
-        updatedAisles.push({ source: 'user_labeled', sign_ts: null, ...upd.aisle });
-      } else if (upd.action === 'add_keyword') {
-        const a = updatedAisles.find(a => a.name === upd.aisle_name);
-        if (a && !a.keywords.includes(upd.keyword)) a.keywords.push(upd.keyword);
-      } else if (upd.action === 'remove_keyword') {
-        const a = updatedAisles.find(a => a.name === upd.aisle_name);
-        if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== upd.keyword.toLowerCase());
-      } else if (upd.action === 'delete') {
-        updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, upd.aisle_name));
-      } else if (upd.action === 'rename') {
-        if (updatedAisles[upd.index]) {
-          updatedAisles[upd.index].name    = upd.new_name;
-          updatedAisles[upd.index].source  = upd.source  || updatedAisles[upd.index].source;
-          updatedAisles[upd.index].sign_ts = upd.sign_ts || updatedAisles[upd.index].sign_ts;
+    const { runTransaction } = window._fb;
+    await runTransaction(db, async (tx) => {
+      // Re-read inside the transaction so our write is based on the latest state
+      const freshSnap = await tx.get(locRef);
+      const freshData = freshSnap.exists() ? freshSnap.data() : {};
+      const freshRaw  = freshData.aisles || [];
+      let updatedAisles = freshRaw.map(a => ({
+        name:        a.name,
+        keywords:    [...(a.keywords || [])],
+        source:      a.source      || 'user_labeled',
+        sign_ts:     a.sign_ts     || null,
+        aisle_index: a.aisle_index ?? null,
+      }));
+      for (const upd of Object.values(immediateUpdates)) {
+        if (upd.action === 'add') {
+          // Only add if no name match exists in the fresh data (handles concurrent adds)
+          if (!updatedAisles.some(a => aisleNamesMatch(a.name, upd.aisle.name))) {
+            updatedAisles.push({ source: 'user_labeled', sign_ts: null, aisle_index: null, ...upd.aisle });
+          }
+        } else if (upd.action === 'add_keyword') {
+          const a = updatedAisles.find(a => a.name === upd.aisle_name);
+          if (a && !a.keywords.includes(upd.keyword)) a.keywords.push(upd.keyword);
+        } else if (upd.action === 'remove_keyword') {
+          const a = updatedAisles.find(a => a.name === upd.aisle_name);
+          if (a) a.keywords = a.keywords.filter(k => k.toLowerCase() !== upd.keyword.toLowerCase());
+        } else if (upd.action === 'delete') {
+          updatedAisles = updatedAisles.filter(a => !aisleNamesMatch(a.name, upd.aisle_name));
+        } else if (upd.action === 'rename') {
+          if (updatedAisles[upd.index]) {
+            updatedAisles[upd.index].name    = upd.new_name;
+            updatedAisles[upd.index].source  = upd.source  || updatedAisles[upd.index].source;
+            updatedAisles[upd.index].sign_ts = upd.sign_ts || updatedAisles[upd.index].sign_ts;
+          }
         }
       }
-    }
-    await updateDoc(locRef, { aisles: updatedAisles });
+      tx.update(locRef, { aisles: updatedAisles });
+    });
   }
 
   // ── Write pending changes ─────────────────────────────────────────────
@@ -3070,6 +3100,123 @@ window.contributeToLibrary = async function(store) {
     }
   }
 };
+
+// ══════════════════════════════════════════════════════════════════════════
+// TRUSTED USER SYSTEM
+// store_locations/{locId}/trusted_users/{uid} → { granted_at, reason }
+// Reasons: 'builder' (first contributor), 'photo_edit' (edited from signs),
+//          'shopper' (GPS-verified check-off)
+//
+// Super-users (window._isSuperUser) are trusted at every store globally.
+// Set users/{uid}.is_super_user = true via Firebase console to designate one.
+// ══════════════════════════════════════════════════════════════════════════
+
+const _trustedStatusCache = {}; // "<locId>:<uid>" → true | false
+
+async function _checkTrustedStatus(locId) {
+  if (!locId || !window._currentUser) return false;
+  if (window._isSuperUser) return true; // super-users trusted everywhere
+  const uid = window._currentUser.uid;
+  const cacheKey = locId + ':' + uid;
+  if (_trustedStatusCache[cacheKey] !== undefined) return _trustedStatusCache[cacheKey];
+  const { db, doc, getDoc } = window._fb;
+  try {
+    const snap = await getDoc(
+      doc(db, 'store_locations', sanitizeLocId(locId), 'trusted_users', uid)
+    );
+    _trustedStatusCache[cacheKey] = snap.exists();
+    return _trustedStatusCache[cacheKey];
+  } catch(e) {
+    console.warn('[trusted] check error:', e.message);
+    return false;
+  }
+}
+
+async function _grantTrustedStatus(locId, reason) {
+  if (!locId || !window._currentUser) return;
+  const uid = window._currentUser.uid;
+  const cacheKey = locId + ':' + uid;
+  if (_trustedStatusCache[cacheKey]) return; // already trusted, skip write
+  const { db, doc, setDoc, serverTimestamp } = window._fb;
+  try {
+    await setDoc(
+      doc(db, 'store_locations', sanitizeLocId(locId), 'trusted_users', uid),
+      { granted_at: serverTimestamp(), reason: reason || 'shopper' }
+    );
+    _trustedStatusCache[cacheKey] = true;
+    console.log('[trusted] granted:', reason, 'for', locId);
+  } catch(e) {
+    console.warn('[trusted] grant error:', e.message);
+  }
+}
+
+// ── Shopper path: GPS-verified check-off threshold ────────────────────────
+const _shopCheckCount = {}; // storeId → items checked this session
+const TRUSTED_SHOPPER_THRESHOLD = 5;
+
+async function _maybeGrantTrustedOnCheckoff(store) {
+  if (!store?.library_location_id || !window._currentUser) return;
+  const locId = store.library_location_id;
+  const cacheKey = locId + ':' + window._currentUser.uid;
+  if (_trustedStatusCache[cacheKey] || window._isSuperUser) return;
+
+  _shopCheckCount[store.id] = (_shopCheckCount[store.id] || 0) + 1;
+  if (_shopCheckCount[store.id] < TRUSTED_SHOPPER_THRESHOLD) return;
+
+  const gps = await _getGPS().catch(() => null);
+  if (!gps || !store.lat || !store.lng) return;
+  if (haversineMeters(gps.lat, gps.lng, store.lat, store.lng) > 300) return;
+
+  await _grantTrustedStatus(locId, 'shopper');
+  showToast("🏅 You're now a trusted contributor for this store!");
+  _updatePublishButton(store);
+}
+
+// ── Photo-edit path: grant trusted after editing from sign photos ──────────
+async function _grantTrustedAfterPhotoEdit(store) {
+  if (!store?.library_location_id) return;
+  await _grantTrustedStatus(store.library_location_id, 'photo_edit');
+  _updatePublishButton(store);
+}
+
+// ── Publish: trusted users force-write their local aisles to library ───────
+async function publishStoreToLibrary(store) {
+  if (!store?.library_location_id) {
+    showToast("This store isn't linked to the library yet."); return;
+  }
+  const trusted = await _checkTrustedStatus(store.library_location_id);
+  if (!trusted) {
+    showToast('Trusted user status required to publish.'); return;
+  }
+  const { db, doc, updateDoc, serverTimestamp } = window._fb;
+  try {
+    await updateDoc(doc(db, 'store_locations', sanitizeLocId(store.library_location_id)), {
+      aisles: store.aisles.map(a => ({
+        name:        a.name,
+        keywords:    [...a.keywords],
+        source:      a.source      || 'user_labeled',
+        sign_ts:     a.sign_ts     || null,
+        aisle_index: a.aisle_index ?? null,
+      })),
+      last_published_by: window._currentUser.uid,
+      last_published_at: serverTimestamp(),
+    });
+    showToast('✓ Your version is now live in the library.');
+  } catch(e) {
+    console.warn('[publish] error:', e.message);
+    showToast('Publish failed — please try again.');
+  }
+}
+
+// ── Show/hide publish button based on trusted status ──────────────────────
+async function _updatePublishButton(store) {
+  const btn = document.getElementById('store-publish-btn');
+  if (!btn) return;
+  if (!store?.library_location_id) { btn.style.display = 'none'; return; }
+  const trusted = await _checkTrustedStatus(store.library_location_id);
+  btn.style.display = trusted ? '' : 'none';
+}
+
 
 window.createStoreInFirestore = async function(storeData) {
   if (!window._currentUser) return storeData.id;
@@ -6723,6 +6870,8 @@ function editStore(id){
   // Hide save button — edits auto-save
   const saveBtn = document.getElementById('store-save-btn');
   if (saveBtn) saveBtn.style.display = 'none';
+  // Show publish button if this user is trusted for this store
+  _updatePublishButton(store);
   // Wire auto-save on name input
   const nameInput = document.getElementById('store-name-input');
   nameInput._autoSaveHandler && nameInput.removeEventListener('input', nameInput._autoSaveHandler);
@@ -7661,6 +7810,11 @@ async function signBuilderConfirmReview() {
         }
       }
       _autoSaveStore();
+      // Editing from sign photos (camera or upload) confers trusted user status
+      if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
+        const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
+        if (_editedStore) _grantTrustedAfterPhotoEdit(_editedStore); // fire-and-forget
+      }
     }
 
   } catch(err) {
@@ -9405,6 +9559,8 @@ function toggleCheck(idx){
 
     // Batch-upload store verification — fire-and-forget, no await
     _maybeVerifyStoreOnCheckoff(store);
+    // Trusted-user grant — fire-and-forget, no await
+    _maybeGrantTrustedOnCheckoff(store);
   }
 
   // Schedule aisle collapse if this check completed the aisle
