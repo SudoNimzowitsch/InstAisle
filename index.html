@@ -3127,7 +3127,11 @@ async function _checkTrustedStatus(locId) {
     _trustedStatusCache[cacheKey] = snap.exists();
     return _trustedStatusCache[cacheKey];
   } catch(e) {
-    console.warn('[trusted] check error:', e.message);
+    if (e.code === 'permission-denied') {
+      console.warn('[trusted] rules not deployed yet — trusted_users subcollection blocked. Deploy firestore.rules to fix.');
+    } else {
+      console.warn('[trusted] check error:', e.message);
+    }
     return false;
   }
 }
@@ -3156,7 +3160,7 @@ const _shopGpsCooldownUntil = {}; // storeId → timestamp before which _getGPS 
 const TRUSTED_SHOPPER_THRESHOLD = 5;
 const TRUSTED_SHOPPER_SPEED_MPH = 60; // assumed max travel speed for cooldown calculation
 
-async function _maybeGrantTrustedOnCheckoff(store) {
+window._maybeGrantTrustedOnCheckoff = async function(store) {
   if (!store?.library_location_id || !window._currentUser) return;
   const locId = store.library_location_id;
   const cacheKey = locId + ':' + window._currentUser.uid;
@@ -3192,14 +3196,14 @@ async function _maybeGrantTrustedOnCheckoff(store) {
 }
 
 // ── Photo-edit path: grant trusted after editing from sign photos ──────────
-async function _grantTrustedAfterPhotoEdit(store) {
+window._grantTrustedAfterPhotoEdit = async function(store) {
   if (!store?.library_location_id) return;
   await _grantTrustedStatus(store.library_location_id, 'photo_edit');
   _updatePublishButton(store);
 }
 
 // ── Publish: trusted users force-write their local aisles to library ───────
-async function publishStoreToLibrary(store) {
+window.publishStoreToLibrary = async function(store) {
   if (!store?.library_location_id) {
     showToast("This store isn't linked to the library yet."); return;
   }
@@ -3228,7 +3232,7 @@ async function publishStoreToLibrary(store) {
 }
 
 // ── Show/hide publish button based on trusted status ──────────────────────
-async function _updatePublishButton(store) {
+window._updatePublishButton = async function(store) {
   const btn = document.getElementById('store-publish-btn');
   if (!btn) return;
   if (!store?.library_location_id) { btn.style.display = 'none'; return; }
