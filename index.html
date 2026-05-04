@@ -5608,7 +5608,12 @@ let _userLocationCache = null;   // {lat, lng} preloaded on login
 let _libAnchorCoords  = null;    // {lat, lng} of the current library search — may differ from GPS
 
 async function openLibraryModal() {
-  await _ensureStoreLibrary();
+  // Kick off library fetch in parallel with GPS/tiles — do NOT await yet.
+  // STORE_LIBRARY is only needed by renderNearbyList() / selectNearbyStore(),
+  // both of which run after tiles arrive. Awaiting here would serialize a
+  // ~599KB download before the modal even opens.
+  const libReady = _ensureStoreLibrary();
+
   _libSelectedChain = null;
   _libSuggestions = [];
 
@@ -5620,8 +5625,12 @@ async function openLibraryModal() {
   _updateLocationButton();
   openModal('modal-library');
 
-  // If nearby results already ready, render immediately
+  // If nearby results already ready, render as soon as the library is in.
+  // (Library is almost always fast since it's cached from a prior modal open,
+  // and even on first open it usually finishes before tiles do.)
   if (_libNearbyLoaded) {
+    await libReady;
+    if (!document.getElementById('modal-library')?.classList.contains('open')) return;
     renderNearbyList();
     if (_outerTilesPromise) _addLoadingMoreFooter();
     return;
@@ -5643,6 +5652,10 @@ async function openLibraryModal() {
   }
 
   if (_libNearbyLoaded) {
+    // Tiles arrived — make sure the library is also in before rendering, since
+    // renderNearbyList needs STORE_LIBRARY for chain-template lookup.
+    await libReady;
+    if (!document.getElementById('modal-library')?.classList.contains('open')) return;
     container.innerHTML = '';
     renderNearbyList();
     if (_outerTilesPromise) _addLoadingMoreFooter();
