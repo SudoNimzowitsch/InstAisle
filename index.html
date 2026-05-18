@@ -1294,8 +1294,12 @@ textarea.input{resize:vertical;min-height:90px;}
       <div id="aisle-rows"></div>
 <button id="aisle-reorder-done" class="btn btn-ghost btn-full btn-sm" style="display:none;margin-bottom:8px;color:var(--green);border-color:var(--green)" onclick="toggleAisleReorderMode()">✓ Done reordering</button>
       <button class="btn btn-primary btn-full" id="store-save-btn" style="margin-top:16px" onclick="saveStore()">Save Store</button>
-      <button class="btn btn-ghost btn-full btn-sm" id="store-publish-btn" style="display:none;margin-top:8px;color:var(--green);border-color:var(--green)" onclick="publishStoreToLibrary(state.stores.find(s=>s.id===state.editingStoreId))">⬆ Publish My Version to Library</button>
+      <button class="btn btn-ghost btn-full btn-sm" id="store-publish-btn" style="display:none;margin-top:8px;color:var(--green);border-color:var(--green)" onclick="_publishEditedStore()">⬆ Publish My Version to Library</button>
       <div id="store-fab-spacer" style="display:none;height:144px;flex-shrink:0"></div>
+    </div>
+    <!-- Pinned "Save changes" bar — edit mode only, revealed after first change -->
+    <div id="store-edit-savebar" style="display:none;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);margin:0 -20px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 18px rgba(0,0,0,.28)">
+      <button class="btn btn-primary btn-full" onclick="saveStore()">Save changes</button>
     </div>
   </div>
 </div>
@@ -6861,9 +6865,13 @@ function hasUnsavedStoreChanges() {
 
 function maybeCloseStoreModal() {
   if (state.editingStoreId) {
-    // Editing: auto-save any pending changes then close cleanly
-    _autoSaveStoreNow();
-    closeModal('modal-store');
+    // Editing: changes are staged in temp buffers, not auto-saved. If the user
+    // has changed anything, confirm before discarding; otherwise close cleanly.
+    if (_storeEditDirty) {
+      document.getElementById('modal-unsaved-changes').classList.add('open');
+    } else {
+      closeModal('modal-store');
+    }
   } else if (hasUnsavedStoreChanges()) {
     document.getElementById('modal-unsaved-changes').classList.add('open');
   } else {
@@ -6911,9 +6919,12 @@ function editStore(id){
   tempAisles=store.aisles.map(a=>({name:a.name,keywords:[...a.keywords],keyword_scores:{...(a.keyword_scores||{})}}));
   _storeSnapshot = { name:store.name, color:store.color, aisles:store.aisles.map(a=>({name:a.name,keywords:[...a.keywords]})) };
   renderStoreModal();
-  // Hide save button — edits auto-save
+  // Hide the inline save button — editing uses the pinned "Save changes" bar,
+  // which is revealed only after the first change.
   const saveBtn = document.getElementById('store-save-btn');
   if (saveBtn) saveBtn.style.display = 'none';
+  _storeEditDirty = false;
+  _setStoreSaveBar(false);
   // Show publish button if this user is trusted for this store
   _updatePublishButton(store);
   // Wire auto-save on name input
@@ -8557,11 +8568,37 @@ function renumberAisleNames(){
 
 // ── Auto-save helpers for store edit mode ────────────────────────────────────
 let _autoSaveTimer = null;
+let _storeEditDirty = false; // true once the user changes anything in an edit session
 
+// Show/hide the pinned "Save changes" bar and lift the FABs clear of it.
+function _setStoreSaveBar(show) {
+  const bar = document.getElementById('store-edit-savebar');
+  if (bar) bar.style.display = show ? 'block' : 'none';
+  const fab = document.getElementById('fab-stack');
+  if (fab) fab.style.bottom = show ? 'calc(80px + env(safe-area-inset-bottom,0px))' : '20px';
+}
+
+// Publish to Library uses the saved store record. Since edits are now staged
+// (not auto-saved), block publishing while there are unsaved changes so we
+// never publish stale data.
+function _publishEditedStore() {
+  const store = state.stores.find(s => s.id === state.editingStoreId);
+  if (!store) return;
+  if (_storeEditDirty) {
+    showToast('Save your changes before publishing');
+    return;
+  }
+  publishStoreToLibrary(store);
+}
+
+// Called on every change while editing a store. Editing no longer auto-saves —
+// instead the first change reveals the pinned "Save changes" bar, and the user
+// must explicitly save (or discard) before the edit is committed.
 function _autoSaveStore() {
-  // Debounce: wait 800ms after last change before saving
-  clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(_autoSaveStoreNow, 800);
+  if (!state.editingStoreId) return; // new store — uses its own inline Save button
+  if (_storeEditDirty) return;       // bar already shown
+  _storeEditDirty = true;
+  _setStoreSaveBar(true);
 }
 
 function _autoSaveStoreNow() {
@@ -10355,6 +10392,9 @@ function _hideStoreFabs() {
   const scrollEl = document.querySelector('.store-modal-scroll');
   if (spacer)   spacer.style.display = 'none';
   if (scrollEl) scrollEl.style.paddingBottom = '36px';
+  // Reset the edit "Save changes" bar whenever the store modal closes
+  _storeEditDirty = false;
+  _setStoreSaveBar(false);
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
 }
