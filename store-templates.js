@@ -1,1950 +1,1637 @@
-// Store chain library — lazy-loaded by index.html
-// Assigned to global STORE_LIBRARY (declared as var in index.html)
-STORE_LIBRARY = {
+// Grocery aisle templates — lazy-loaded by index.html
+// Assigned to global GROCERY_TEMPLATES (declared as var in index.html)
+GROCERY_TEMPLATES = [
 
-  // ── CATEGORY: GROCERY ────────────────────────────────────────────────────
+  // ── 1. PRODUCE ──────────────────────────────────────────────────────────
+  {
+    name: 'Produce',
+    clusters: [
+      {
+        name: 'Fresh Fruit',
+        keywords: [
+          'apple','banana','orange','grape','strawberry','blueberry','lemon','lime',
+          'avocado','raspberry','blackberry','watermelon','cantaloupe','honeydew',
+          'peach','plum','pear','mango','pineapple','kiwi','cherry','grapefruit',
+          'tangerine','clementine','mandarin','pomelo','nectarine','apricot',
+          'cranberry','gooseberry','elderberry','papaya','coconut','guava',
+          'passionfruit','lychee','dragon fruit','rambutan','jackfruit','fig',
+          'date','pomegranate','persimmon','quince','starfruit','kumquat',
+          'blood orange','navel orange','melon','olive','pitaya',
+        ],
+      },
+      {
+        name: 'Fresh Vegetables',
+        keywords: [
+          'tomato','lettuce','spinach','kale','broccoli','carrot','celery',
+          'cucumber','pepper','onion','garlic','mushroom','potato','sweet potato',
+          'cauliflower','cabbage','zucchini','squash','bell pepper','jalapeño',
+          'corn','asparagus','green beans','peas','beets','radish','arugula',
+          'romaine','iceberg','eggplant','artichoke','brussels sprouts',
+          'leek','scallion','green onion','shallot','yellow onion','red onion',
+          'white onion','chives','cherry tomato','heirloom tomato','butternut squash',
+          'acorn squash','spaghetti squash','pumpkin','snap peas','snow peas',
+          'lima beans','edamame','okra','fennel','shiitake','portobello',
+          'oyster mushroom','cremini','bok choy','napa cabbage','kohlrabi',
+          'broccolini','daikon','turnip','parsnip','rutabaga','yam','cassava',
+          'taro','celeriac','yellow squash','delicata squash','kabocha',
+          'bitter melon','bottle gourd','chayote','nopales','jicama','plantain',
+          'serrano','poblano','habanero','chili pepper',
+          'butterhead lettuce','romaine lettuce','iceberg lettuce',
+        ],
+      },
+      {
+        name: 'Fresh Herbs',
+        keywords: [
+          'basil','cilantro','parsley','mint','dill','rosemary','thyme',
+          'oregano','sage','tarragon','lemongrass','chives','green onion',
+          'ginger root','turmeric root','fresh herbs',
+        ],
+      },
+      {
+        name: 'Specialty & Exotic Produce',
+        keywords: [
+          'microgreens','sprouts','watercress','swiss chard','collard greens',
+          'mustard greens','beet greens','turnip greens','savoy cabbage',
+          'red cabbage','green cabbage',
+          'seaweed','nopales','jicama','taro root','yuca','breadfruit',
+          'ackee','soursop','sapodilla','mangosteen','longan','durian',
+          'rambutan','lychee','dragon fruit','starfruit','carambola',
+          'passion fruit','yuzu','blood orange','kumquat',
+        ],
+      },
+    ],
+  },
 
-  grocery: [
+  // ── 2. MEAT & POULTRY ───────────────────────────────────────────────────
+  {
+    name: 'Meat & Poultry',
+    clusters: [
+      {
+        name: 'Chicken',
+        keywords: [
+          'chicken','chicken breast','chicken thighs','chicken wings',
+          'whole chicken','rotisserie chicken','chicken drumsticks',
+          'chicken tenders','ground chicken','bone-in chicken',
+          'marinated chicken','stuffed chicken breast','chicken burgers',
+          'chicken liver','chicken heart','cornish hen',
+        ],
+      },
+      {
+        name: 'Beef',
+        keywords: [
+          'beef','ground beef','steak','ribeye','sirloin','filet mignon',
+          'chuck roast','brisket','short ribs','flank steak','skirt steak',
+          'beef patties','stew meat',
+          'sirloin steak','t-bone steak','porterhouse steak','corned beef',
+          'beef liver','beef tenderloin','tri-tip','hanger steak',
+          'flat iron steak','top round','bottom round','eye of round',
+          'beef chuck','beef shank','beef ribs','chuck eye',
+          'beef cheeks','beef tongue','tripe','oxtail','beef franks',
+          'beef suet','meatballs','meatloaf mix',
+        ],
+      },
+      {
+        name: 'Pork',
+        keywords: [
+          'pork','bacon','ham','sausage','pork chops','pork tenderloin',
+          'pork ribs','hot dog','bratwurst','italian sausage','chorizo',
+          'kielbasa','breakfast sausage','smoked sausage','pork shoulder',
+          'pork belly','baby back ribs','pork butt','spare ribs','pork loin',
+          'marinated pork','ground pork','salt pork','fatback','pork belly slices',
+          'guanciale','lard','blood sausage',
+          'pancetta','andouille',
+          'linguica','merguez','ham steaks',
+          'turkey bacon',
+        ],
+      },
+      {
+        name: 'Turkey & Other Poultry',
+        keywords: [
+          'turkey','ground turkey','turkey breast','whole turkey',
+          'turkey burgers','turkey bacon','turkey sausage',
+          'duck','duck breast','duck leg','goose',
+          'pheasant','quail',
+        ],
+      },
+      {
+        name: 'Lamb, Veal & Specialty',
+        keywords: [
+          'lamb','lamb chops','lamb shank','ground lamb','rack of lamb',
+          'lamb shoulder','lamb ribs','leg of lamb','veal','veal chops',
+          'veal cutlet','ground veal','osso buco','bison','venison','elk',
+          'wild boar','rabbit','alligator','frog legs',
+        ],
+      },
+      {
+        name: 'Deli Meats',
+        keywords: [
+          'deli','salami logs',
+          'pepperoni stick','giblets','skewers','kebab meat',
+          'pre-seasoned pork',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // MARKET BASKET
-    // Source: Official per-store Shopper's Guides (PDFs)
-    // shopmarketbasket.com/market-basket-stores-shoppers-guide-by-state/
-    //
-    // Aisle assignments derived from 3 stores: #89 Warwick RI, #90 Johnston RI,
-    // #24 Burlington MA. Aisle numbers vary by location; this uses the CATEGORY
-    // groupings that are consistent across all stores, with typical aisle names.
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'market-basket',
-      name: 'Market Basket',
-      confidence: 0.8,
-      type: 'grocery',
-      color: '#e63329',
-      searchNames: ['market basket', 'demoulas', 'demoulas market basket'],
-      dataSource: 'real',
-      aisles: [
-        {
-          name: 'Aisle 1 – Dairy & Deli',
-          keywords: [
-            'milk','butter','eggs','cottage cheese','sour cream','cream cheese','cheese','cheddar','mozzarella','parmesan','brie','feta','ricotta','grated parmesan','prepackaged cheese','swiss','american cheese','half and half','heavy cream','whipped cream','kefir','whole milk','skim milk','2% milk','oat milk','almond milk','soy milk','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','yogurt','greek yogurt','drinkable yogurt','ice cream','frozen yogurt','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','turkey deli meat','ham deli meat','roast beef','salami','pepperoni','bologna','pastrami','corned beef','mortadella','capicola','prosciutto di parma','swiss cheese','provolone','muenster','havarti','colby jack','pepper jack','gouda','gruyere','cheddar block','fresh mozzarella','rotisserie chicken','prepared salads','potato salad','coleslaw','pasta salad','macaroni salad','hummus','olives','pickles','antipasto','sub sandwiches','wraps','quiche','stuffed peppers','deli platters','deli chicken salad','tuna salad','egg salad','meatloaf slices','deli soups','fried chicken','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','emmental','jarlsberg','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','colby','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','bocconcini','goat cheese','chevre','romano','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer','sliced turkey','smoked turkey','honey turkey','black forest ham','honey ham','smoked ham','genoa salami','hard salami','chicken breast slices','american cheese slices','swiss cheese slices','provolone slices','cheddar slices','prepared sandwiches','liverwurst','braunschweiger','head cheese','soppressata','prosciutto','pancetta','coppa','bresaola','landjaeger','summer sausage','olive loaf','pickle loaf','pimento loaf','pepper jack slices','muenster slices','havarti slices','gouda slices','colby jack slices','fresh burrata','chicken tenders','meatloaf','pot roast','macaroni and cheese','mashed potatoes','roasted vegetables','soup','chili','baba ganoush','tzatziki','pimento cheese','spinach dip','artichoke dip','bruschetta','tapenade','mustard spread','horseradish cream','pate','duck confit','rillettes','terrine','charcuterie','stuffed grape leaves','deviled eggs','spring rolls','egg rolls','tamales'
-          ]
-        },
-        {
-          name: 'Aisle 2 – Soup, Canned Fish & Condiments',
-          keywords: [
-            'soup','chowder','clam chowder','corn chowder','potato chowder','bouillon','bouillon cubes','noodles','egg noodles','ramen noodles','canned fish','clams','canned clams','canned tuna','tuna','sardines','canned meat','canned chicken','spam','canned salmon','chinese food','asian canned','soy sauce','mexican food','taco sauce','taco shells','barbecue sauce','bbq sauce','ketchup','mustard','mayonnaise','mayo','salad dressing','ranch','vinegar','hot sauce','tabasco','tartar sauce','steak sauce','olives','pickles','capers','relish','croutons','chili sauce','worcestershire','baked beans','canned beans','canned tomatoes','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned sardines','canned anchovies','canned crab','canned ham','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','canned fruit','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','yellow mustard','dijon mustard','miracle whip','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','teriyaki sauce','hoisin sauce','oyster sauce','worcestershire sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pepperoncini','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','french onion soup','split pea soup','ramen broth','stock concentrate','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','olive oil','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi'
-          ]
-        },
-        {
-          name: 'Aisle 3 – Pasta, Rice & Sauce',
-          keywords: [
-            'pasta','spaghetti','penne','rigatoni','fettuccine','linguine','noodles','macaroni','mac and cheese','mac & cheese','lasagna','rice','white rice','brown rice','rice cakes','rice pilaf','spaghetti sauce','pasta sauce','marinara','tomato sauce','tomato paste','canned tomato','tomato','bread crumbs','breadcrumbs','hamburger helper','beans','kidney beans','black beans','chickpeas','lentils','dry beans','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','panko','jasmine rice','basmati rice','wild rice','instant rice','oatmeal','rolled oats','steel cut oats','granola','grits','cornmeal','quinoa','farro','barley','bulgur','couscous','polenta','orzo','lasagna noodles','egg noodles','ramen noodles','rice noodles','udon','soba','split peas','dried lentils','risotto rice','dried chickpeas','ravioli dried','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','sugar','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','whole wheat bread','multigrain bread','pumpernickel','baguette','ciabatta','brioche','challah','focaccia','pretzel bread','pita bread','roti','cornbread','gluten free bread','sprouted bread','ezekiel bread','keto bread','arborio','sushi rice','black rice','red rice','forbidden rice','parboiled rice','rice pilaf mix','oats','millet','amaranth','teff','spelt','freekeh','wheat berries','buckwheat','semolina','hominy','fusilli','farfalle','rotini','lasagna sheets','angel hair','pasta shells','cavatappi','ditalini','orecchiette','tortellini','ravioli','gnocchi','glass noodles','lo mein','vermicelli','shirataki noodles','wonton wrappers','dumpling wrappers','spring roll wrappers','croutons','stuffing mix','crispbread','matzo','corn tortillas','flour tortillas','taco shells','dried black beans','dried kidney beans','dried pinto beans','dried navy beans','dried cannellini beans','coconut flour','self-rising flour','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots'
-          ]
-        },
-        {
-          name: 'Aisle 4 – Breakfast & Cereal',
-          keywords: [
-            'cereal','granola','granola bars','oatmeal','oats','pop tarts','toaster pastries','breakfast bars','grits','cream of wheat','instant oatmeal','rice cakes','wheat germ','muesli','pancake mix','waffle mix','bisquick','baking mix','maple syrup','syrup','honey','jam','jelly','peanut butter','nutella','almond butter','nut butter','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','rolled oats','steel cut oats','biscuit mix','muffin mix','pancake syrup','preserves','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins'
-          ]
-        },
-        {
-          name: 'Aisle 5 – Baking',
-          keywords: [
-            'flour','sugar','brown sugar','powdered sugar','confectioners sugar','baking soda','baking powder','yeast','cornstarch','vanilla extract','vanilla','food coloring','cake mix','brownie mix','muffin mix','bread mix','pie filling','pudding mix','jello','gelatin','shortening','vegetable shortening','crisco','chocolate chips','cocoa powder','baking chocolate','spices','salt','pepper','cinnamon','nutmeg','garlic powder','onion powder','paprika','cumin','oregano','basil','thyme','coffee','ground coffee','instant coffee','tea','tea bags','nuts baking','baking nuts','walnuts','pecans','molasses','corn syrup','cooking oil','canola oil','vegetable oil','olive oil','coconut oil','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','raw sugar','stevia','splenda','cream of tartar','almond extract','black pepper','chili powder','rosemary','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','yeast packets','coconut flakes','gelatin mix','frosting tubs','frosting tubes','marshmallows','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','maple syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs'
-          ]
-        },
-        {
-          name: 'Aisle 6 – Canned Vegetables & Fruit',
-          keywords: [
-            'canned vegetables','canned corn','canned green beans','canned peas','canned carrots','canned beets','canned spinach','artichoke hearts','canned fruit','canned peaches','canned pears','canned pineapple','canned cherries','fruit cocktail','applesauce','apple sauce','cranberry sauce','cranberry','pie filling cherry','dried fruit','raisins','prunes','dried cranberries','dried apricots','dates','currants','figs','dried figs','snack nuts','mixed nuts','cashews','almonds','peanuts','trail mix','popcorn','popping corn','potato chips','chips','pretzels','candy','chocolate','m&ms','gummies','crackers snack','snacks','molasses','honey','jam','jelly','canned tomatoes','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','canned beans','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','olives','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','cherry pie filling','apple pie filling','canned mango','lychee','jackfruit','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales'
-          ]
-        },
-        {
-          name: 'Aisle 7 – Gravy, Mushrooms & Juice',
-          keywords: [
-            'gravy','gravy mix','brown gravy','turkey gravy','chicken gravy','mushrooms canned','canned mushrooms','vegetables canned','mixed vegetables','juice','apple juice','orange juice','cranberry juice','grape juice','tomato juice','v8','lemonade','fruit punch','canned potatoes','potato canned','canned tomatoes','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','canned beans','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','canned fruit','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','olives','roasted red peppers','sun-dried tomatoes','capers','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales'
-          ]
-        },
-        {
-          name: 'Aisle 8 – Coffee, Tea & Household Supplies',
-          keywords: [
-            'aluminum foil','foil','plastic wrap','saran wrap','wax paper','freezer bags','sandwich bags','ziploc','storage bags','trash bags','garbage bags','paper towels','napkins','plastic cups','paper plates','straws','toothpicks','plasticware','plastic utensils','kitchen utensils','kitchen tools','bakeware','cooking tools','ground coffee','whole bean coffee','instant coffee','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','cold brew coffee','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','chamomile tea','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','powdered creamer','liquid creamer','non dairy creamer','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','bounty','viva','select-a-size paper towels','toilet paper','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','paper napkins','cocktail napkins','dinner napkins','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','hot cups','cold cups','heavy duty foil','parchment paper','butcher paper','zip lock bags','gallon bags','snack bags','plastic storage bags','bin liners','paper straws','paper bowls','freezer paper','compost bags','light bulbs','led bulbs','60 watt bulbs','flood lights','smart bulbs','batteries','aa batteries','aaa batteries','9 volt batteries','d batteries','extension cord','power strip','outlet covers','cable ties','tape','scotch tape','duct tape','masking tape','packing tape','super glue','gorilla glue','wood glue','sandpaper','screwdrivers','hammer','nails','screws','picture hooks','command strips','velcro strips','furnace filters','air filters','carbon monoxide detector','smoke detector','bug spray','insect repellent','wasp spray','ant traps','mouse traps','rat poison','roach bait','caulk','weather stripping','door sweep','cabinet hardware','zip ties','bungee cords','rope','carabiners','nitro cold brew','ready to drink coffee','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','coffee creamer','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','green tea','black tea','herbal tea','chai','matcha','sugar','sweeteners','cold brew concentrate','canned coffee','bottled frappuccino','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','hot chocolate mix','drinking chocolate','cocoa powder','flavored creamer','vanilla creamer','hazelnut creamer','caramel creamer','oat milk creamer','almond milk creamer','coconut milk creamer','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','simple syrup','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','cocktail picks','recycling bags','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets','electrical tape','wall hooks','screwdriver','wrench','pliers','smart bulb','dimmer bulb','flood light bulb','candelabra bulb','globe bulb','tube bulb','night light','outdoor bulb','bug light','grow light','halogen bulb','fluorescent bulb','cfl bulb','C batteries','9 volt battery','button cell battery','lithium battery','rechargeable battery','battery charger','hearing aid battery','watch battery','surge protector','outlet cover','outlet extender','plug adapter','usb charger','cable organizer','smart plug','timer switch','dimmer switch','painters tape','double sided tape','foam tape','carpet tape','mounting tape','epoxy','silicone sealant','weatherstripping','wall anchors','toggle bolts','picture hangers','shelf brackets','drawer pulls','hinges','door handles','door knobs','lock','padlock','deadbolt','utility knife','box cutter','measuring tape','level','stud finder','drill bits','putty knife','spackle','caulking gun','paint roller','paint brush','paint tray','drop cloth','safety glasses','work gloves','storage bins','storage boxes','plastic containers','drawer organizer','closet organizer','shelf liner','vacuum storage bags','command hooks','tool box','label maker','labels','fire extinguisher','first aid kit','flashlight','lantern','emergency candle','safety lock','child safety lock','door stopper','door alarm','window lock','cabinet lock','mouse trap','rat trap','sticky trap','ant trap','raid','mosquito coil','fly trap','fly paper','moth balls','cedar blocks','matches','lighter','candle','bungee cord','twine','moving boxes','bubble wrap','packing peanuts','plastic sheeting','tarp'
-          ]
-        },
-        {
-          name: 'Aisle 9 – Soda & Water',
-          keywords: [
-            'soda','cola','pepsi','coke','sprite','ginger ale','root beer','sparkling water','seltzer','tonic water','water','spring water','distilled water','bottled water','sports drinks','gatorade','powerade','vitamin water','energy drinks','red bull','monster','kool aid','drink mix','iced tea mix','lemonade mix','club soda','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','coffee','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','diet cola','dr pepper','electrolyte drinks','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','juice','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister'
-          ]
-        },
-        {
-          name: 'Aisle 10 – Pet & Automotive',
-          keywords: [
-            'dog food','cat food','pet food','cat litter','dog treats','cat treats','pet supplies','bird food','fish food','aquarium','charcoal','lighter fluid','bug spray','insect repellent','automotive','motor oil','windshield washer','car supplies','bug killer','ant trap','mouse trap','pest control','dry dog food','wet dog food','dog kibble','grain-free dog food','dry cat food','wet cat food','cat kibble','kitten food','training treats','dental treats','rawhide','bully sticks','catnip','cat chews','dog leash','dog collar','cat collar','id tags','harness','dog shampoo','cat shampoo','pet wipes','flea and tick treatment','flea collar','pet toothbrush','pet toothpaste','clumping litter','crystal litter','litter box liners','dog poop bags','waste bags','pet bowls','water fountain','food mat','dog toys','chew toys','rope toys','cat toys','laser pointer','bird seed','hamster food','small animal bedding','pet treats','pet toys','litter','litter boxes','leashes','collars','pet beds','pet shampoo','grooming brushes','grain free dog food','puppy food','senior dog food','small breed dog food','large breed dog food','raw dog food','freeze dried dog food','dog food topper','blue buffalo','purina','hills science diet','royal canin','iams','wellness','merrick','orijen','acana','taste of the wild','senior cat food','grain free cat food','raw cat food','freeze dried cat food','cat food topper','fancy feast','friskies','tiki cat','dental chews','pig ears','dog biscuits','temptations','greenies','milk bone','kong stuffing','freeze dried treats','jerky treats','soft treats','pill pockets','silica gel litter','natural litter','pine litter','paper litter','tidy cats','arm hammer litter','fresh step','world best cat litter','litter deodorizer','litter liner','litter mat','litter scoop','rope toy','tennis ball','fetch toy','squeaky toy','interactive toy','puzzle toy','catnip toy','feather wand','cat wand','crinkle toy','plush toy','kong','nylabone','antler chew','flea treatment','tick prevention','heartgard','frontline','seresto','nexgard','bravecto','pet conditioner','ear cleaner','dental water additive','probiotic pet','fish oil pet','joint supplement pet','calming supplement','anxiety wrap','thundershirt','nail clippers pet','deshedding brush','furminator','slicker brush','pin brush','pet comb','dematting comb','poop bags','pet carrier','crate','pet gate','pet stairs','pet ramp','pet fountain','pet bowl','slow feeder bowl','puzzle feeder','elevated bowl','pet blanket','pet jacket','pet boots','retractable leash','long line leash','head collar','muzzle','id tag','bird cage','hamster wheel','rabbit food','guinea pig food','ferret food','reptile food','reptile lamp','fish tank','aquarium filter','aquarium heater','aquarium gravel','fish net','turtle food','hermit crab food'
-          ]
-        },
-        {
-          name: 'Aisle 11 – Health & Baby',
-          keywords: [
-            'baby food','baby formula','diapers','wipes','baby powder','baby lotion','cold remedies','cough syrup','cold medicine','aspirin','ibuprofen','tylenol','vitamins','supplements','eye care','eye drops','bandages','first aid','band-aids','antiseptic','hydrogen peroxide','rubbing alcohol','laxative','antacid','tums','feminine hygiene','pads','tampons','feminine needs','shaving cream','razors','razor blades','shaving needs','shoe care','shoe polish','advil','acetaminophen','naproxen','dayquil','nyquil','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','pepto-bismol','imodium','gas-x','prilosec','gauze','medical tape','ace bandage','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','infant formula','toddler formula','breast milk bags','pureed baby food','baby cereal','teething crackers','puffs','baby snacks','toddler snacks','squeeze pouches','applesauce pouches','newborn diapers','size 1 diapers','pull-ups','training pants','baby wipes','sensitive wipes','fragrance-free wipes','diaper rash cream','baby wash','baby shampoo','baby oil','baby sunscreen','pacifiers','bottle nipples','baby bottles','sippy cups','baby monitor','nursing pads','nipple cream','baby tylenol','infant ibuprofen','gripe water','gas drops','baby oatmeal','baby puree meats','yogurt melts','toddler meals','baby juice','bottle liners','ready formula bottles','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves','face mask','newborn formula','hypoallergenic formula','soy formula','goat milk formula','organic formula','enfamil','similac','gerber formula','kendamil','baby food jars','baby pouches','teething biscuits','stage 1 baby food','stage 2 baby food','stage 3 baby food','gerber','beech-nut','happy baby','once upon a farm','plum organics','baby rice cereal','baby mum mum','toddler puffs','squeeze pouch','veggie pouch','fruit pouch','overnight diapers','swim diapers','pampers','huggies','luvs','honest diapers','seventh generation diapers','bambo diapers','pull ups','fragrance free wipes','water wipes','diaper cream','desitin','aquaphor','balmex','infant tylenol','infant advil','saline drops','nasal aspirator','baby thermometer','baby bottle','bottle nipple','pacifier','sippy cup','straw cup','baby spoon','suction bowl','high chair mat','bib','burp cloth','formula dispenser','bottle brush','bottle sterilizer'
-          ]
-        },
-        {
-          name: 'Aisle 12 – Personal Care',
-          keywords: [
-            'shampoo','conditioner','hair care','hair spray','hair gel','soap','body wash','hand soap','bar soap','liquid soap','deodorant','antiperspirant','toothpaste','toothbrush','floss','mouthwash','dental care','lotion','moisturizer','body lotion','hand cream','sunscreen','bath tissue','toilet paper','facial tissue','kleenex','tissues','paper towels','napkins','paper plates','paper cups','batteries','lightbulbs','electrical supplies','stationery','2-in-1 shampoo','dry shampoo','hair mask','antibacterial soap','electric toothbrush','dental floss','whitening strips','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','face wash','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','mousse','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','electric toothbrush heads','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','eye drops','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods'
-          ]
-        },
-        {
-          name: 'Aisle 13 – Cleaning & Laundry',
-          keywords: [
-            'laundry detergent','tide','laundry soap','fabric softener','dryer sheets','bleach','stain remover','oxygen cleaner','dish soap','dishwasher detergent','cascade','dawn','household cleaner','all-purpose cleaner','lysol','windex','409','disinfectant','disinfecting wipes','clorox','drain cleaner','drano','broom','mop','sponges','scrub brush','rubber gloves','steel wool','vacuum bags','air freshener','febreze','candles household','ammonia','pine sol','floor cleaner','dish detergent','dishwasher pods','rinse aid','liquid laundry detergent','laundry pods','powder detergent','oxiclean','multi-surface spray','disinfectant spray','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','plunger','trash bags','garbage bags','recycling bags','compostable bags','microfiber cloths','paper towels','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','toilet paper','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','plastic wrap','saran wrap','aluminum foil','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','fabuloso','murphy oil soap','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','finish','palmolive','plug in air freshener','charcoal odor absorber','room spray','microfiber cloth','scrubbing pad','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','ziploc','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets'
-          ]
-        },
-        {
-          name: 'Aisle 14 – Bread & Bakery',
-          keywords: [
-            'bread','white bread','wheat bread','sourdough','rye bread','bagels','english muffins','pita','tortillas','wraps','flatbread','rolls','dinner rolls','hamburger buns','hot dog buns','muffins','donuts','croissants','pastries','danish','cookies','crackers','graham crackers','stuffing mix','breadcrumbs','croutons','sourdough bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','flour tortillas','corn tortillas','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','lavash','rice cakes','panko']
-        },
-        {
-          name: 'Frozen Foods',
-          keywords: [
-            'frozen','frozen vegetables','frozen peas','frozen corn','frozen broccoli','frozen fruit','frozen berries','frozen meals','tv dinner','frozen pizza','frozen burritos','frozen entrees','ice cream','ice cream bars','popsicles','sorbet','frozen yogurt','frozen waffles','frozen pancakes','frozen breakfast','frozen fish','frozen shrimp','frozen chicken','frozen meat','edamame','frozen edamame','ice cubes','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen salmon','frozen spinach','frozen stir fry vegetables','frozen mixed vegetables','frozen mango','frozen breakfast sandwiches','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle'
-          ]
-        },
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','limes','grapes','strawberries','blueberries','raspberries','blackberries','peach','pear','mango','pineapple','watermelon','cantaloupe','melon','avocado','tomato','cucumber','zucchini','squash','broccoli','cauliflower','lettuce','spinach','kale','arugula','chard','cabbage','brussels sprouts','asparagus','green beans','snap peas','carrot','celery','bell pepper','peppers','jalapeño','onion','garlic','shallots','leeks','scallions','potato','sweet potato','yam','corn on the cob','mushrooms fresh','fresh mushrooms','herbs','cilantro','parsley','basil fresh','ginger fresh','fresh ginger','lemongrass','lime','strawberry','blueberry','raspberry','blackberry','grape','honeydew','plum','kiwi','ginger','corn','peas','mushrooms','mushroom','beets','radish','romaine','iceberg','basil','mint','leek','eggplant','artichoke','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit'
-          ]
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','chicken breast','chicken thighs','whole chicken','rotisserie','ground beef','hamburger','steak','beef','chuck','sirloin','ribeye','pork','pork chops','pork loin','ribs','bacon','ham','sausage','turkey','turkey breast','ground turkey','lamb','lamb chops','veal','fish','salmon','tuna fresh','cod','tilapia','halibut','shrimp','scallops','lobster','crab','clams fresh','oysters','mussels','deli meat','sliced turkey','sliced ham','prosciutto','salami','hot dogs','bratwurst','kielbasa','chicken wings','rotisserie chicken','beef steak','filet mignon','chuck roast','brisket','whole turkey','turkey bacon','pork tenderloin','pork ribs','lamb shank','ground lamb','italian sausage','chorizo','breakfast sausage','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','crab legs','dungeness crab','clams','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','tuna','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets'
-          ]
-        }
-      ]
-    },
+  // ── 3. SEAFOOD ──────────────────────────────────────────────────────────
+  {
+    name: 'Seafood',
+    clusters: [
+      {
+        name: 'Fresh & Refrigerated Fish',
+        keywords: [
+          'salmon','tuna','tilapia','cod','halibut','mahi mahi','sea bass',
+          'trout','catfish','flounder','swordfish','snapper','grouper',
+          'pollock','haddock','branzino','striped bass','yellowfin tuna',
+          'bluefin tuna','ahi tuna','swordfish steak','sole','arctic char',
+          'whiting','walleye','pike','rockfish','monkfish','skate','turbot',
+          'black cod','sablefish','atlantic salmon','sockeye salmon',
+          'tuna steak','fish fillets','smoked salmon','lox','whitefish',
+          'sushi grade tuna','gravlax','smoked whitefish','smoked trout',
+          'smoked mackerel','smoked herring','salt cod','bacalao',
+          'pickled herring','anchovies','sardine','herring','mackerel',
+        ],
+      },
+      {
+        name: 'Fresh & Refrigerated Shellfish',
+        keywords: [
+          'shrimp','crab','lobster','scallops','clams','mussels','oysters',
+          'squid','calamari','octopus','jumbo shrimp','crab legs',
+          'dungeness crab','crawfish','peeled shrimp','bay scallops',
+          'sea scallops','littleneck clams','langoustine','whelk',
+          'stone crab','snow crab','soft shell crab','blue crab',
+          'razor clam','manila clam','geoduck','sea urchin','uni',
+          'abalone','conch','king crab','crayfish','prawns',
+        ],
+      },
+      {
+        name: 'Packaged & Specialty Seafood',
+        keywords: [
+          'smoked mussels','smoked oyster','fish cakes','surimi',
+          'imitation crab','fish ball','salmon roe','tobiko','masago',
+          'caviar','fish roe','crab cake','shrimp cocktail',
+        ],
+      },
+      {
+        name: 'Frozen Seafood',
+        shared: true, // also found in Frozen Foods aisle
+        keywords: [
+          'frozen shrimp','frozen salmon','frozen fish fillets','frozen scallops',
+          'frozen lobster tails','frozen crab cakes','frozen breaded shrimp',
+          'popcorn shrimp','breaded scallops','tempura shrimp','fish sticks',
+          'breaded fish fillets','frozen shrimp rings',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WHOLE FOODS MARKET
-    // Source: Curated based on Whole Foods department structure
-    // Whole Foods uses department labels rather than aisle numbers
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'whole-foods',
-      name: 'Whole Foods Market',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#00674b',
-      searchNames: ['whole foods','whole foods market','whole foods co'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','grape','berries','strawberry','blueberry','raspberry','lettuce','spinach','kale','arugula','chard','cabbage','broccoli','cauliflower','carrot','celery','cucumber','zucchini','squash','pepper','jalapeño','tomato','avocado','lemon','lime','mango','pineapple','watermelon','melon','onion','garlic','shallot','scallion','ginger','herbs','cilantro','parsley','basil','potato','sweet potato','yam','mushroom','corn','asparagus','green beans','peas snap','blackberry','cantaloupe','honeydew','peach','plum','pear','kiwi','bell pepper','peas','beets','radish','romaine','iceberg','mint','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','green onion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','oat milk','almond milk','soy milk','coconut milk','butter','ghee','eggs','egg','heavy cream','half and half','sour cream','yogurt','greek yogurt','kefir','cottage cheese','cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese','cream cheese','ricotta','gouda','manchego','camembert','whole milk','skim milk','2% milk','whipping cream','margarine','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','gruyere','emmental','jarlsberg','muenster','havarti','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','bocconcini','chevre','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','beef','pork','lamb','turkey','bison','bacon','sausage','ham','prosciutto','pancetta','deli meat','salmon','tuna','cod','halibut','tilapia','shrimp','scallops','crab','lobster','hot dogs','bratwurst','chorizo','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','lamb chops','lamb shank','ground lamb','italian sausage','kielbasa','breakfast sausage','veal','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','salami logs','ham steaks','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','sourdough','baguette','multigrain','rye','bagel','english muffin','pita','tortilla','wrap','flatbread','croissant','muffin','scone','danish','pastry','cookie bakery','rolls','buns','focaccia','naan','lavash','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','ciabatta','brioche','pita bread','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Pantry Staples',
-          keywords: [
-            'pasta','spaghetti','penne','fettuccine','linguine','orzo','lasagna','rice','brown rice','white rice','wild rice','quinoa','farro','barley','bulgur','flour','sugar','baking soda','baking powder','yeast','cornstarch','vanilla','olive oil','avocado oil','coconut oil','canola oil','sesame oil','vinegar','apple cider vinegar','balsamic','red wine vinegar','soy sauce','tamari','fish sauce','oyster sauce','miso','pasta sauce','marinara','tomato sauce','tomato paste','crushed tomato','broth','chicken broth','vegetable broth','bone broth','beans','lentils','chickpeas','black beans','kidney beans','canned tomato','canned fish','canned salmon','canned tuna','nut butter','peanut butter','almond butter','tahini','honey','maple syrup','agave','jam','jelly','preserves','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','cream of tartar','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','vegetable oil','white vinegar','balsamic vinegar','worcestershire sauce','hot sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','molasses','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','popcorn kernels','dried fruit','raisins','dates','apricots','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','fruit spread','apple butter','pumpkin butter','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','muesli','oatmeal','oats','overnight oats','granola bars','protein bars','energy bars','trail mix','pancake mix','waffle mix','syrup','maple syrup','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','biscuit mix','muffin mix','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','pop tarts','toaster pastries','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Snacks & Chips',
-          keywords: [
-            'chips','tortilla chips','potato chips','pretzels','popcorn','crackers','rice crackers','nut mix','almonds','cashews','walnuts','pecans','dried fruit','raisins','dates','jerky','beef jerky','chocolate','dark chocolate','candy','gummies','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','nuts','peanuts','mixed nuts','pistachios','trail mix','granola bars','protein bars','energy bars','fruit snacks','meat sticks','pepperoni sticks','cookies','oreos','chocolate chip cookies','fig newtons','nutter butters','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','sparkling water','kombucha','cold brew','juice','orange juice','coffee','espresso','tea','green tea','herbal tea','matcha','soda','sparkling juice','coconut water','sports drink','wine','beer','cider','hard seltzer','seltzer','club soda','tonic water','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','ground coffee','whole bean coffee','instant coffee','hot tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','tea bags','chai','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen fruit','frozen berries','frozen meals','frozen pizza','frozen burritos','frozen fish','frozen shrimp','ice cream','sorbet','frozen yogurt','popsicles','frozen waffles','frozen breakfast','edamame','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen mango','frozen pancakes','frozen breakfast sandwiches','ice cream bars','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Body Care',
-          keywords: [
-            'vitamins','supplements','protein powder','collagen','probiotics','shampoo','conditioner','body wash','soap','lotion','sunscreen','toothpaste','toothbrush','floss','deodorant','razor','pain reliever','ibuprofen','aspirin','cold medicine','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','hand soap','antibacterial soap','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','biotin','hair skin nails','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','advil','tylenol','acetaminophen','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'dish soap','dishwasher','laundry detergent','fabric softener','dryer sheets','all-purpose cleaner','bleach','disinfectant wipes','sponge','trash bags','paper towels','toilet paper','facial tissue','aluminum foil','plastic wrap','sandwich bags','ziploc','storage bags','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','stain remover','oxiclean','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 4. DELI ─────────────────────────────────────────────────────────────
+  {
+    name: 'Deli',
+    clusters: [
+      {
+        name: 'Sliced Meats',
+        keywords: [
+          'roast beef','salami','pepperoni',
+          'prosciutto','mortadella','bologna','pastrami','corned beef deli',
+          'capicola','sopressata','liverwurst','head cheese',
+        ],
+      },
+      {
+        name: 'Sliced Cheese',
+        shared: true, // also found in Dairy aisle
+        keywords: [
+          'sliced cheese','sliced cheddar','sliced swiss','sliced provolone',
+          'sliced muenster','sliced american','sliced pepper jack',
+          'sliced gouda','deli cheese','fresh mozzarella','burrata',
+          'kraft singles',
+        ],
+      },
+      {
+        name: 'Prepared Foods & Hot Bar',
+        keywords: [
+          'prepared foods','hot bar','deli salad',
+          'potato salad','coleslaw','macaroni salad','pasta salad',
+          'stuffed peppers','meatloaf','lasagna deli','soup deli',
+          'sandwich','wrap','sub','panini',
+        ],
+      },
+      {
+        name: 'Dips, Spreads & Olives',
+        keywords: [
+          'hummus','guacamole','tzatziki','baba ganoush','spinach dip',
+          'artichoke dip','olive bar','olives','stuffed olives',
+          'pickles','pickled vegetables','deli pickles',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // TRADER JOE'S
-    // Source: Curated — TJ's has no numbered aisles; uses open floor plan
-    // with consistent section groupings. Products organized by section/zone.
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'trader-joes',
-      name: "Trader Joe's",
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#c8102e',
-      searchNames: ["trader joe's","trader joes","tj's"],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Fresh Produce',
-          keywords: [
-            'apple','banana','orange','lemon','lime','avocado','mango','lettuce','spinach','kale','arugula','bagged salad','salad kit','broccoli','cauliflower','carrot','celery','cucumber','zucchini','tomato','pepper','onion','garlic','ginger','herbs','cilantro','basil','mushroom','potato','sweet potato','berries','grapes','melon','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','pineapple','kiwi','cabbage','squash','bell pepper','jalapeño','corn','asparagus','green beans','peas','beets','radish','romaine','iceberg','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Fresh Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','lamb','turkey','salmon','cod','shrimp','scallops','tuna steak','sausage','chicken sausage','bratwurst','merguez','bacon','prosciutto','pancetta','deli','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','ham','lamb chops','lamb shank','ground lamb','italian sausage','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','salami logs','ham steaks','tilapia','halibut','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','tuna','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','oat milk','almond milk','soy milk','eggs','butter','cream cheese','sour cream','yogurt','greek yogurt','cheese','cheddar','brie','goat cheese','feta','manchego','cottage cheese','ricotta','heavy cream','half and half','whole milk','skim milk','2% milk','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','gruyere','emmental','jarlsberg','muenster','havarti','gouda','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','mozzarella','bocconcini','chevre','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','sourdough','brioche','multigrain','baguette','pita','naan','tortillas','flatbread','lavash','bagel','english muffin','croissant','muffin','scone','rolls','buns','challah','raisin bread','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','ciabatta','focaccia','pita bread','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Refrigerated & Prepared',
-          keywords: [
-            'hummus','salsa','guacamole','tzatziki','dips','pasta fresh','fresh pasta','gnocchi','pizza dough','soup refrigerated','chilled soup','tofu','tempeh','salad dressing refrigerated','pesto fresh','orange juice fresh','lemonade fresh','cold brew','turkey deli meat','ham deli meat','roast beef','salami','pepperoni','bologna','pastrami','corned beef','mortadella','capicola','prosciutto di parma','swiss cheese','provolone','muenster','havarti','colby jack','pepper jack','brie','gouda','gruyere','cheddar block','fresh mozzarella','rotisserie chicken','prepared salads','potato salad','coleslaw','pasta salad','macaroni salad','olives','pickles','antipasto','sub sandwiches','wraps','quiche','stuffed peppers','deli platters','deli chicken salad','tuna salad','egg salad','meatloaf slices','deli soups','fried chicken','sliced turkey','smoked turkey','honey turkey','black forest ham','honey ham','smoked ham','genoa salami','hard salami','chicken breast slices','american cheese slices','swiss cheese slices','provolone slices','cheddar slices','prepared sandwiches','liverwurst','braunschweiger','head cheese','soppressata','prosciutto','pancetta','coppa','bresaola','landjaeger','summer sausage','olive loaf','pickle loaf','pimento loaf','pepper jack slices','muenster slices','havarti slices','gouda slices','colby jack slices','fresh burrata','smoked gouda','chicken tenders','meatloaf','pot roast','macaroni and cheese','mashed potatoes','roasted vegetables','soup','chili','baba ganoush','pimento cheese','spinach dip','artichoke dip','bruschetta','tapenade','mustard spread','horseradish cream','pate','duck confit','rillettes','terrine','charcuterie','stuffed grape leaves','deviled eggs','spring rolls','egg rolls','tamales']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen','mandarin chicken','orange chicken','palak paneer','frozen burritos','frozen pizza','frozen meals','frozen entrees','frozen vegetables','edamame','peas','corn','broccoli frozen','frozen fish','frozen shrimp','frozen fruit','frozen berries','ice cream','sorbet','frozen yogurt','mochi','popsicles','frozen waffles','hash browns','tater tots','cauliflower gnocchi','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen mango','frozen pancakes','frozen breakfast sandwiches','ice cream bars','frozen yogurt bars','gelato','frozen fries','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Pantry & Dry Goods',
-          keywords: [
-            'pasta','spaghetti','penne','rice','quinoa','farro','lentils','beans','canned tomato','tomato sauce','pasta sauce','olive oil','coconut oil','soy sauce','coconut aminos','broth','chicken broth','vegetable broth','flour','sugar','honey','maple syrup','jam','jelly','nut butter','peanut butter','almond butter','sunflower butter','tahini','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','vegetable oil','canola oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','popcorn kernels','dried fruit','raisins','dates','apricots','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Cereal, Snacks & Nuts',
-          keywords: [
-            'granola','cereal','oatmeal','bars','granola bars','protein bars','chips','kettle chips','tortilla chips','pretzels','popcorn','pita chips','crackers','rice crackers','almond crackers','nuts','almonds','cashews','walnuts','trail mix','dried fruit','chocolate','dark chocolate','candy','gummies','cookies','potato chips','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','peanuts','mixed nuts','pistachios','pecans','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','gummy bears','licorice','hard candy','mints','microwave popcorn','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','pancake mix','waffle mix','biscuit mix','muffin mix','maple syrup','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','pop tarts','toaster pastries','molasses','breakfast biscuits','cereal bars','kids cereal','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos','special k','life cereal','grape nuts','kashi','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','kids bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Wine, Beer & Beverages',
-          keywords: [
-            'wine','red wine','white wine','prosecco','champagne','beer','ipa','lager','cider','hard seltzer','water','sparkling water','juice','kombucha','cold brew','tea','coffee','coconut water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','ground coffee','whole bean coffee','instant coffee','hot tea','herbal tea','chamomile tea','black tea','soda','cola','diet cola','ginger ale','root beer','sprite','dr pepper','sports drinks','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ale','stout','pilsner','wheat beer','sour beer','light beer','craft beer','domestic beer','imported beer','six pack','case of beer','rosé','sparkling wine','cabernet sauvignon','merlot','pinot noir','chardonnay','sauvignon blanc','pinot grigio','riesling','moscato','malbec','zinfandel','vodka','gin','rum','tequila','whiskey','bourbon','scotch','brandy','white claw','truly','hard cider','cocktail mixers','bitters','triple sec','grenadine','simple syrup','non-alcoholic beer','non-alcoholic wine','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','margarita mix','bloody mary mix','mojito mix','drink mixer','saison','belgian ale','amber ale','brown ale','kolsch','hefeweizen','porter','imperial stout','session beer','hard kombucha','hard lemonade','malt beverage','shiraz','syrah','gewurztraminer','cava','dessert wine','port','sherry','vermouth','sake','mead','boxed wine','canned wine','mini wine','mezcal','irish whiskey','rye whiskey','cognac','armagnac','pisco','grappa','absinthe','sambuca','limoncello','schnapps','kahlua','baileys','grand marnier','chambord','aperol','campari','amaretto','angostura bitters','daiquiri mix','sour mix','cocktail syrup','cocktail cherries','cocktail olives','seedlip','lyres','ritual','monday','athletic brewing','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Health & Wellness',
-          keywords: [
-            'vitamins','supplements','protein powder','collagen','magnesium','shampoo','conditioner','body wash','lotion','sunscreen','toothpaste','deodorant','face wash','hand soap','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','moisturizer','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','biotin','hair skin nails','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','cold medicine','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        }
-      ]
-    },
+  // ── 5. DAIRY ────────────────────────────────────────────────────────────
+  {
+    name: 'Dairy',
+    clusters: [
+      {
+        name: 'Milk & Milk Alternatives',
+        keywords: [
+          'milk','whole milk','skim milk','2% milk','1% milk',
+          'chocolate milk','buttermilk','lactose free milk','goat milk',
+          'oat milk','almond milk','soy milk','coconut milk beverage',
+          'cashew milk','hemp milk','rice milk','pea milk','macadamia milk',
+          'flax milk','powdered milk','evaporated milk','half and half',
+          'lactaid',
+          'eggnog','kefir','drinkable yogurt',
+        ],
+      },
+      {
+        name: 'Cheese',
+        keywords: [
+          'cheese','cheddar','mozzarella','parmesan','american cheese',
+          'cottage cheese','ricotta','feta','string cheese','shredded cheese',
+          'bocconcini','goat cheese','chevre','romano','swiss cheese',
+          'aged gouda','gouda','edam','smoked gouda','raclette','roquefort',
+          'danish blue','babybel','laughing cow','velveeta','colby',
+          'colby jack','pepper jack','monterey jack','brie','camembert',
+          'blue cheese','gorgonzola','stilton','pecorino','asiago',
+          'fontina','provolone','muenster','havarti','gruyere','emmental',
+          'jarlsberg','manchego','paneer','halloumi','queso fresco','queso blanco',
+          'cotija','oaxacan cheese','cream cheese','labneh',
+          'creme fraiche','mascarpone','quark',
+        ],
+      },
+      {
+        name: 'Yogurt',
+        keywords: [
+          'yogurt','greek yogurt','plain yogurt','flavored yogurt','skyr',
+          'soy yogurt','dairy free yogurt','coconut yogurt','almond yogurt',
+        ],
+      },
+      {
+        name: 'Butter & Cream',
+        keywords: [
+          'butter','unsalted butter','salted butter','european butter',
+          'whipped butter','cultured butter','clarified butter','ghee',
+          'margarine','plant based butter','vegan butter','dairy free butter',
+          'heavy cream','whipping cream','light cream','sour cream',
+          'dairy free sour cream','clotted cream','half and half',
+          'cool whip','aerosol whipped cream',
+          'whipped cream',
+        ],
+      },
+      {
+        name: 'Eggs',
+        keywords: [
+          'eggs','brown eggs','white eggs','free range eggs',
+          'organic eggs','liquid eggs','egg substitute','duck eggs',
+          'quail eggs','egg whites',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // STOP & SHOP
-    // Source: Curated based on published department structure
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'stop-and-shop',
-      name: 'Stop & Shop',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#d4001a',
-      searchNames: ['stop and shop','stop & shop','stop&shop'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','corn','grapes','berries','strawberry','blueberry','mango','pineapple','watermelon','herbs','cilantro','parsley','ginger','zucchini','squash','asparagus','raspberry','blackberry','grape','cantaloupe','honeydew','peach','plum','pear','kiwi','cabbage','bell pepper','jalapeño','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit','broccoli rabe','rapini','radicchio','endive','escarole','chicory']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','beef','pork','lamb','turkey','bacon','sausage','ham','deli meat','hot dogs','salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','cheddar','american cheese','swiss','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Deli & Prepared Foods',
-          keywords: [
-            'deli turkey','deli ham','sliced cheese','prosciutto','salami','rotisserie chicken','prepared meals','soup deli','prepared food','olives deli','pickles deli','hummus refrigerated','turkey deli meat','ham deli meat','roast beef','pepperoni','bologna','pastrami','corned beef','mortadella','capicola','prosciutto di parma','swiss cheese','provolone','muenster','havarti','colby jack','pepper jack','brie','gouda','gruyere','cheddar block','fresh mozzarella','prepared salads','potato salad','coleslaw','pasta salad','macaroni salad','hummus','olives','pickles','antipasto','sub sandwiches','wraps','quiche','stuffed peppers','deli platters','deli chicken salad','tuna salad','egg salad','meatloaf slices','deli soups','fried chicken','sliced turkey','smoked turkey','honey turkey','black forest ham','honey ham','smoked ham','genoa salami','hard salami','chicken breast slices','american cheese slices','swiss cheese slices','provolone slices','cheddar slices','prepared sandwiches','liverwurst','braunschweiger','head cheese','soppressata','pancetta','coppa','bresaola','landjaeger','summer sausage','olive loaf','pickle loaf','pimento loaf','pepper jack slices','muenster slices','havarti slices','gouda slices','colby jack slices','fresh burrata','smoked gouda','chicken tenders','meatloaf','pot roast','macaroni and cheese','mashed potatoes','roasted vegetables','soup','chili','baba ganoush','tzatziki','pimento cheese','spinach dip','artichoke dip','bruschetta','tapenade','mustard spread','horseradish cream','pate','duck confit','rillettes','terrine','charcuterie','stuffed grape leaves','deviled eggs','spring rolls','egg rolls','tamales']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','sourdough','white bread','wheat bread','rye','bagels','english muffins','rolls','buns','tortillas','pita','wraps','croissant','muffin','danish','cake','pie bakery','cookies bakery','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','oats','granola bars','breakfast bars','pop tarts','toaster pastries','syrup','maple syrup','pancake mix','waffle mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','biscuit mix','muffin mix','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned & Jarred Goods',
-          keywords: [
-            'soup','chicken broth','vegetable broth','beef broth','canned tomato','tomato paste','tomato sauce','marinara','pasta sauce','canned beans','black beans','kidney beans','chickpeas','baked beans','canned corn','canned peas','canned green beans','canned carrots','canned fruit','peaches','pears','pineapple','fruit cocktail','canned tuna','canned salmon','canned clams','sardines','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','pinto beans','cannellini beans','canned beets','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','spaghetti','penne','rotini','fettuccine','lasagna','mac and cheese','mac & cheese','noodles','rice','brown rice','white rice','quinoa','couscous','barley','stuffing mix','bread mix','polenta','grits','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko','jasmine rice','basmati rice','wild rice','instant rice','oatmeal','rolled oats','steel cut oats','granola','cornmeal','farro','bulgur','rigatoni','orzo','lasagna noodles','egg noodles','ramen noodles','rice noodles','udon','soba','split peas','dried lentils','risotto rice','dried chickpeas','ravioli dried','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','sugar','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','whole wheat bread','multigrain bread','pumpernickel','baguette','ciabatta','brioche','challah','focaccia','pretzel bread','pita bread','roti','cornbread','gluten free bread','sprouted bread','ezekiel bread','keto bread','arborio','sushi rice','black rice','red rice','forbidden rice','parboiled rice','rice pilaf mix','oats','millet','amaranth','teff','spelt','freekeh','wheat berries','buckwheat','semolina','hominy','linguine','fusilli','farfalle','macaroni','lasagna sheets','angel hair','pasta shells','cavatappi','ditalini','orecchiette','tortellini','ravioli','gnocchi','glass noodles','lo mein','vermicelli','shirataki noodles','wonton wrappers','dumpling wrappers','spring roll wrappers','croutons','crispbread','matzo','corn tortillas','flour tortillas','taco shells','dried black beans','dried kidney beans','dried pinto beans','dried navy beans','dried cannellini beans','coconut flour','self-rising flour','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','beans','lentils']
-        },
-        {
-          name: 'Baking',
-          keywords: [
-            'flour','sugar','brown sugar','baking soda','baking powder','vanilla extract','yeast','cornstarch','shortening','cake mix','brownie mix','muffin mix','cookie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','jam','jelly','peanut butter','almond butter','nutella','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','powdered sugar','raw sugar','stevia','splenda','cream of tartar','cocoa powder','almond extract','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs']
-        },
-        {
-          name: 'Condiments & Oils',
-          keywords: [
-            'ketchup','mustard','mayo','mayonnaise','ranch','salad dressing','olive oil','vegetable oil','canola oil','cooking spray','vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce','worcestershire','fish sauce','teriyaki','yellow mustard','dijon mustard','miracle whip','relish','tabasco','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks & Chips',
-          keywords: [
-            'chips','potato chips','tortilla chips','pretzels','popcorn','crackers','cheese crackers','graham crackers','rice cakes','nuts','almonds','cashews','mixed nuts','trail mix','dried fruit','raisins','fruit snacks','granola bars','cookies','candy','chocolate','gummies','corn chips','animal crackers','saltines','ritz crackers','whole grain crackers','pita chips','peanuts','walnuts','pistachios','pecans','protein bars','energy bars','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','sparkling water','soda','pepsi','coke','ginger ale','juice','apple juice','orange juice','cranberry juice','coffee','tea','green tea','iced tea','sports drinks','gatorade','energy drinks','wine','beer','hard seltzer','cider','seltzer','club soda','tonic water','grape juice','lemonade','sweet tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','root beer','sprite','dr pepper','powerade','electrolyte drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen fruit','frozen meals','frozen pizza','frozen chicken','frozen fish','frozen shrimp','frozen burritos','ice cream','frozen yogurt','sorbet','popsicles','frozen waffles','frozen breakfast','edamame','frozen fries','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen berries','frozen mango','frozen pancakes','frozen breakfast sandwiches','ice cream bars','frozen yogurt bars','gelato','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','supplements','pain reliever','cold medicine','antacid','shampoo','conditioner','body wash','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','razor','feminine hygiene','baby food','diapers','baby care','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','hand soap','antibacterial soap','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Laundry',
-          keywords: [
-            'laundry detergent','tide','fabric softener','dryer sheets','bleach','dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes','paper towels','toilet paper','trash bags','aluminum foil','plastic wrap','ziploc','storage bags','sponge','scrub','dish detergent','dishwasher pods','rinse aid','liquid laundry detergent','laundry pods','powder detergent','stain remover','oxiclean','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        },
-        {
-          name: 'Pet & Household',
-          keywords: [
-            'dog food','cat food','cat litter','dog treats','pet supplies','light bulbs','batteries','candles','air freshener','laundry bags','dry dog food','wet dog food','dog kibble','grain-free dog food','dry cat food','wet cat food','cat kibble','kitten food','training treats','dental treats','rawhide','bully sticks','cat treats','catnip','cat chews','dog leash','dog collar','cat collar','id tags','harness','dog shampoo','cat shampoo','pet wipes','flea and tick treatment','flea collar','pet toothbrush','pet toothpaste','clumping litter','crystal litter','litter box liners','dog poop bags','waste bags','pet bowls','water fountain','food mat','dog toys','chew toys','rope toys','cat toys','laser pointer','bird food','bird seed','fish food','hamster food','small animal bedding','led bulbs','60 watt bulbs','flood lights','smart bulbs','aa batteries','aaa batteries','9 volt batteries','d batteries','extension cord','power strip','outlet covers','cable ties','tape','scotch tape','duct tape','masking tape','packing tape','super glue','gorilla glue','wood glue','sandpaper','screwdrivers','hammer','nails','screws','picture hooks','command strips','velcro strips','furnace filters','air filters','carbon monoxide detector','smoke detector','bug spray','insect repellent','wasp spray','ant traps','mouse traps','rat poison','roach bait','caulk','weather stripping','door sweep','cabinet hardware','zip ties','bungee cords','rope','carabiners','pet treats','pet toys','litter','litter boxes','leashes','collars','pet beds','pet shampoo','grooming brushes','grain free dog food','puppy food','senior dog food','small breed dog food','large breed dog food','raw dog food','freeze dried dog food','dog food topper','blue buffalo','purina','hills science diet','royal canin','iams','wellness','merrick','orijen','acana','taste of the wild','senior cat food','grain free cat food','raw cat food','freeze dried cat food','cat food topper','fancy feast','friskies','tiki cat','dental chews','pig ears','dog biscuits','temptations','greenies','milk bone','kong stuffing','freeze dried treats','jerky treats','soft treats','pill pockets','silica gel litter','natural litter','pine litter','paper litter','tidy cats','arm hammer litter','fresh step','world best cat litter','litter deodorizer','litter liner','litter mat','litter scoop','rope toy','tennis ball','fetch toy','squeaky toy','interactive toy','puzzle toy','catnip toy','feather wand','cat wand','crinkle toy','plush toy','kong','nylabone','antler chew','flea treatment','tick prevention','heartgard','frontline','seresto','nexgard','bravecto','pet conditioner','ear cleaner','dental water additive','probiotic pet','fish oil pet','joint supplement pet','calming supplement','anxiety wrap','thundershirt','nail clippers pet','deshedding brush','furminator','slicker brush','pin brush','pet comb','dematting comb','poop bags','pet carrier','crate','pet gate','pet stairs','pet ramp','pet fountain','pet bowl','slow feeder bowl','puzzle feeder','elevated bowl','pet blanket','pet jacket','pet boots','retractable leash','long line leash','head collar','muzzle','id tag','bird cage','hamster wheel','rabbit food','guinea pig food','ferret food','reptile food','reptile lamp','fish tank','aquarium filter','aquarium heater','aquarium gravel','fish net','turtle food','hermit crab food','electrical tape','wall hooks','screwdriver','wrench','pliers','smart bulb','dimmer bulb','flood light bulb','candelabra bulb','globe bulb','tube bulb','night light','outdoor bulb','bug light','grow light','halogen bulb','fluorescent bulb','cfl bulb','C batteries','9 volt battery','button cell battery','lithium battery','rechargeable battery','battery charger','hearing aid battery','watch battery','surge protector','outlet cover','outlet extender','plug adapter','usb charger','cable organizer','smart plug','timer switch','dimmer switch','painters tape','double sided tape','foam tape','carpet tape','mounting tape','epoxy','silicone sealant','weatherstripping','wall anchors','toggle bolts','picture hangers','shelf brackets','drawer pulls','hinges','door handles','door knobs','lock','padlock','deadbolt','utility knife','box cutter','measuring tape','level','stud finder','drill bits','putty knife','spackle','caulking gun','paint roller','paint brush','paint tray','drop cloth','safety glasses','work gloves','storage bins','storage boxes','plastic containers','drawer organizer','closet organizer','shelf liner','vacuum storage bags','command hooks','tool box','label maker','labels','fire extinguisher','first aid kit','flashlight','lantern','emergency candle','safety lock','child safety lock','door stopper','door alarm','window lock','cabinet lock','mouse trap','rat trap','sticky trap','ant trap','raid','mosquito coil','fly trap','fly paper','moth balls','cedar blocks','matches','lighter','candle','bungee cord','twine','moving boxes','bubble wrap','packing peanuts','plastic sheeting','tarp']
-        }
-      ]
-    },
+  // ── 6. FROZEN FOODS ─────────────────────────────────────────────────────
+  {
+    name: 'Frozen Foods',
+    clusters: [
+      {
+        name: 'Frozen Meals & Entrees',
+        keywords: [
+          'frozen meal','frozen dinner','tv dinners','frozen lasagna','frozen pizza',
+          'frozen pot pie','frozen mac and cheese','frozen chili',
+          'frozen pasta','frozen Indian meals','frozen Asian meals',
+          'frozen enchiladas','frozen tamales','frozen stuffed peppers',
+          'frozen soup','frozen fried rice','frozen pad thai','frozen ramen',
+          'frozen burritos',
+        ],
+      },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SHAW'S / STAR MARKET
-    // Source: Curated — Shaw's uses standard New England supermarket layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'shaws',
-      name: "Shaw's",
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#005dab',
-      searchNames: ["shaw's","shaws","star market"],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','strawberry','blueberry','mango','pineapple','herbs','cilantro','parsley','ginger','zucchini','cucumber','corn','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','kiwi','cabbage','squash','bell pepper','jalapeño','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','lamb','turkey','bacon','sausage','ham','deli','hot dogs','salmon','tuna','cod','shrimp','tilapia','scallops','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','kefir','whole milk','skim milk','2% milk','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','sourdough','bagels','english muffins','rolls','buns','tortillas','pita','wraps','croissant','muffin','danish','cake bakery','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','granola bars','pop tarts','pancake mix','syrup','maple syrup','waffle mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','biscuit mix','muffin mix','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned Goods & Soups',
-          keywords: [
-            'soup','broth','canned tomato','tomato paste','tomato sauce','canned beans','canned corn','canned peas','canned fruit','applesauce','canned tuna','canned salmon','olives','pickles','salsa','diced tomatoes','crushed tomatoes','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned green beans','canned carrots','canned beets','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','spaghetti','penne','mac and cheese','noodles','rice','brown rice','quinoa','couscous','stuffing','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko','white rice','jasmine rice','basmati rice','wild rice','instant rice','oatmeal','rolled oats','steel cut oats','granola','grits','cornmeal','farro','barley','bulgur','polenta','fettuccine','rigatoni','orzo','lasagna noodles','egg noodles','ramen noodles','rice noodles','udon','soba','split peas','dried lentils','risotto rice','dried chickpeas','ravioli dried','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','sugar','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','whole wheat bread','multigrain bread','pumpernickel','baguette','ciabatta','brioche','challah','focaccia','pretzel bread','pita bread','roti','cornbread','gluten free bread','sprouted bread','ezekiel bread','keto bread','arborio','sushi rice','black rice','red rice','forbidden rice','parboiled rice','rice pilaf mix','oats','millet','amaranth','teff','spelt','freekeh','wheat berries','buckwheat','semolina','hominy','linguine','fusilli','farfalle','rotini','macaroni','lasagna sheets','angel hair','pasta shells','cavatappi','ditalini','orecchiette','tortellini','ravioli','gnocchi','glass noodles','lo mein','vermicelli','shirataki noodles','wonton wrappers','dumpling wrappers','spring roll wrappers','croutons','stuffing mix','crispbread','matzo','corn tortillas','flour tortillas','taco shells','dried black beans','dried kidney beans','dried pinto beans','dried navy beans','dried cannellini beans','coconut flour','self-rising flour','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','beans','lentils']
-        },
-        {
-          name: 'Baking & Spices',
-          keywords: [
-            'flour','sugar','baking soda','baking powder','vanilla','cake mix','brownie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','jam','peanut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','cornstarch','cream of tartar','yeast','cocoa powder','vanilla extract','almond extract','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','almond butter','jelly','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Condiments & Oils',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','olive oil','vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','trail mix','dried fruit','raisins','cookies','candy','chocolate','granola bars','potato chips','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','peanuts','walnuts','mixed nuts','pistachios','pecans','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','sports drinks','energy drinks','wine','beer','cider','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen meals','frozen pizza','frozen chicken','frozen fish','frozen fruit','ice cream','sorbet','frozen yogurt','frozen waffles','edamame','frozen fries','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen berries','frozen mango','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','conditioner','body wash','soap','lotion','toothpaste','deodorant','razor','pain reliever','cold medicine','baby food','diapers','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Paper Products',
-          keywords: [
-            'laundry detergent','dish soap','all-purpose cleaner','bleach','paper towels','toilet paper','trash bags','aluminum foil','plastic wrap','ziploc','sponge','disinfecting wipes','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+      {
+        name: 'Frozen Vegetables',
+        keywords: [
+          'frozen vegetable','frozen broccoli','frozen peas','frozen corn',
+          'frozen spinach','frozen edamame','frozen stir fry vegetables',
+          'frozen mixed vegetables','frozen kale','frozen brussels sprouts',
+          'frozen cauliflower','frozen artichoke hearts',
+          'frozen riced cauliflower','frozen zucchini noodles',
+          'frozen sweet potato','frozen green beans','frozen carrots',
+          'frozen lima beans','frozen okra','frozen collard greens',
+          'frozen turnip greens','frozen mustard greens','frozen butternut squash',
+          'frozen bell peppers','frozen onions','frozen corn on the cob',
+          'frozen asparagus','frozen snap peas','frozen stir fry mix',
+        ],
+      },
+      {
+        name: 'Frozen Fruit & Smoothies',
+        keywords: [
+          'frozen fruit','frozen berries','frozen mango','frozen pineapple',
+          'frozen peaches','frozen cherries','frozen pitaya','frozen coconut',
+          'frozen avocado','frozen smoothie packs','acai packet',
+          'frozen acai',
+        ],
+      },
+      {
+        name: 'Frozen Breakfast',
+        keywords: [
+          'frozen waffles','eggo waffles','frozen pancakes','frozen breakfast sandwiches',
+          'frozen breakfast burrito','frozen french toast','frozen crepes',
+          'frozen biscuits','frozen oatmeal cups','frozen hash browns',
+        ],
+      },
+      {
+        name: 'Frozen Snacks & Appetizers',
+        keywords: [
+          'frozen appetizers','frozen mozzarella sticks','frozen egg rolls',
+          'frozen dumplings','frozen taquitos','frozen chicken nuggets',
+          'frozen chicken tenders','frozen chicken patties',
+          'frozen onion rings','frozen fries','tater tots',
+          'egg rolls','pierogies',
+        ],
+      },
+      {
+        name: 'Frozen International',
+        keywords: [
+          'frozen dumplings','gyoza','pot stickers','wontons',
+          'frozen spring rolls','lumpia','frozen samosa','frozen bao buns',
+          'empanadas','frozen tamales',
+        ],
+      },
+      {
+        name: 'Frozen Meat & Poultry',
+        shared: true, // also found in Meat & Poultry aisle
+        keywords: [
+          'frozen burgers','frozen veggie burgers','frozen meatballs',
+          'frozen sausage','frozen hot dogs','frozen bacon','frozen turkey',
+          'frozen chicken nuggets','frozen chicken tenders',
+          'frozen chicken patties',
+        ],
+      },
+      {
+        name: 'Frozen Seafood',
+        shared: true, // also found in Seafood aisle
+        keywords: [
+          'frozen shrimp','frozen salmon','frozen fish fillets','frozen scallops',
+          'frozen lobster tails','frozen crab cakes','frozen breaded shrimp',
+          'popcorn shrimp','breaded scallops','tempura shrimp','fish sticks',
+          'breaded fish fillets','frozen shrimp rings',
+        ],
+      },
+      {
+        name: 'Ice Cream & Frozen Desserts',
+        keywords: [
+          'ice cream','frozen yogurt','gelato','sorbet','sherbet',
+          'frozen custard','dairy free ice cream','oat milk ice cream',
+          'ice cream bars','popsicles','frozen yogurt bars','mochi ice cream',
+          'paletas','ice cream sandwich','drumstick cone','klondike bar',
+          'frozen fruit bar','frozen cheesecake','frozen pie','chipwich',
+          'popsicle','frozen acai bowls',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // HANNAFORD
-    // Source: Curated — Hannaford typical New England layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'hannaford',
-      name: 'Hannaford',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#008542',
-      searchNames: ['hannaford','hannaford supermarket'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','strawberry','blueberry','mango','pineapple','herbs','cilantro','parsley','ginger','zucchini','cucumber','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','kiwi','cabbage','squash','bell pepper','jalapeño','corn','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','lamb','turkey','bacon','sausage','ham','deli','hot dogs','salmon','tuna','cod','shrimp','tilapia','scallops','crab','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','lobster','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','sourdough','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','cake bakery','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','whole grain bread','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','granola bars','pop tarts','pancake mix','syrup','maple syrup','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned & Jarred',
-          keywords: [
-            'soup','broth','canned tomato','tomato paste','pasta sauce','canned beans','canned vegetables','canned fruit','applesauce','canned tuna','olives','pickles','salsa','diced tomatoes','crushed tomatoes','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','spaghetti','penne','mac and cheese','rice','brown rice','quinoa','couscous','lentils','barley','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko','white rice','jasmine rice','basmati rice','wild rice','instant rice','oatmeal','rolled oats','steel cut oats','granola','grits','cornmeal','farro','bulgur','polenta','fettuccine','rigatoni','orzo','lasagna noodles','egg noodles','ramen noodles','rice noodles','udon','soba','split peas','dried lentils','risotto rice','dried chickpeas','ravioli dried','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','sugar','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','whole wheat bread','multigrain bread','pumpernickel','baguette','ciabatta','brioche','challah','focaccia','pretzel bread','pita bread','roti','cornbread','gluten free bread','sprouted bread','ezekiel bread','keto bread','arborio','sushi rice','black rice','red rice','forbidden rice','parboiled rice','rice pilaf mix','oats','millet','amaranth','teff','spelt','freekeh','wheat berries','buckwheat','semolina','hominy','linguine','fusilli','farfalle','rotini','macaroni','lasagna sheets','angel hair','pasta shells','cavatappi','ditalini','orecchiette','tortellini','ravioli','gnocchi','glass noodles','lo mein','vermicelli','shirataki noodles','wonton wrappers','dumpling wrappers','spring roll wrappers','croutons','stuffing mix','crispbread','matzo','corn tortillas','flour tortillas','taco shells','dried black beans','dried kidney beans','dried pinto beans','dried navy beans','dried cannellini beans','coconut flour','self-rising flour','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','beans']
-        },
-        {
-          name: 'Baking & Spices',
-          keywords: [
-            'flour','sugar','baking soda','baking powder','vanilla','cake mix','chocolate chips','spices','salt','pepper','honey','jam','peanut butter','nut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','cornstarch','cream of tartar','yeast','cocoa powder','vanilla extract','almond extract','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','brownie mix','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','almond butter','jelly','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Condiments & Dressings',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','olive oil','vinegar','soy sauce','hot sauce','bbq sauce','worcestershire','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks & Nuts',
-          keywords: [
-            'chips','pretzels','popcorn','crackers','nuts','almonds','cashews','trail mix','dried fruit','cookies','candy','chocolate','granola bars','rice cakes','potato chips','tortilla chips','corn chips','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','peanuts','walnuts','mixed nuts','pistachios','pecans','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','sports drinks','energy drinks','wine','beer','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen meals','frozen pizza','frozen chicken','frozen fish','frozen fruit','ice cream','sorbet','frozen yogurt','edamame','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health, Beauty & Baby',
-          keywords: [
-            'vitamins','supplements','shampoo','conditioner','body wash','toothpaste','deodorant','razor','pain reliever','cold medicine','baby food','diapers','wipes','baby formula','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','lotion','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','infant formula','toddler formula','breast milk bags','pureed baby food','baby cereal','teething crackers','puffs','baby snacks','toddler snacks','squeeze pouches','applesauce pouches','newborn diapers','size 1 diapers','pull-ups','training pants','baby wipes','sensitive wipes','fragrance-free wipes','diaper rash cream','baby powder','baby lotion','baby wash','baby shampoo','baby oil','baby sunscreen','pacifiers','bottle nipples','baby bottles','sippy cups','baby monitor','nursing pads','nipple cream','baby tylenol','infant ibuprofen','gripe water','gas drops','baby oatmeal','baby puree meats','yogurt melts','toddler meals','baby juice','bottle liners','ready formula bottles','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves','newborn formula','hypoallergenic formula','soy formula','goat milk formula','organic formula','enfamil','similac','gerber formula','kendamil','baby food jars','baby pouches','teething biscuits','stage 1 baby food','stage 2 baby food','stage 3 baby food','gerber','beech-nut','happy baby','once upon a farm','plum organics','baby rice cereal','baby mum mum','toddler puffs','squeeze pouch','veggie pouch','fruit pouch','overnight diapers','swim diapers','pampers','huggies','luvs','honest diapers','seventh generation diapers','bambo diapers','pull ups','fragrance free wipes','water wipes','diaper cream','desitin','aquaphor','balmex','infant tylenol','infant advil','saline drops','nasal aspirator','baby thermometer','baby bottle','bottle nipple','pacifier','sippy cup','straw cup','baby spoon','suction bowl','high chair mat','bib','burp cloth','formula dispenser','bottle brush','bottle sterilizer']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'laundry detergent','dish soap','cleaner','bleach','paper towels','toilet paper','trash bags','aluminum foil','plastic wrap','ziploc','sponge','disinfecting wipes','dog food','cat food','cat litter','pet food','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 7. BAKERY ───────────────────────────────────────────────────────────
+  {
+    name: 'Bakery',
+    clusters: [
+      {
+        name: 'Fresh Bread & Rolls',
+        keywords: [
+          'fresh bread','sourdough','baguette','ciabatta','brioche',
+          'focaccia','artisan bread','rye bread','multigrain bread',
+          'whole grain bread','dinner rolls','hamburger buns','hot dog buns',
+          'fresh bagels','fresh pita','fresh naan','lavash',
+          'fresh tortillas','loaf',
+        ],
+      },
+      {
+        name: 'Cakes & Pastries',
+        keywords: [
+          'cake','birthday cake','sheet cake','pound cake','loaf cake',
+          'coffee cake','cheesecake','chocolate cake','cupcakes','muffin',
+          'croissant','danishes','cinnamon rolls','scones','tarts',
+          'macarons','biscotti','pastry','donut',
+        ],
+      },
+      {
+        name: 'Pies & Specialty',
+        keywords: [
+          'pie','apple pie','peach pie','blueberry pie','cherry pie',
+          'boysenberry pie','strawberry rhubarb pie','pumpkin pie',
+          'lemon meringue pie','key lime pie','pecan pie','pie crust',
+          'brownie','brownie mix',
+        ],
+      },
+      {
+        name: 'Gluten-Free Baked Goods',
+        keywords: [
+          'gluten free bread','gluten free bagel','gluten free muffin',
+          'gluten free croissant','gluten free roll','gluten free bun',
+          'gluten free cake','gluten free cookie','gluten free brownie',
+          'gluten free donut','gluten free pizza crust','gluten free pie crust',
+          'gluten free biscotti','gluten free macaron',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PRICE CHOPPER / MARKET 32
-    // Source: Curated — Price Chopper typical layout (NY/NE)
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'price-chopper',
-      name: 'Price Chopper',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#f26522',
-      searchNames: ['price chopper','market 32','market32'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','avocado','tomato','lettuce','spinach','broccoli','carrot','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','mango','herbs','lime','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','pineapple','kiwi','kale','cauliflower','cabbage','celery','cucumber','zucchini','squash','bell pepper','jalapeño','ginger','corn','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','turkey','bacon','sausage','ham','salmon','tuna','shrimp','cod','deli','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','tilapia','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','scallops','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','yogurt','sour cream','cream cheese','cottage cheese','heavy cream','almond milk','oat milk','whole milk','skim milk','2% milk','soy milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','greek yogurt','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','bagels','rolls','buns','tortillas','muffin','croissant','cake','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','english muffins','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','pita','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','granola bars','syrup','pancake mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','maple syrup','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','pop tarts','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned Goods',
-          keywords: [
-            'soup','broth','canned tomato','pasta sauce','canned beans','canned vegetables','canned fruit','tuna','olives','pickles','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','spaghetti','rice','quinoa','mac and cheese','lentils','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Baking & Spices',
-          keywords: [
-            'flour','sugar','baking soda','vanilla','spices','honey','jam','peanut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','almond butter','jelly','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Condiments',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce','bbq sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','soy sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','pretzels','crackers','nuts','almonds','trail mix','cookies','candy','potato chips','tortilla chips','corn chips','popcorn','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','cashews','peanuts','walnuts','mixed nuts','pistachios','pecans','granola bars','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','wine','beer','sports drinks','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen meals','frozen pizza','ice cream','sorbet','edamame','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','toothpaste','deodorant','pain reliever','baby food','diapers','conditioner','2-in-1 shampoo','dry shampoo','hair mask','body wash','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','lotion','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','cold medicine','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'laundry detergent','dish soap','paper towels','toilet paper','trash bags','aluminum foil','dog food','cat food','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','bleach','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','plastic wrap','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','ziploc','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 8. BREAD & GRAINS ───────────────────────────────────────────────────
+  {
+    name: 'Bread & Grains',
+    clusters: [
+      {
+        name: 'Sliced & Packaged Bread',
+        keywords: [
+          'sliced bread','sandwich bread','wheat bread','white bread','wonder bread',
+          'whole wheat bread','sourdough bread packaged','multigrain bread packaged',
+          'gluten-free bread','oatmeal bread','potato bread',
+        ],
+      },
+      {
+        name: 'Packaged Flatbreads & Wraps',
+        keywords: [
+          'packaged tortillas','flour tortillas','corn tortillas',
+          'packaged pita','packaged naan','english muffins','bagels packaged',
+          'breadsticks',
+        ],
+      },
+      {
+        name: 'Stuffing, Breadcrumbs & Croutons',
+        keywords: [
+          'breadcrumbs','panko','stuffing','croutons','bread crumbs',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // BIG Y
-    // Source: Curated — Big Y (Western MA / CT) typical layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'big-y',
-      name: 'Big Y',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#d4001a',
-      searchNames: ['big y','big y foods','big y world class'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','avocado','tomato','lettuce','spinach','broccoli','carrot','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','herbs','lime','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','mango','pineapple','kiwi','kale','cauliflower','cabbage','celery','cucumber','zucchini','squash','bell pepper','jalapeño','ginger','corn','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','turkey','bacon','sausage','salmon','tuna','shrimp','cod','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','ham','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','tilapia','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','scallops','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','yogurt','sour cream','cream cheese','cottage cheese','heavy cream','almond milk','oat milk','whole milk','skim milk','2% milk','soy milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','greek yogurt','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','bagels','rolls','buns','tortillas','muffin','cake','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','english muffins','croissants','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','pita','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','granola bars','syrup','pancake mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','maple syrup','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','pop tarts','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned Goods & Soups',
-          keywords: [
-            'soup','broth','canned tomato','pasta sauce','canned beans','canned vegetables','canned fruit','tuna','olives','pickles','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Dry Goods',
-          keywords: [
-            'pasta','spaghetti','rice','quinoa','mac and cheese','lentils','beans dry','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Baking',
-          keywords: [
-            'flour','sugar','baking soda','vanilla','spices','cake mix','honey','jam','peanut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','brownie mix','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs']
-        },
-        {
-          name: 'Condiments & Oils',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','olive oil','vinegar','hot sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','soy sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks & Chips',
-          keywords: [
-            'chips','pretzels','crackers','nuts','trail mix','cookies','candy','popcorn','potato chips','tortilla chips','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','almonds','cashews','peanuts','walnuts','mixed nuts','pistachios','pecans','granola bars','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','wine','beer','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','sports drinks','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen meals','frozen pizza','ice cream','edamame','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','sorbet','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','toothpaste','deodorant','pain reliever','conditioner','2-in-1 shampoo','dry shampoo','hair mask','body wash','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','lotion','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','cold medicine','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'laundry detergent','dish soap','paper towels','toilet paper','trash bags','dog food','cat food','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','bleach','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','plastic wrap','saran wrap','aluminum foil','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','ziploc','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 9. PASTA & NOODLES ──────────────────────────────────────────────────
+  {
+    name: 'Pasta & Noodles',
+    clusters: [
+      {
+        name: 'Dried Pasta',
+        keywords: [
+          'pasta','spaghetti','penne','rigatoni','fusilli','farfalle',
+          'linguine','fettuccine','angel hair','orzo','rotini','ziti',
+          'lasagna sheets','macaroni','cavatappi','orecchiette',
+          'radiatori','capellini','bowties','elbows','pastina',
+          'ditalini','shells','campanelle','gemelli','bucatini',
+          'pappardelle','tagliatelle','lasagne','gluten free pasta',
+          'whole wheat pasta','chickpea pasta','lentil pasta','egg noodles',
+        ],
+      },
+      {
+        name: 'Asian Noodles',
+        keywords: [
+          'ramen','udon','soba','rice noodles','vermicelli',
+          'pad thai noodles','glass noodles','lo mein','chow mein noodles',
+          'shirataki','somen','udon noodles','cold noodles',
+        ],
+      },
+      {
+        name: 'Fresh & Refrigerated Pasta',
+        keywords: [
+          'fresh pasta','refrigerated pasta','fresh tortellini','ravioli',
+          'fresh gnocchi','fresh lasagna',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // KROGER (and affiliates: Fred Meyer, Fry's, Harris Teeter, Ralphs, etc.)
-    // Source: Curated — standard Kroger department structure
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'kroger',
-      name: 'Kroger',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#0073a8',
-      searchNames: ['kroger','fred meyer','frys','fry\'s food','harris teeter',
-        'ralphs','ralph\'s','king soopers','smiths','smith\'s','mariano\'s','marianos',
-        'city market','dillons'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','mango','pineapple','herbs','ginger','zucchini','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','kiwi','cabbage','squash','bell pepper','jalapeño','corn','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','lamb','turkey','bacon','sausage','ham','deli','hot dogs','salmon','tuna','cod','shrimp','tilapia','crab','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','scallops','lobster','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','cake','cookies bakery','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','granola bars','pop tarts','pancake mix','syrup','maple syrup','waffles mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned & Packaged',
-          keywords: [
-            'soup','broth','canned tomato','tomato paste','pasta sauce','canned beans','canned vegetables','canned fruit','tuna canned','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','spaghetti','penne','mac and cheese','noodles','rice','quinoa','couscous','stuffing','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Baking',
-          keywords: [
-            'flour','sugar','baking soda','baking powder','vanilla','cake mix','brownie mix','chocolate chips','cocoa','spices','honey','jam','peanut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','cornstarch','cream of tartar','yeast','cocoa powder','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs']
-        },
-        {
-          name: 'Condiments & Oils',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','olive oil','vegetable oil','vinegar','soy sauce','hot sauce','bbq sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','trail mix','cookies','candy','granola bars','potato chips','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','peanuts','walnuts','mixed nuts','pistachios','pecans','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','sports drinks','energy drinks','wine','beer','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen vegetables','frozen meals','frozen pizza','frozen chicken','frozen fish','ice cream','sorbet','edamame','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','conditioner','body wash','lotion','toothpaste','deodorant','razor','pain reliever','cold medicine','baby food','diapers','2-in-1 shampoo','dry shampoo','hair mask','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'laundry detergent','dish soap','all-purpose cleaner','bleach','paper towels','toilet paper','trash bags','aluminum foil','dog food','cat food','cat litter','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','plastic wrap','saran wrap','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','ziploc','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 10. RICE, GRAINS & BEANS ────────────────────────────────────────────
+  {
+    name: 'Rice, Grains & Beans',
+    clusters: [
+      {
+        name: 'Rice',
+        keywords: [
+          'rice','white rice','brown rice','jasmine rice','basmati rice',
+          'long grain rice','short grain rice','arborio rice','wild rice',
+          'sushi rice','instant rice','rice pilaf','black rice','red rice',
+          'carnaroli rice','vialone nano','risotto',
+        ],
+      },
+      {
+        name: 'Dried Grains',
+        keywords: [
+          'quinoa','farro','barley','bulgur','millet','amaranth','spelt',
+          'teff','buckwheat','wheat berries','couscous','polenta',
+          'cornmeal','oats','steel cut oats','rolled oats',
+        ],
+      },
+      {
+        name: 'Dried Beans & Legumes',
+        keywords: [
+          'dried beans','black beans dried','pinto beans dried',
+          'kidney beans dried','chickpeas dried','lentils dried',
+          'navy beans dried','cannellini beans dried','split peas',
+          'dried lentils','dried chickpeas','dried peas',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WALMART SUPERCENTER / NEIGHBORHOOD MARKET
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'walmart',
-      name: 'Walmart',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#0071ce',
-      searchNames: ['walmart','walmart supercenter','walmart neighborhood market','walmart grocery'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','lemon','avocado','tomato','lettuce','spinach','broccoli','carrot','pepper','onion','garlic','mushroom','potato','sweet potato','grapes','berries','herbs','lime','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','mango','pineapple','kiwi','kale','cauliflower','cabbage','celery','cucumber','zucchini','squash','bell pepper','jalapeño','ginger','corn','asparagus','green beans','peas','beets','radish','arugula','romaine','iceberg','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','pork','turkey','bacon','sausage','salmon','shrimp','tilapia','cod','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','ham','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','scallops','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','tuna','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','american cheese','sour cream','cream cheese','yogurt','cottage cheese','heavy cream','almond milk','whole milk','skim milk','2% milk','oat milk','soy milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','greek yogurt','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','white bread','wheat bread','bagels','rolls','buns','tortillas','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','english muffins','croissants','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','muffins','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','pita','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','oatmeal','granola','syrup','pancake mix','pop tarts','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','maple syrup','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','granola bars','breakfast bars','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned Goods',
-          keywords: [
-            'soup','broth','canned tomato','pasta sauce','canned beans','canned vegetables','canned fruit','tuna','olives','pickles','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta & Rice',
-          keywords: [
-            'pasta','spaghetti','mac and cheese','rice','ramen','noodles','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Baking',
-          keywords: [
-            'flour','sugar','baking soda','spices','cake mix','salt','pepper','vanilla','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','brownie mix','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs']
-        },
-        {
-          name: 'Condiments & Sauces',
-          keywords: [
-            'ketchup','mustard','mayo','salad dressing','oil','vinegar','hot sauce','bbq sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','soy sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','olive oil','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','pretzels','crackers','nuts','cookies','candy','popcorn','granola bars','potato chips','tortilla chips','corn chips','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','almonds','cashews','peanuts','walnuts','mixed nuts','pistachios','pecans','trail mix','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','sports drinks','energy drinks','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','gatorade','powerade','electrolyte drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen meals','frozen pizza','frozen vegetables','frozen chicken','ice cream','frozen fish','frozen fries','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','sorbet','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','toothpaste','deodorant','soap','lotion','pain reliever','cold medicine','baby food','diapers','conditioner','2-in-1 shampoo','dry shampoo','hair mask','body wash','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','sunscreen','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning',
-          keywords: [
-            'laundry detergent','dish soap','cleaner','bleach','paper towels','toilet paper','trash bags','dog food','cat food','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush']
-        }
-      ]
-    },
+  // ── 11. CEREAL & BREAKFAST ──────────────────────────────────────────────
+  {
+    name: 'Cereal & Breakfast',
+    clusters: [
+      {
+        name: 'Cold Cereal',
+        keywords: [
+          'cereal','granola','muesli','corn flakes','cheerios',
+          'frosted flakes','special k','raisin bran','grape nuts',
+          'lucky charms','froot loops','cocoa puffs','captain crunch',
+          'honey bunches of oats','life cereal','kashi','fiber one',
+          'total cereal','wheaties','mini wheats','rice krispies',
+          'honey smacks','crispix','corn chex','wheat chex',
+        ],
+      },
+      {
+        name: 'Hot Cereal & Oatmeal',
+        keywords: [
+          'oatmeal','instant oatmeal','oatmeal packets','cream of wheat',
+          'grits','cream of rice','oat bran','hot cereal',
+        ],
+      },
+      {
+        name: 'Pancake, Waffle & Baking Mixes',
+        keywords: [
+          'pancake mix','waffle mix','baking mix','bisquick',
+          'corn bread mix','muffin mix',
+        ],
+      },
+      {
+        name: 'Breakfast Bars & Granola',
+        keywords: [
+          'granola bar','breakfast bar','cereal bar','protein bar',
+          'nature valley','kind bar','clif bar','larabar','luna bar',
+        ],
+      },
+      {
+        name: 'Syrup, Jam & Breakfast Spreads',
+        keywords: [
+          'syrup','maple syrup','pancake syrup','jam','jelly','preserves',
+          'peanut butter','almond butter','sunflower butter','nut butter',
+          'hazelnut spread','nutella','honey','agave nectar',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // TARGET
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'target',
-      name: 'Target',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#cc0000',
-      searchNames: ['target','super target'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','avocado','tomato','lettuce','spinach','broccoli','carrot','pepper','onion','garlic','potato','berries','herbs','lemon','lime','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','mango','pineapple','kiwi','kale','cauliflower','cabbage','celery','cucumber','zucchini','squash','bell pepper','jalapeño','ginger','sweet potato','corn','asparagus','green beans','peas','mushrooms','mushroom','beets','radish','arugula','romaine','iceberg','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Seafood',
-          keywords: [
-            'chicken','ground beef','steak','bacon','sausage','salmon','shrimp','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','ham','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','tilapia','cod','halibut','tuna steak','mahi mahi','sea bass','trout','catfish','flounder','swordfish','snapper','grouper','pollock','haddock','jumbo shrimp','scallops','lobster','crab','crab legs','dungeness crab','clams','mussels','oysters','squid','calamari','octopus','canned tuna','canned salmon','canned sardines','canned anchovies','fish fillets','smoked salmon','lox','whitefish','sushi grade tuna','crawfish','peeled shrimp','imitation crab','fish cakes','crab cakes','seafood mix','seafood chowder','frozen shrimp rings','seafood dip','ceviche mix','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','mortadella','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','corned beef','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','anchovies','sardine','herring','mackerel','branzino','striped bass','yellowfin tuna','bluefin tuna','ahi tuna','swordfish steak','stone crab','snow crab','soft shell crab','blue crab','razor clam','manila clam','geoduck','sea urchin','uni','abalone','conch','smoked herring','smoked mackerel','smoked trout','smoked oyster','canned mackerel','canned oyster','canned crab','fish cake','surimi','fish ball','atlantic salmon','sockeye salmon','tuna','sole','arctic char','whiting','walleye','pike','rockfish','monkfish','skate','turbot','black cod','sablefish','prawns','king crab','crayfish','bay scallops','sea scallops','littleneck clams','langoustine','whelk','gravlax','smoked mussels','smoked whitefish','salt cod','bacalao','pickled herring','canned clams','salmon roe','tobiko','masago','caviar','fish roe','crab cake','shrimp cocktail','popcorn shrimp','breaded scallops','tempura shrimp','seaweed','nori','kelp','wakame','fish sticks','breaded fish fillets']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','yogurt','sour cream','cream cheese','cottage cheese','heavy cream','almond milk','oat milk','whole milk','skim milk','2% milk','soy milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','greek yogurt','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','cheddar','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bakery & Bread',
-          keywords: [
-            'bread','bagels','tortillas','rolls','muffin','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','english muffins','croissants','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','pita','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Cereal & Breakfast',
-          keywords: [
-            'cereal','granola','oatmeal','syrup','pancake mix','granola bars','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','muesli','bran flakes','shredded wheat','wheat chex','rice chex','froot loops','lucky charms','cocoa puffs','captain crunch','instant oatmeal','rolled oats','steel cut oats','grits','waffle mix','biscuit mix','muffin mix','maple syrup','pancake syrup','honey','jam','jelly','preserves','peanut butter','almond butter','nutella','cream of wheat','breakfast bars','pop tarts','toaster pastries','trail mix','dried fruit','molasses','breakfast biscuits','cereal bars','kids cereal','special k','life cereal','grape nuts','kashi','nature valley','kind bar','clif bar','larabar','rx bar','quest bar','overnight oats','chia pudding mix','agave syrup','date syrup','sunflower butter','tahini','speculoos','crepe mix','scone mix','dried mango','dried apricot','dried blueberry','dried cranberry','coconut flakes','hemp seed','chia seed','flaxseed','protein bars','cocoa krispies','rice krispies','fruity pebbles','apple jacks','wheaties','honey bunches of oats','fiber one','total','reeses puffs','cinnamon toast crunch','quick oats','seven grain cereal','multigrain hot cereal','marmalade','cashew butter','cookie butter','hazelnut spread','granola bar','fiber bar','cereal bar','kids bar','oat bar','toaster strudel','overnight oats mix','raisins']
-        },
-        {
-          name: 'Canned & Packaged',
-          keywords: [
-            'soup','canned tomato','pasta sauce','canned beans','tuna','olives','pickles','broth','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','canned fruit','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Pasta, Rice & Grains',
-          keywords: [
-            'pasta','rice','mac and cheese','quinoa','lentils','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Baking & Spices',
-          keywords: [
-            'flour','sugar','baking soda','spices','vanilla','honey','jam','peanut butter','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','ketchup','mustard','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','almond butter','jelly','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Condiments & Oils',
-          keywords: [
-            'ketchup','mustard','mayo','olive oil','salad dressing','vinegar','hot sauce','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','soy sauce','hoisin sauce','oyster sauce','worcestershire sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','vegetable oil','canola oil','coconut oil','avocado oil','sesame oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','white vinegar','apple cider vinegar','red wine vinegar','balsamic vinegar','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','fish sauce','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','tahini','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','peanut butter','almond butter','jam','jelly','honey','maple syrup','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','crackers','nuts','cookies','candy','popcorn','trail mix','potato chips','tortilla chips','corn chips','pretzels','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','almonds','cashews','peanuts','walnuts','mixed nuts','pistachios','pecans','granola bars','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','soda','juice','coffee','tea','wine','beer','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','sports drinks','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen meals','frozen pizza','frozen vegetables','ice cream','frozen chicken','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','sorbet','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Health & Beauty',
-          keywords: [
-            'vitamins','shampoo','toothpaste','deodorant','lotion','sunscreen','pain reliever','baby food','diapers','conditioner','2-in-1 shampoo','dry shampoo','hair mask','body wash','bar soap','liquid soap','hand soap','antibacterial soap','toothbrush','electric toothbrush','dental floss','mouthwash','whitening strips','antiperspirant','body spray','cologne','perfume','shaving cream','razors','razor blades','aftershave','electric shaver','facial cleanser','face wash','moisturizer','spf lotion','toner','serum','eye cream','face mask','exfoliator','body butter','hand cream','lip balm','chapstick','tampons','pads','menstrual cups','panty liners','cotton balls','cotton swabs','q-tips','nail clippers','nail polish remover','hand sanitizer','sunscreen spray','deep conditioner','leave-in conditioner','heat protectant','hair serum','hair oil','argan oil','hair spray','mousse','hair gel','pomade','hair wax','texturizing spray','curl cream','defining cream','edge control','hair color','root touch up','hair dye','bleach kit','hair brush','paddle brush','round brush','wide tooth comb','detangling brush','hair ties','bobby pins','hair clips','headbands','scrunchies','curling iron','flat iron','hair dryer','diffuser','anti-frizz','volumizing spray','clarifying shampoo','purple shampoo','multivitamin','vitamin c','vitamin d','vitamin b12','vitamin e','vitamin a','vitamin k','b complex','prenatal vitamins','gummy vitamins','childrens vitamins','omega-3','fish oil','flaxseed oil','krill oil','calcium','magnesium','zinc','iron','potassium','selenium','probiotics','digestive enzymes','fiber supplements','psyllium husk','melatonin','sleep aid','valerian root','ashwagandha','turmeric','echinacea','elderberry','collagen','biotin','hair skin nails','protein powder','creatine','bcaa','pre-workout','electrolytes','glucosamine','chondroitin','coq10','resveratrol','ibuprofen','advil','tylenol','acetaminophen','aspirin','naproxen','cold medicine','dayquil','nyquil','cough syrup','cough drops','throat lozenges','antihistamine','benadryl','zyrtec','claritin','allegra','nasal spray','afrin','flonase','neti pot','saline spray','antacids','tums','pepto-bismol','imodium','gas-x','prilosec','bandages','band-aids','gauze','medical tape','ace bandage','antiseptic','hydrogen peroxide','rubbing alcohol','neosporin','bacitracin','thermometer','blood pressure monitor','heating pad','ice pack','eye drops','contact solution','reading glasses','pregnancy test','ovulation test','covid test','blood glucose monitor','heartburn relief','anti diarrhea medicine','motion sickness tablets','electrolyte powder','gauze pads','electric toothbrush heads','body lotion','face moisturizer','foam soap','liquid hand soap','body scrub','body exfoliator','loofa','bath sponge','bath salts','bath bombs','shower gel','intimate wash','feminine wash','natural deodorant','clinical strength deodorant','deodorant spray','whitening toothpaste','charcoal toothpaste','kids toothpaste','water flosser','floss picks','tongue scraper','denture adhesive','denture cleaner','orthodontic wax','sheet mask','retinol','vitamin c serum','hyaluronic acid','niacinamide','micellar water','makeup remover','facial wipes','cleansing balm','spot treatment','acne wash','mineral sunscreen','spf moisturizer','kids sunscreen','after sun lotion','aloe vera gel','self tanner','tanning lotion','shaving gel','shaving foam','post shave balm','disposable razor','electric razor','depilatory cream','wax strips','menstrual cup','period underwear','feminine wipes','yeast infection treatment','nail file','tweezers','pumice stone','foot file','corn pads','blister pads','contact lens solution','hair mousse','hair cream','moisturizing shampoo','volumizing shampoo','color safe shampoo','sulfate free shampoo','blue shampoo','dandruff shampoo','anti dandruff shampoo','scalp shampoo','thickening shampoo','keratin shampoo','baby shampoo','mens shampoo','head and shoulders','pantene','dove shampoo','tresemme','ogx','herbal essences','protein treatment','co-wash','detangling conditioner','repair conditioner','color safe conditioner','hair clay','curl definer','curl enhancer','wave spray','anti frizz serum','heat protectant spray','shine spray','finishing spray','sea salt spray','root lifter','blow dry cream','box dye','gloss treatment','henna','highlights kit','balayage kit','color depositing shampoo','scalp serum','scalp oil','scalp scrub','dandruff treatment','hair growth serum','biotin treatment','keratin treatment','bond repair','olaplex','coconut hair oil','castor oil','rosemary oil','boar bristle brush','fine tooth comb','rat tail comb','scrunchie','hair pins','barrettes','headband','hair net','shower cap','silk bonnet','satin pillowcase','diffuser attachment','hot comb','hot rollers','flexi rods','vitamin b complex','vitamin b6','vitamin d3','vitamin k2','folate','folic acid','riboflavin','niacin','thiamine','pantothenic acid','postnatal vitamins','mens multivitamin','womens multivitamin','senior multivitamin','chromium','iodine','copper','manganese','phosphorus','magnesium glycinate','magnesium citrate','zinc picolinate','ferrous sulfate','calcium carbonate','calcium citrate','algae oil','cod liver oil','DHA','EPA','whey protein','plant based protein','collagen peptides','bone broth protein','casein protein','amino acids','pre workout','post workout','l-glutamine','l-carnitine','beta alanine','citrulline','creatine monohydrate','mass gainer','recovery powder','rhodiola','lions mane','reishi','chaga','turmeric supplement','curcumin','ginger supplement','grape seed extract','milk thistle','saw palmetto','5-htp','sam-e','berberine','quercetin','NAC','NMN','NAD','alpha lipoic acid','msm','hyaluronic acid supplement','fiber supplement','inulin','lactobacillus','melatonin gummies','sleep support','stress support','energy supplement','immune support','heart support','lutein','zeaxanthin','apple cider vinegar capsules','green tea extract','flu medicine','allergy medicine','adhesive bandages','antiseptic wipes','first aid kits','aleve','motrin','excedrin','midol','bc powder','topical pain relief','bengay','icy hot','biofreeze','lidocaine cream','tiger balm','aspercreme','theraflu','cold eeze','zicam','mucinex','robitussin','delsym','halls','ricola','vicks','vapor rub','saline nasal spray','nasal strips','chest rub','loratadine','cetirizine','fexofenadine','decongestant','sudafed','allergy eye drops','rolaids','pepto bismol','maalox','mylanta','gas x','beano','miralax','dulcolax','colace','stool softener','laxative','pepcid','nexium','lactaid','anti nausea','dramamine','hydrocortisone cream','calamine lotion','burn gel','blister bandage','moleskin','butterfly closure','wound closure strips','tegaderm','elastic bandage','compression bandage','instant cold pack','hot pack','pulse oximeter','glucose meter','test strips','eye wash','ear drops','swimmers ear drops','visine','artificial tears','clear eyes','athletes foot cream','jock itch cream','wart remover','anti itch cream','poison ivy treatment','psoriasis cream','eczema cream','flu test','lancets','pill organizer','pill cutter','medicine cup','medicine dropper','medical gloves']
-        },
-        {
-          name: 'Cleaning & Household',
-          keywords: [
-            'laundry detergent','dish soap','paper towels','toilet paper','trash bags','cleaning spray','dog food','cat food','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','bleach','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','bounty','viva','select-a-size paper towels','bathroom tissue','double roll','mega roll','ultra soft','facial tissue','kleenex','puffs','tissues','napkins','paper napkins','cocktail napkins','dinner napkins','paper plates','foam plates','plastic plates','heavy duty plates','paper cups','foam cups','plastic cups','hot cups','cold cups','plastic wrap','saran wrap','aluminum foil','heavy duty foil','wax paper','parchment paper','butcher paper','zip lock bags','sandwich bags','gallon bags','freezer bags','snack bags','plastic storage bags','bin liners','coffee filters','paper straws','paper bowls','freezer paper','compost bags','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','charmin','cottonelle','scott','angel soft','seventh generation toilet paper','bamboo toilet paper','recycled toilet paper','flushable wipes','select a size','brawny','sparkle','bamboo paper towels','recycled paper towels','shop towels','luncheon napkins','dispenser napkins','recycled napkins','lotion tissue','aloe tissue','travel tissue','pocket tissue','compartment plates','compostable plates','sugarcane plates','bamboo plates','foam bowls','plastic bowls','compostable bowls','soup bowls','compostable cups','cup sleeves','drink lids','plastic straws','cling wrap','quart bags','ziploc','glad bags','reusable bags','beeswax wrap','cupcake liners','muffin liners','baking cups','parchment rounds','skewers','toothpicks','cocktail picks','tall kitchen bags','outdoor trash bags','contractor bags','drawstring bags','plastic forks','plastic knives','plastic spoons','plastic sporks','wooden forks','wooden knives','wooden spoons','wooden chopsticks','disposable chopsticks','compostable cutlery','compostable forks','compostable knives','compostable spoons','cutlery sets','individually wrapped cutlery','cutlery packets']
-        }
-      ]
-    },
+  // ── 12. CANNED GOODS ────────────────────────────────────────────────────
+  {
+    name: 'Canned Goods',
+    clusters: [
+      {
+        name: 'Canned Vegetables',
+        keywords: [
+          'canned tomatoes','diced tomatoes','crushed tomatoes',
+          'tomato paste','tomato sauce canned','canned corn','canned peas',
+          'canned green beans','canned beets','canned artichoke hearts',
+          'canned pumpkin','canned mushrooms','canned asparagus',
+          'canned potatoes','canned carrots','canned spinach','black olives','canned olives',
+        ],
+      },
+      {
+        name: 'Canned Fruit',
+        keywords: [
+          'canned fruit','canned peaches','canned pears','canned pineapple',
+          'canned mandarin oranges','canned cherries','canned apricots',
+          'canned mango','fruit cocktail','maraschino cherries',
+          'applesauce',
+        ],
+      },
+      {
+        name: 'Canned Beans & Legumes',
+        keywords: [
+          'canned beans','canned black beans','canned pinto beans',
+          'canned kidney beans','canned chickpeas','canned lentils',
+          'canned navy beans','canned cannellini','canned white beans',
+          'canned refried beans','baked beans',
+        ],
+      },
+      {
+        name: 'Canned Soup & Broth',
+        keywords: [
+          'soup','canned soup','campbell\'s soup','chicken soup','tomato soup','vegetable soup',
+          'cream of mushroom soup','minestrone','chili canned','stew canned',
+          'broth','chicken broth','beef broth','vegetable broth',
+          'bone broth','stock',
+        ],
+      },
+      {
+        name: 'Canned Meat & Seafood',
+        keywords: [
+          'canned chicken','canned beef','spam','canned corned beef',
+          'canned tuna','canned salmon','canned sardines','canned anchovies',
+          'canned crab','canned clams','canned mackerel','canned oyster',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // ALDI
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'aldi',
-      name: 'ALDI',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#00529b',
-      searchNames: ['aldi','aldi market','aldi grocery'],
-      dataSource: 'curated',
-      aisles: [
-        {
-          name: 'Produce',
-          keywords: [
-            'apple','banana','orange','avocado','tomato','lettuce','spinach','broccoli','carrot','pepper','onion','garlic','potato','berries','lemon','lime','strawberry','blueberry','raspberry','blackberry','grape','watermelon','cantaloupe','honeydew','peach','plum','pear','mango','pineapple','kiwi','kale','cauliflower','cabbage','celery','cucumber','zucchini','squash','bell pepper','jalapeño','ginger','sweet potato','corn','asparagus','green beans','peas','mushrooms','mushroom','beets','radish','arugula','romaine','iceberg','herbs','basil','cilantro','parsley','mint','scallions','leek','eggplant','artichoke','brussels sprouts','cherries','fresh herbs','ginger root','iceberg lettuce','butterhead lettuce','swiss chard','collard greens','mustard greens','beet greens','turnip greens','watercress','microgreens','sprouts','green cabbage','red cabbage','savoy cabbage','bok choy','napa cabbage','kohlrabi','broccolini','beetroot','beet','daikon','turnip','parsnip','rutabaga','yam','cassava','yuca','taro','taro root','celeriac','yellow onion','red onion','white onion','shallot','green onion','scallion','chives','cherry tomato','heirloom tomato','aubergine','habanero','chili pepper','serrano','poblano','yellow squash','butternut squash','acorn squash','spaghetti squash','pumpkin','delicata squash','kabocha','bitter melon','bottle gourd','snap peas','snow peas','lima beans','edamame','okra','fennel','shiitake','portobello','oyster mushroom','seaweed','nopales','jicama','chayote','plantain','dill','rosemary','thyme','oregano','sage','tarragon','lemongrass','turmeric root','nectarine','apricot','cherry','grapefruit','tangerine','clementine','mandarin','pomelo','yuzu','blood orange','kumquat','cranberry','gooseberry','elderberry','papaya','coconut','guava','passionfruit','lychee','dragon fruit','rambutan','durian','jackfruit','soursop','sapodilla','mangosteen','longan','breadfruit','ackee','jabuticaba','galia melon','melon','olive','quince','persimmon','pomegranate','fig','date','starfruit','carambola','kiwifruit','romaine lettuce','butterhead','green','red','savoy','yuca cassava','yellow','white','scallion onion','aubergine eggplant','jalapeño pepper','habanero pepper','pitaya','pitaya fruit','carambola starfruit','cremini','navel orange','passion fruit']
-        },
-        {
-          name: 'Meat & Deli',
-          keywords: [
-            'chicken','ground beef','steak','pork','bacon','sausage','ham','deli meat','salmon','shrimp','chicken breast','chicken thighs','chicken wings','whole chicken','rotisserie chicken','beef steak','ribeye','sirloin','filet mignon','chuck roast','brisket','ground turkey','turkey breast','whole turkey','turkey bacon','pork chops','pork tenderloin','pork ribs','prosciutto','lamb chops','lamb shank','ground lamb','italian sausage','bratwurst','chorizo','kielbasa','hot dogs','breakfast sausage','veal','bison','venison','duck','short ribs','flank steak','skirt steak','chicken drumsticks','chicken tenders','ground pork','spare ribs','bone-in chicken','pork loin','marinated chicken','marinated pork','smoked sausage','turkey burgers','beef patties','bone broth','stew meat','kabob meat','meatballs','duck breast','pancetta','salami logs','ham steaks','turkey deli meat','ham deli meat','roast beef','salami','pepperoni','bologna','pastrami','corned beef','mortadella','capicola','prosciutto di parma','swiss cheese','provolone','muenster','havarti','colby jack','pepper jack','brie','gouda','gruyere','cheddar block','fresh mozzarella','prepared salads','potato salad','coleslaw','pasta salad','macaroni salad','hummus','olives','pickles','antipasto','sub sandwiches','wraps','quiche','stuffed peppers','deli platters','deli chicken salad','tuna salad','egg salad','meatloaf slices','deli soups','fried chicken','lamb chop','leg of lamb','rabbit','quail','goose','oxtail','short rib','beef tongue','tripe','liverwurst','andouille','linguica','merguez','pepperoni stick','meat stick','beef stick','chicken liver','chicken heart','giblets','beef chuck','beef brisket','beef shank','beef ribs','chuck eye','ribeye steak','sirloin steak','t-bone steak','porterhouse steak','beef liver','beef tenderloin','tri-tip','hanger steak','flat iron steak','top round','bottom round','eye of round','beef cheeks','beef suet','veal chops','veal cutlet','ground veal','osso buco','pork shoulder','pork belly','baby back ribs','pork butt','salt pork','fatback','pork belly slices','guanciale','lard','head cheese','blood sausage','beef franks','chicken drumstick','ground chicken','turkey sausage','duck leg','cornish hen','pheasant','rack of lamb','lamb shoulder','lamb ribs','elk','wild boar','alligator','frog legs','pre-seasoned pork','stuffed chicken breast','meatloaf mix','chicken burgers','kebab meat','skewers','sliced turkey','smoked turkey','honey turkey','black forest ham','honey ham','smoked ham','genoa salami','hard salami','chicken breast slices','american cheese slices','swiss cheese slices','provolone slices','cheddar slices','prepared sandwiches','braunschweiger','soppressata','coppa','bresaola','landjaeger','summer sausage','olive loaf','pickle loaf','pimento loaf','pepper jack slices','muenster slices','havarti slices','gouda slices','colby jack slices','fresh burrata','smoked gouda','meatloaf','pot roast','macaroni and cheese','mashed potatoes','roasted vegetables','soup','chili','baba ganoush','tzatziki','pimento cheese','spinach dip','artichoke dip','bruschetta','tapenade','mustard spread','horseradish cream','pate','duck confit','rillettes','terrine','charcuterie','stuffed grape leaves','deviled eggs','spring rolls','egg rolls','tamales']
-        },
-        {
-          name: 'Dairy & Eggs',
-          keywords: [
-            'milk','butter','eggs','cheese','cheddar','yogurt','sour cream','cream cheese','cottage cheese','heavy cream','whole milk','skim milk','2% milk','oat milk','almond milk','soy milk','half and half','whipping cream','margarine','ghee','egg whites','cheddar cheese','mozzarella cheese','parmesan cheese','american cheese','ricotta cheese','feta cheese','string cheese','shredded cheese','sliced cheese','greek yogurt','drinkable yogurt','kefir','ice cream','frozen yogurt','whipped cream','pudding','custard','plant-based butter','lactose-free milk','evaporated milk','eggnog','buttermilk','chocolate milk','eggs organic','quark','labneh','creme fraiche','mascarpone','burrata','paneer','halloumi','queso fresco','cotija','oaxacan cheese','manchego','gruyere','emmental','jarlsberg','muenster','havarti','gouda','brie','camembert','blue cheese','gorgonzola','stilton','pecorino','asiago','fontina','provolone','colby','colby jack','pepper jack','monterey jack','cashew milk','coconut milk beverage','hemp milk','rice milk','lactose free milk','dairy free yogurt','coconut yogurt','almond yogurt','vegan butter','plant based butter','dairy free cream cheese','1% milk','light cream','clotted cream','condensed milk','goat milk','sheep milk','pea milk','macadamia milk','flax milk','powdered milk','unsalted butter','salted butter','european butter','whipped butter','cultured butter','clarified butter','plain yogurt','flavored yogurt','skyr','soy yogurt','ricotta','mozzarella','bocconcini','feta','goat cheese','chevre','parmesan','romano','swiss cheese','aged gouda','edam','smoked gouda','raclette','roquefort','danish blue','babybel','laughing cow','velveeta','brown eggs','white eggs','free range eggs','organic eggs','liquid eggs','egg substitute','duck eggs','quail eggs','cool whip','aerosol whipped cream','dairy free sour cream','coffee creamer','non dairy creamer','powdered creamer','liquid creamer']
-        },
-        {
-          name: 'Bread & Bakery',
-          keywords: [
-            'bread','rolls','tortillas','bagels','muffin','cake','white bread','wheat bread','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','pita bread','naan','english muffins','croissants','dinner rolls','hamburger buns','hot dog buns','flour tortillas','corn tortillas','donuts','danishes','cinnamon rolls','coffee cake','chocolate cake','birthday cake','cheesecake','pie','brownies','cookies','cupcakes','macarons','tarts','scones','biscotti','sandwich bread','artisan bread','gluten-free bread','sliced bread','biscuits','pound cake','loaf cake','fruit pies','pie crust','sheet cake','sourdough','whole grain bread','pita','lavash','rice cakes','breadcrumbs','panko']
-        },
-        {
-          name: 'Dry Goods & Pasta',
-          keywords: [
-            'pasta','rice','oatmeal','cereal','flour','sugar','mac and cheese','quinoa','lentils','beans','white bread','wheat bread','sourdough','whole grain bread','rye bread','bagels','english muffins','pita','naan','tortillas','lavash','rice cakes','breadcrumbs','panko','white rice','brown rice','jasmine rice','basmati rice','wild rice','instant rice','rolled oats','steel cut oats','granola','grits','cornmeal','farro','barley','bulgur','couscous','polenta','spaghetti','penne','fettuccine','rigatoni','orzo','lasagna noodles','egg noodles','ramen noodles','rice noodles','udon','soba','split peas','dried lentils','risotto rice','dried chickpeas','ravioli dried','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking soda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','olive oil','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','hot sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','whole wheat bread','multigrain bread','pumpernickel','baguette','ciabatta','brioche','challah','focaccia','pretzel bread','pita bread','roti','cornbread','gluten free bread','sprouted bread','ezekiel bread','keto bread','arborio','sushi rice','black rice','red rice','forbidden rice','parboiled rice','rice pilaf mix','oats','millet','amaranth','teff','spelt','freekeh','wheat berries','buckwheat','semolina','hominy','linguine','fusilli','farfalle','rotini','macaroni','lasagna sheets','angel hair','pasta shells','cavatappi','ditalini','orecchiette','tortellini','ravioli','gnocchi','glass noodles','lo mein','vermicelli','shirataki noodles','wonton wrappers','dumpling wrappers','spring roll wrappers','croutons','stuffing mix','crispbread','matzo','corn tortillas','flour tortillas','taco shells','dried black beans','dried kidney beans','dried pinto beans','dried navy beans','dried cannellini beans','coconut flour','self-rising flour','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','honey','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots']
-        },
-        {
-          name: 'Canned & Jarred',
-          keywords: [
-            'soup','canned tomato','pasta sauce','canned beans','tuna','olives','pickles','broth','diced tomatoes','crushed tomatoes','tomato paste','tomato sauce','black beans','kidney beans','chickpeas','pinto beans','cannellini beans','canned corn','canned peas','canned green beans','canned carrots','canned beets','canned tuna','canned salmon','canned sardines','canned anchovies','canned crab','canned chicken','canned ham','spam','chicken broth','beef broth','vegetable broth','chicken stock','beef stock','canned soup','tomato soup','cream of mushroom','chicken noodle soup','canned fruit','peaches in syrup','pears in syrup','fruit cocktail','mandarin oranges','coconut milk','evaporated milk','condensed milk','canned pumpkin','artichoke hearts','roasted red peppers','sun-dried tomatoes','capers','canned potatoes','canned chili','canned lentils','applesauce','canned fruit cocktail','lentils','navy beans','great northern beans','butter beans','fava beans','black-eyed peas','baked beans','refried beans','whole tomatoes','canned artichoke hearts','canned mushrooms','canned asparagus','canned spinach','canned jalapenos','canned olives','tomato puree','stewed tomatoes','fire roasted tomatoes','tomato juice','canned peaches','canned pears','canned pineapple','cherry pie filling','apple pie filling','cranberry sauce','canned mango','lychee','jackfruit','canned cherries','canned mackerel','canned clams','canned oysters','canned herring','smoked oysters','smoked mussels','bone broth','cream of chicken','minestrone','lentil soup','beef stew','clam chowder','french onion soup','split pea soup','ramen broth','stock concentrate','bouillon cubes','chili','canned corned beef','canned turkey','vienna sausages','coconut cream','sweetened condensed milk','canned tamales']
-        },
-        {
-          name: 'Baking & Condiments',
-          keywords: [
-            'baking soda','vanilla','spices','ketchup','mustard','mayo','olive oil','vinegar','hot sauce','jam','peanut butter','honey','all-purpose flour','bread flour','cake flour','almond flour','whole wheat flour','sugar','brown sugar','powdered sugar','raw sugar','stevia','splenda','baking powder','cornstarch','cream of tartar','yeast','cocoa powder','chocolate chips','vanilla extract','almond extract','salt','black pepper','garlic powder','onion powder','cumin','paprika','chili powder','oregano','basil','thyme','rosemary','cinnamon','nutmeg','red pepper flakes','bay leaves','turmeric','curry powder','cayenne','vegetable oil','canola oil','coconut oil','sesame oil','white vinegar','apple cider vinegar','balsamic vinegar','red wine vinegar','soy sauce','worcestershire sauce','fish sauce','white chocolate chips','butterscotch chips','sprinkles','food coloring','yeast packets','pie filling','coconut flakes','shortening','gelatin mix','pudding mix','frosting tubs','frosting tubes','marshmallows','cake mix','brownie mix','yellow mustard','dijon mustard','mayonnaise','miracle whip','relish','tabasco','sriracha','ranch dressing','italian dressing','caesar dressing','balsamic dressing','thousand island','blue cheese dressing','barbecue sauce','teriyaki sauce','hoisin sauce','oyster sauce','steak sauce','a1 sauce','salsa','guacamole','queso','hummus','tzatziki','pasta sauce','marinara sauce','alfredo sauce','pesto','pickle relish','pickles','pepperoncini','capers','olives','tartar sauce','cocktail sauce','horseradish','wasabi','chutney','sandwich spread','buffalo sauce','honey mustard dressing','taco sauce','enchilada sauce','pizza sauce','gravy mix','gravy jars','vinaigrette dressing','coconut flour','self-rising flour','semolina','rice flour','oat flour','gluten free flour','cassava flour','chickpea flour','spelt flour','white sugar','coconut sugar','date sugar','monk fruit','erythritol','xylitol','allulose','agave','molasses','maple syrup','corn syrup','table salt','kosher salt','sea salt','pink himalayan salt','fleur de sel','smoked salt','pickling salt','curing salt','smoked paprika','coriander','garam masala','cloves','allspice','cardamom','ginger powder','mustard powder','celery seed','fennel seed','caraway seed','poppy seed','saffron','sumac','Italian seasoning','herbs de provence','old bay','cajun seasoning','everything bagel seasoning','lemon pepper','ranch seasoning','sage','dill','tarragon','marjoram','gelatin','agar agar','pectin','tapioca starch','arrowroot','potato starch','powdered buttermilk','dry milk powder','dark chocolate chips','peppermint extract','almonds','cashews','walnuts','pecans','pistachios','pine nuts','macadamia nuts','hazelnuts','brazil nuts','peanuts','sunflower seeds','pumpkin seeds','sesame seeds','flaxseed','chia seeds','hemp seeds','pepitas','nutritional yeast','liquid smoke','dried mushrooms','dried chiles','anchovy paste','tomato paste tube','tahini','popcorn kernels','dried fruit','raisins','dates','apricots','rice','beans','lentils','pasta','breadcrumbs','spicy brown mustard','whole grain mustard','honey mustard','stone ground mustard','vegenaise','aioli','chipotle mayo','sriracha mayo','wasabi mayo','cholula','valentina','franks red hot','ghost pepper sauce','habanero sauce','chili garlic sauce','gochujang','sambal','harissa','calabrian chili','chili crisp','tonkatsu sauce','bulgogi sauce','mole sauce','chimichurri','romesco','sofrito','greek dressing','asian sesame dressing','tahini dressing','green goddess','avocado dressing','french dressing','vinaigrette','extra virgin olive oil','avocado oil','peanut oil','grapeseed oil','sunflower oil','truffle oil','chili oil','herb infused oil','cooking spray','rice vinegar','white wine vinegar','sherry vinegar','malt vinegar','ponzu','mirin','coconut aminos','liquid aminos','marinara','vodka sauce','gravy','au jus','remoulade','curry paste','pomegranate molasses','rose water','nutella','speculoos','sunflower butter','cashew butter','hazelnut spread','marmalade','preserves','fruit spread','apple butter','pumpkin butter','almond butter','jelly','giardiniera','sauerkraut','kimchi']
-        },
-        {
-          name: 'Snacks',
-          keywords: [
-            'chips','pretzels','crackers','nuts','almonds','cookies','candy','granola bars','potato chips','tortilla chips','corn chips','popcorn','rice cakes','graham crackers','animal crackers','saltines','ritz crackers','cheese crackers','whole grain crackers','pita chips','cashews','peanuts','walnuts','mixed nuts','pistachios','pecans','trail mix','protein bars','energy bars','fruit snacks','beef jerky','meat sticks','pepperoni sticks','oreos','chocolate chip cookies','fig newtons','nutter butters','chocolate','gummy bears','licorice','hard candy','mints','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','popcorn kernels','snack cakes','fruit leather','sandwich crackers','snack crackers','granola bites','rice cracker','seaweed snack','nori snack','veggie straw','plantain chip','cassava chip','taro chip','beet chip','pork rind','chicharron','date bar','fig bar','fruit roll up','sunflower seed','pumpkin seed','pepitas','pine nut','macadamia nut','hazelnut','brazil nut','chestnut','wasabi pea','chickpea snack','edamame snack','roasted fava bean','protein chip','popcorn cake','rice cake','slim jim','jack links','chomps','Epic bar','cheese puff','cheese curl','cheese ball','candy bar','snickers','kit kat','reeses','twix','m&m','gummy worm','sour patch kids','starburst','skittles','swedish fish','jolly rancher','werthers','breath mint','tic tac','altoids','sweet potato chips','lentil chips','popcorn chips','pretzel nuggets','pretzel sticks','pretzel rods','yogurt covered pretzels','chocolate covered pretzels','soft pretzel','wheat thins','triscuits','flatbread crackers','peanut butter crackers','wasa crispbread','matzo','honey roasted peanuts','wasabi almonds','smoked almonds','candied nuts','corn nuts','sesame sticks','turkey jerky','meat stick','pepperoni stick','summer sausage','kind bar','clif bar','larabar','rx bar','quest bar','nature valley','fiber bar','oat bar','energy bar','granola bar','cereal bar','protein bar','chips ahoy','ginger snaps','biscotti','shortbread','wafers','sandwich cookies','chocolate covered cookies','little debbie','hostess','twinkies','ding dongs','ho hos','swiss rolls','oatmeal cream pie','rice krispie treat','fruit rollup','applesauce pouch','milky way','almond joy','hersheys','lifesavers','candy corn','peach rings','haribo','trolli','lollipop','rock candy','caramel','toffee','fudge','chocolate covered raisins','chocolate covered almonds','peanut brittle','pralines','chewing gum','bubble gum','mentos']
-        },
-        {
-          name: 'Beverages',
-          keywords: [
-            'water','juice','coffee','tea','soda','sparkling water','seltzer','club soda','tonic water','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','sweet tea','green tea','kombucha','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','cola','diet cola','ginger ale','root beer','sprite','dr pepper','sports drinks','gatorade','powerade','electrolyte drinks','energy drinks','red bull','monster','hot chocolate mix','cocoa','chai mix','cider','coconut water','vegetable juice','tomato juice','v8','mineral water','meal replacement shakes','protein drinks','drink mixers','flavored sparkling water','ginger beer','switchel','agua fresca','horchata','tamarind drink','malta','electrolyte water','alkaline water','protein shake','meal replacement shake','ensure','boost','slim fast','probiotic drink','prebiotic soda','kefir drink','juice box','capri sun','squeezed lemonade','pressed juice','cold pressed juice','green juice','beet juice','celery juice','turmeric shot','ginger shot','wellness shot','oat milk latte','bottled frappuccino','canned coffee','bubble tea','boba','thai iced tea mix','flavored water','diet soda','sparkling mineral water','pellegrino','perrier','la croix','bubly','smartwater','vitaminwater','pineapple juice','grapefruit juice','pomegranate juice','carrot juice','limeade','fruit punch','apple cider','cream soda','orange soda','grape soda','birch beer','italian soda','sparkling cider','zero sugar soda','bodyarmor','liquid iv','pedialyte','celsius','reign','bang','5 hour energy','rockstar','prime','kvass','shrub','apple cider vinegar drink','aloe vera drink','chlorophyll water','mushroom drink','adaptogen drink','hibiscus drink','agua de jamaica','thai iced tea','lassi','mango lassi','rose milk','cold brew coffee','nitro cold brew','muscle milk','ready to drink coffee','grenadine','simple syrup','margarita mix','bloody mary mix','mojito mix','drink mixer','espresso coffee','decaf coffee','flavored coffee','coffee pods','k-cups','iced coffee bottles','black tea bags','green tea bags','herbal tea bags','peppermint tea','chai tea','matcha powder','loose leaf tea','tea pods','white tea','oolong tea','rooibos tea','ginger tea','coffee syrup','sugar packets','sweetener packets','honey sticks','coffee filters','french press','pour over filters','cold brew bags','canned cold brew','coffee concentrate','espresso pods','nespresso pods','coffee capsule','pour over coffee','french press coffee','turkish coffee','decaf tea','rooibos','hibiscus tea','lemon tea','turmeric tea','sleepy time tea','throat coat tea','echinacea tea','dandelion tea','vanilla syrup','hazelnut syrup','caramel syrup','sugar in the raw','stevia packet','monk fruit sweetener','coffee filter','paper filter','reusable filter','matcha latte mix','chai latte mix','golden milk mix','cacao powder','espresso','tea bags','chai','matcha','sugar','sweeteners','cold brew concentrate','vietnamese coffee','light roast','medium roast','dark roast','single origin coffee','fair trade coffee','organic coffee','k cups','coffee bags','sleepytime tea','jasmine tea','earl grey','english breakfast','irish breakfast','darjeeling','assam','sencha','gyokuro','hojicha','kukicha','pu erh','white peony','silver needle','yerba mate','guayusa','holy basil','tulsi','lavender tea','rose tea','fruit tea','berry tea','citrus tea','immunity tea','detox tea','bedtime tea','tea variety pack','ceremonial matcha','culinary matcha','hojicha powder','barley tea','brown rice tea','genmaicha','thai tea mix','masala chai mix','turmeric latte mix','cacao mix','drinking chocolate','cocoa powder','heavy cream','half and half','condensed milk','evaporated milk','lavender syrup','stevia drops','monk fruit sweetener packets','white sugar','brown sugar','raw sugar','honey','agave','maple syrup','coconut sugar','coffee grinder','burr grinder','pour over dripper','chemex','aeropress','moka pot','milk frother','handheld frother','electric frother','coffee scale','gooseneck kettle','electric kettle','tea kettle','tea infuser','tea strainer','tea ball','teapot','travel mug','tumbler','insulated mug','cold brew pitcher','coffee canister']
-        },
-        {
-          name: 'Frozen',
-          keywords: [
-            'frozen meals','frozen pizza','frozen vegetables','ice cream','frozen fish','frozen burritos','tv dinners','frozen lasagna','frozen chicken nuggets','frozen fish sticks','frozen shrimp','frozen salmon','frozen broccoli','frozen peas','frozen corn','frozen spinach','frozen edamame','frozen stir fry vegetables','frozen mixed vegetables','frozen fruit','frozen berries','frozen mango','frozen waffles','frozen pancakes','frozen breakfast sandwiches','ice cream bars','popsicles','frozen yogurt bars','gelato','frozen fries','tater tots','frozen onion rings','frozen pot pies','frozen soup','frozen dumplings','frozen egg rolls','frozen appetizers','frozen hash browns','frozen smoothie packs','frozen ice cream','pierogies','empanadas','gyoza','pot stickers','wontons','dumplings','spring rolls','lumpia','samosa','frozen tamales','frozen enchiladas','frozen taquitos','mochi ice cream','paletas','frozen acai','frozen breakfast sandwich','frozen pot pie','frozen mac and cheese','frozen appetizer','frozen mozzarella sticks','frozen smoothie pack','acai packet','frozen fruit bar','sherbet','frozen custard','ice cream sandwich','drumstick cone','klondike bar','frozen kale','frozen brussels sprouts','frozen cauliflower','frozen artichoke hearts','frozen riced cauliflower','frozen zucchini noodles','frozen sweet potato','frozen green beans','frozen carrots','frozen lima beans','frozen okra','frozen pineapple','frozen peaches','frozen cherries','frozen pitaya','frozen coconut','frozen avocado','frozen chili','frozen pasta','frozen Indian meals','frozen Asian meals','frozen breakfast burrito','frozen chicken tenders','frozen chicken patties','frozen burgers','frozen veggie burgers','frozen fish fillets','frozen meatballs','frozen sausage','frozen hot dogs','frozen bacon','frozen turkey','frozen salmon portions','frozen crab cakes','frozen scallops','frozen lobster tails','frozen breaded shrimp','popcorn shrimp','egg rolls','frozen pad thai','frozen fried rice','frozen ramen','frozen bao buns','frozen naan pizza','frozen french toast','frozen crepes','frozen biscuits','frozen oatmeal cups','frozen stuffed peppers','frozen yogurt','sorbet','dairy free ice cream','oat milk ice cream','frozen cheesecake','frozen pie','chipwich','popsicle']
-        },
-        {
-          name: 'Household & Health',
-          keywords: [
-            'laundry detergent','dish soap','paper towels','toilet paper','trash bags','vitamins','shampoo','toothpaste','dish detergent','dishwasher pods','dishwasher detergent','rinse aid','liquid laundry detergent','laundry pods','powder detergent','fabric softener','dryer sheets','stain remover','oxiclean','bleach','all-purpose cleaner','multi-surface spray','disinfectant spray','lysol','clorox wipes','bathroom cleaner','toilet bowl cleaner','toilet brush','shower cleaner','mold remover','glass cleaner','windex','floor cleaner','mop solution','wood floor cleaner','oven cleaner','degreaser','kitchen cleaner','stainless steel cleaner','furniture polish','dusting spray','drain cleaner','drano','plunger','garbage bags','recycling bags','compostable bags','sponges','scrub brushes','microfiber cloths','cleaning gloves','wood polish','carpet cleaner spray','odor eliminator','light bulbs','led bulbs','60 watt bulbs','flood lights','smart bulbs','batteries','aa batteries','aaa batteries','9 volt batteries','d batteries','extension cord','power strip','outlet covers','cable ties','tape','scotch tape','duct tape','masking tape','packing tape','super glue','gorilla glue','wood glue','sandpaper','screwdrivers','hammer','nails','screws','picture hooks','command strips','velcro strips','furnace filters','air filters','carbon monoxide detector','smoke detector','bug spray','insect repellent','wasp spray','ant traps','mouse traps','rat poison','roach bait','caulk','weather stripping','door sweep','cabinet hardware','zip ties','bungee cords','rope','carabiners','toilet cleaner','disinfectant wipes','multi surface spray','clorox','fabuloso','pine sol','murphy oil soap','409','fantastik','cleaning concentrate','enzyme cleaner','natural cleaner','streak free cleaner','wood cleaner','leather cleaner','granite cleaner','mildew remover','tile cleaner','grout cleaner','tub and tile cleaner','ajax','comet','scrubbing bubbles','toilet drop in','liquid plumr','microwave cleaner','dishwasher cleaner','liquid detergent','dryer balls','color safe bleach','woolite','sport wash','tide','gain','all detergent','arm and hammer','downy','bounce','wrinkle releaser','fabric refresher','febreze laundry','hardwood floor cleaner','carpet cleaner','carpet spray','wet jet solution','swiffer refill','mop head','dish scrubber','dish brush','bottle brush','cascade','finish','dawn','palmolive','air freshener','febreze','plug in air freshener','charcoal odor absorber','room spray','rubber gloves','microfiber cloth','scrubbing pad','steel wool','magic eraser','squeegee','duster','ceiling fan duster','grout brush','electrical tape','wall hooks','screwdriver','wrench','pliers','smart bulb','dimmer bulb','flood light bulb','candelabra bulb','globe bulb','tube bulb','night light','outdoor bulb','bug light','grow light','halogen bulb','fluorescent bulb','cfl bulb','C batteries','9 volt battery','button cell battery','lithium battery','rechargeable battery','battery charger','hearing aid battery','watch battery','surge protector','outlet cover','outlet extender','plug adapter','usb charger','cable organizer','smart plug','timer switch','dimmer switch','painters tape','double sided tape','foam tape','carpet tape','mounting tape','epoxy','silicone sealant','weatherstripping','wall anchors','toggle bolts','picture hangers','shelf brackets','drawer pulls','hinges','door handles','door knobs','lock','padlock','deadbolt','utility knife','box cutter','measuring tape','level','stud finder','drill bits','putty knife','spackle','caulking gun','paint roller','paint brush','paint tray','drop cloth','safety glasses','work gloves','storage bins','storage boxes','plastic containers','drawer organizer','closet organizer','shelf liner','vacuum storage bags','command hooks','tool box','label maker','labels','fire extinguisher','first aid kit','flashlight','lantern','emergency candle','safety lock','child safety lock','door stopper','door alarm','window lock','cabinet lock','mouse trap','rat trap','sticky trap','ant trap','raid','mosquito coil','fly trap','fly paper','moth balls','cedar blocks','matches','lighter','candle','bungee cord','twine','moving boxes','bubble wrap','packing peanuts','plastic sheeting','tarp']
-        }
-      ]
-    },
+  // ── 13. DRY GOODS & PANTRY ──────────────────────────────────────────────
+  {
+    name: 'Dry Goods & Pantry',
+    clusters: [
+      {
+        name: 'Baking',
+        keywords: [
+          'flour','all purpose flour','bread flour','cake flour',
+          'whole wheat flour','almond flour','coconut flour','gluten free flour',
+          'cornstarch','tapioca starch','baking soda','baking powder','yeast',
+          'cream of tartar','powdered sugar','brown sugar','white sugar',
+          'granulated sugar','sugar substitute','cocoa powder','chocolate chips',
+          'baking chocolate','vanilla extract','almond extract',
+          'food coloring','sprinkles','cake decorating',
+        ],
+      },
+      {
+        name: 'Cooking Oil & Vinegar',
+        keywords: [
+          'oil','olive oil','vegetable oil','canola oil','coconut oil',
+          'avocado oil','grapeseed oil','sunflower oil','peanut oil',
+          'cooking spray','vinegar','balsamic vinegar','red wine vinegar',
+          'white wine vinegar','white vinegar','rice vinegar',
+          'apple cider vinegar',
+        ],
+      },
+      {
+        name: 'Spices & Seasoning',
+        keywords: [
+          'spices','seasoning','salt','black pepper','sea salt',
+          'kosher salt','garlic powder','onion powder','paprika',
+          'smoked paprika','cumin','chili powder','cayenne','cinnamon',
+          'nutmeg','cloves','allspice','turmeric powder','curry powder',
+          'Italian seasoning','oregano dried','thyme dried','bay leaves',
+          'red pepper flakes','Old Bay','lemon pepper','seasoned salt',
+          'steak seasoning','taco seasoning','ranch seasoning',
+          'everything bagel seasoning','sazon goya',
+          'smoked salt','himalayan pink salt',
+        ],
+      },
+      {
+        name: 'Sweeteners & Sugar',
+        keywords: [
+          'agave','stevia','splenda','equal','sweet and low',
+          'truvia','monk fruit sweetener','coconut sugar','raw sugar',
+          'simple syrup',
+        ],
+      },
+      {
+        name: 'Canned Coconut & Specialty',
+        keywords: [
+          'coconut milk canned','canned coconut',
+          'evaporated milk canned','condensed milk canned',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PUBLIX
-    // Source: Curated based on typical Publix department layout
-    // Southeast US chain; departments consistent across locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'publix',
-      name: 'Publix',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#009f4d',
-      searchNames: ['publix','publix super market','publix supermarket'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower'] },
-        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','pepperoni','prosciutto','pastrami','sliced cheese','american cheese','swiss','provolone','deli meat','sandwich','sub','wrap','prepared food','rotisserie','fried chicken','hot bar','olive','pickle','hummus'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pita','naan','tortilla','english muffin','brioche','cake','pie','cookie','donut','pastry','danish','brownie'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','sausage','bacon','lamb','veal','crab','lobster','scallop','clam','fish','turkey breast','pork chop','ribs'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','peas','corn','french fries','tater tots','waffle','pancake','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','soy milk','creamer','espresso','matcha','hot chocolate','punch'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','pepper','olive oil','vegetable oil','vinegar','sauce','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','ranch','soup','broth','stock','beans','lentils','quinoa','oats','cereal','granola','honey','jam','jelly','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','popcorn','pretzels','baking soda','baking powder','vanilla','cocoa','canned tomato','canned tuna','canned beans','breadcrumbs'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','licorice','cookies','snack','fruit snacks','jerky','rice cake'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','moisturizer','sunscreen','toothpaste','toothbrush','floss','mouthwash','deodorant','razors','shaving cream','vitamins','supplements','medicine','pain reliever','allergy','bandage','first aid','feminine care','diapers','baby','makeup','skincare','hair care'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','candle','batteries','light bulbs','aluminum foil','plastic wrap','zip bags'] },
-        { name: 'Beer, Wine & Spirits', keywords: ['wine','beer','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','liquor','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','mead'] },
-      ]
-    },
+  // ── 14. CONDIMENTS & SAUCES ─────────────────────────────────────────────
+  {
+    name: 'Condiments & Sauces',
+    clusters: [
+      {
+        name: 'Ketchup, Mustard & Mayo',
+        keywords: [
+          'ketchup','mustard','yellow mustard','dijon mustard','spicy mustard',
+          'honey mustard','mayonnaise','mayo','miracle whip','hellmann\'s',
+        ],
+      },
+      {
+        name: 'Hot Sauce & Salsa',
+        keywords: [
+          'hot sauce','tabasco','buffalo sauce','salsa',
+          'pico de gallo','enchilada sauce','taco sauce','chipotle sauce',
+          'chili garlic sauce',
+        ],
+      },
+      {
+        name: 'Salad Dressing',
+        keywords: [
+          'salad dressing','ranch dressing','italian dressing',
+          'caesar dressing','balsamic dressing','vinaigrette',
+          'blue cheese dressing','thousand island','french dressing',
+          'greek dressing','asian dressing','green goddess dressing',
+          'avocado dressing','russian dressing','bolthouse farms',
+        ],
+      },
+      {
+        name: 'Pasta Sauce & Pizza Sauce',
+        keywords: [
+          'pasta sauce','marinara','tomato basil sauce','vodka sauce',
+          'alfredo sauce','pesto','arrabbiata','pizza sauce',
+          'prego','ragu',
+        ],
+      },
+      {
+        name: 'Gravy, Stocks & Western Sauces',
+        keywords: [
+          'gravy','worcestershire sauce','steak sauce','bbq sauce',
+          'teriyaki sauce','plum sauce',
+          'sweet and sour sauce','cocktail sauce','tartar sauce',
+          'stir fry sauce',
+        ],
+      },
+      {
+        name: 'Spreads & Dips',
+        keywords: [
+          'relish','pickle relish','capers','horseradish','cream cheese spread',
+          'tzatziki packaged','hummus packaged','bruschetta',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // H-E-B
-    // Source: Curated based on typical HEB department layout
-    // Texas-focused chain with strong fresh department presence
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'heb',
-      name: 'H-E-B',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#e31837',
-      searchNames: ['h-e-b','heb','h e b','central market','heb plus'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','jalapeño','tomatillo','cilantro','lime','mango','papaya','pineapple','guava','mushroom','zucchini','corn','potato','sweet potato','cabbage','cauliflower','beet','herbs'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','carne asada','fajita meat','chorizo','carnitas','barbacoa','brisket','ribs','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','lamb','turkey','pork chop','ham','deli meat'] },
-        { name: 'Bakery & Tortilleria', keywords: ['bread','bagel','muffin','roll','bun','sourdough','baguette','tortilla','flour tortilla','corn tortilla','pita','pan dulce','bolillo','conchas','cookies','cake','pie','donut','pastry','brownie'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','queso fresco','cotija','oaxaca cheese','jack cheese','whipped cream','almond milk','oat milk'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','sliced cheese','sandwich','prepared food','rotisserie','fried chicken','hot bar','guacamole','pico de gallo','salsa','hummus','olive','pickle'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','edamame','french fries','tamales','frozen burrito','enchiladas','frozen shrimp','ice','frozen fruit','frozen waffle'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','sports drink','energy drink','lemonade','horchata','agua fresca','coconut water','almond milk','oat milk','creamer','beer','wine'] },
-        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','masa','cornmeal','sugar','salt','olive oil','vegetable oil','lard','vinegar','sauce','pasta sauce','salsa','enchilada sauce','mole','soy sauce','hot sauce','sriracha','tamarind','adobo','soup','broth','beans','pinto beans','black beans','lentils','quinoa','oats','cereal','honey','jam','peanut butter','crackers','chips','tortilla chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned chile','canned beans','spices','cumin','chili powder'] },
-        { name: 'International & Hispanic Foods', keywords: ['tortilla','tamales','mole','adobo','chipotle','chile','ancho','pasilla','guajillo','jamaica','piloncillo','mexican chocolate','tomatillo','nopales','chayote','jicama','plantain','yuca','masa harina','menudo','pozole','sofrito'] },
-        { name: 'Snacks', keywords: ['chips','tortilla chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','cookies','jerky','fruit snacks','rice cake','sunflower seeds'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
-      ]
-    },
+  // ── 15. SNACKS ──────────────────────────────────────────────────────────
+  {
+    name: 'Snacks',
+    clusters: [
+      {
+        name: 'Chips & Crisps',
+        keywords: [
+          'chips','potato chips','tortilla chips','corn chips','pita chips',
+          'veggie chips','pretzels','popcorn','kettle chips','rice chips',
+          'sweet potato chips','lentil chips','cheese puffs',
+          'cheetos','doritos','fritos','lays','ruffles','pringles',
+          'sun chips','cape cod chips',
+        ],
+      },
+      {
+        name: 'Crackers',
+        keywords: [
+          'crackers','saltines','ritz','wheat thins','triscuits',
+          'graham crackers','animal crackers','rice crackers',
+          'nut thin crackers','gluten free crackers','wasa crispbread',
+          'ak mak','matzo','rice cakes',
+        ],
+      },
+      {
+        name: 'Snack Nuts & Seeds',
+        keywords: [
+          'snack nuts','almonds','cashews','peanuts','walnuts','pecans',
+          'pistachios','macadamia nuts','mixed nuts','trail mix',
+          'sunflower seeds','pumpkin seeds','pine nuts','brazil nuts',
+          'hazelnuts','chestnuts','planters','beef jerky','beef stick',
+          'jerky','meat stick',
+        ],
+      },
+      {
+        name: 'Candy & Chocolate',
+        keywords: [
+          'candy','chocolate','gummy bears','gummy worms','jelly beans',
+          'licorice','sour candy','hard candy','lollipop','skittles',
+          'm&ms','reese\'s','snickers','kit kat','twix','milky way',
+          'hershey\'s','butterfinger','jolly rancher','starburst',
+          'airheads','warheads','swedish fish','nerds','trolli',
+          'haribo','dove chocolate','lindt','ghirardelli','ferrero rocher',
+        ],
+      },
+      {
+        name: 'Fruit Snacks & Dried Fruit',
+        keywords: [
+          'fruit snacks','fruit rollups','dried fruit','raisins','dried mango',
+          'dried cranberries','dried apricots','dried blueberries',
+          'dried cherries','dried plums','dried pineapple','dried papaya',
+          'dried strawberries','dried figs','dried dates','dried kiwi',
+          'prunes','fig bars','fruit leather',
+        ],
+      },
+      {
+        name: 'Cookies & Sweet Snacks',
+        keywords: [
+          'cookies','oreos','chips ahoy','nutter butter','vienna fingers',
+          'fig newtons','nilla wafers','pepperidge farm','stroopwafel',
+          'pirouette cookies',
+          'pop tarts','toaster strudel packaged','rice krispie treats',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // MEIJER
-    // Source: Curated based on typical Meijer supercenter layout
-    // Midwest supercenter with full grocery + general merchandise
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'meijer',
-      name: 'Meijer',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#e31837',
-      searchNames: ['meijer','meijer superstore','meijer supercenter'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','cabbage','cauliflower','beet','arugula'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','ribs','fish','deli meat','hot dogs','brats','bratwurst'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','tortilla','english muffin','pita','cookies','cake','pie','donut','pastry','brownie'] },
-        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','provolone','sandwich','prepared food','rotisserie','fried chicken','hot bar','olive','pickle','hummus'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','corn','french fries','tater tots','waffle','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','rice cake'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-        { name: 'General Merchandise', keywords: ['electronics','clothing','shoes','toys','bedding','towels','kitchen','tools','auto','seasonal','garden','sporting goods','books','office','school supplies','storage','luggage'] },
-        { name: 'Pharmacy', keywords: ['prescription','pharmacy','vitamins','supplements','first aid','bandage','cold','flu','allergy medicine','pain reliever','antacid','eye drops','ear drops','cough syrup'] },
-      ]
-    },
+  // ── 16. BEVERAGES ───────────────────────────────────────────────────────
+  {
+    name: 'Beverages',
+    clusters: [
+      {
+        name: 'Soda & Carbonated',
+        keywords: [
+          'soda','cola','coke','coca cola','pepsi','diet coke','diet pepsi','diet soda','sparkling water','club soda',
+          'ginger ale','root beer','dr pepper','sprite',
+          'mountain dew','fanta','7up','canada dry','la croix','bubly',
+          'perrier','san pellegrino','pellegrino',
+        ],
+      },
+      {
+        name: 'Juice',
+        keywords: [
+          'juice','orange juice','apple juice','grape juice','cranberry juice',
+          'pineapple juice','tomato juice','v8','lemonade','fruit punch',
+          'grapefruit juice','pomegranate juice','acai juice','cider',
+          'coconut water','juicebox',
+        ],
+      },
+      {
+        name: 'Sports & Energy Drinks',
+        keywords: [
+          'sports drink','gatorade','powerade','vitamin water','pedialyte',
+          'energy drink','red bull','monster energy','celsius','bang energy',
+          'rockstar','5 hour energy',
+        ],
+      },
+      {
+        name: 'Water',
+        keywords: [
+          'water','bottled water','spring water','purified water',
+          'distilled water','sparkling water','evian','poland spring',
+          'fiji water','smartwater','dasani','aquafina','volvic',
+          'san pellegrino water','perrier water',
+        ],
+      },
+      {
+        name: 'Iced Tea & Cold Coffee',
+        keywords: [
+          'iced tea','sweet tea','kombucha','cold brew coffee',
+          'bottled coffee','frappuccino','starbucks bottled',
+          'ready to drink coffee','ready to drink tea',
+        ],
+      },
+      {
+        name: 'Drink Mixes & Powders',
+        keywords: [
+          'drink mix','kool aid','crystal light','mio','powerade powder',
+          'electrolyte powder','pedialyte powder','protein shake mix','meal replacement',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WEGMANS
-    // Source: Curated based on typical Wegmans department layout
-    // Northeast/Mid-Atlantic upscale chain with large prepared foods section
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'wegmans',
-      name: 'Wegmans',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#004b87',
-      searchNames: ['wegmans','wegmans food markets','wegman\'s'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower','leek','fennel'] },
-        { name: 'Organic & Natural', keywords: ['organic','natural','gluten free','vegan','plant based','non-gmo','whole grain','sprouted','raw','superfood','chia','flaxseed','hemp','nutritional yeast','kombucha','kefir'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','oyster','sausage','bacon','lamb','veal','turkey','pork chop','ribs','duck','bison'] },
-        { name: 'Prepared Foods & Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','sandwich','sushi','prepared food','rotisserie','fried chicken','hot bar','pizza','soup','salad bar','olive','pickle','hummus','charcuterie','pâté'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pita','ciabatta','focaccia','english muffin','brioche','cake','pie','cookie','donut','pastry','danish','brownie','eclair','macaron','tart'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','camembert','feta','gouda','gruyère','manchego','aged cheddar','whipped cream','almond milk','oat milk','soy milk'] },
-        { name: 'Cheese Shop', keywords: ['cheese','brie','camembert','manchego','gruyère','gouda','aged cheddar','blue cheese','gorgonzola','stilton','fontina','havarti','goat cheese','chevre','wensleydale','pecorino'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','pot pie','fish sticks','ice','frozen fruit','frozen shrimp','frozen appetizer'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer','espresso','matcha'] },
-        { name: 'Pantry & World Foods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vinegar','pasta sauce','salsa','soy sauce','fish sauce','sriracha','miso','tahini','soup','broth','beans','lentils','quinoa','farro','oats','cereal','honey','jam','peanut butter','almond butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','spices','curry paste','coconut milk'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
-        { name: 'Floral', keywords: ['flowers','bouquet','plant','succulent','potted plant','floral','roses','tulips','orchid','lily','arrangement','vase'] },
-      ]
-    },
+  // ── 17. BEER, WINE & SPIRITS ────────────────────────────────────────────
+  {
+    name: 'Beer, Wine & Spirits',
+    clusters: [
+      {
+        name: 'Beer',
+        shared: true, // also found in Beverages aisle at some stores
+        keywords: [
+          'beer','lager','ale','ipa','pale ale','stout','porter',
+          'wheat beer','sour beer','hard cider','hard seltzer',
+          'white claw','truly','budweiser','bud light','bud','miller',
+          'miller high life','high life','pabst','pbr','coors','coors light',
+          'heineken','corona','modelo','dos equis','stella artois',
+          'sam adams','sierra nevada','dogfish head','blue moon',
+          'guinness','harp','newcastle','yuengling','lagunitas',
+          'stone ipa','sculpin','oskar blues','bell\'s','new belgium',
+        ],
+      },
+      {
+        name: 'Wine',
+        keywords: [
+          'wine','red wine','white wine','rosé','sparkling wine',
+          'champagne','prosecco','cabernet','merlot','pinot noir',
+          'chardonnay','sauvignon blanc','pinot grigio','moscato',
+          'riesling','malbec','shiraz','syrah','zinfandel','bordeaux',
+          'burgundy','chianti','rioja','port wine','dessert wine','vinho verde',
+          'yellow tail','barefoot wine','kim crawford','la marca',
+          'meiomi','josh cellars','whispering angel','santa margherita',
+          'kendall jackson','beringer','robert mondavi','apothic',
+        ],
+      },
+      {
+        name: 'Spirits & Liquor',
+        keywords: [
+          'vodka','whiskey','bourbon','scotch','rum','tequila','gin',
+          'brandy','cognac','mezcal','triple sec','kahlua','baileys',
+          'amaretto','schnapps','soju','jameson','jack daniel\'s',
+          'absolut','stolichnaya','grey goose','tito\'s','bombay sapphire',
+          'tanqueray','hendricks','bacardi','captain morgan','malibu',
+          'jose cuervo','patron','don julio','makers mark','woodford reserve',
+          'buffalo trace','bulleit','knob creek','johnnie walker',
+          'chivas regal','macallan','glenfiddich','hennessy','courvoisier',
+        ],
+      },
+      {
+        name: 'Mixers & Bar',
+        keywords: [
+          'mixer','tonic water','club soda mixer','grenadine',
+          'simple syrup bar','cocktail mix','margarita mix',
+          'bloody mary mix','pina colada mix','mai tai mix',
+          'bitters','maraschino cherries bar',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SAFEWAY / ALBERTSONS
-    // Source: Curated based on typical Safeway/Albertsons layout
-    // Covers both banners as they share near-identical layouts
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'safeway',
-      name: 'Safeway',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#e31837',
-      searchNames: ['safeway','albertsons','vons','pavilions','randalls','tom thumb','acme','jewel','jewel-osco','star market','united supermarkets','market street'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','cabbage','cauliflower'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','fish','deli meat','hot dogs'] },
-        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','sandwich','prepared food','rotisserie','fried chicken','olive','pickle','hummus'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','tortilla','english muffin','cookies','cake','pie','donut','pastry','brownie'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','rice cake'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
-        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','mead','spirits','vodka','whiskey','bourbon','rum','tequila'] },
-        { name: 'Pharmacy', keywords: ['prescription','pharmacy','vitamins','supplements','first aid','bandage','cold','flu','allergy medicine','pain reliever','antacid','eye drops','cough syrup'] },
-      ]
-    },
+  // ── 18. INTERNATIONAL FOODS ─────────────────────────────────────────────
+  {
+    name: 'International Foods',
+    clusters: [
+      {
+        name: 'Latin & Hispanic Foods',
+        keywords: [
+          'goya','goya beans','goya juice','malta goya','goya crackers',
+          'sofrito','sazon','adobo seasoning','recaito','mole sauce',
+          'pozole','menudo','tamale masa','masa harina','mexican rice',
+          'refried beans canned','tomatillos','canned chiles','chipotle peppers',
+          'jalapeños canned','tortilla chips mexican','plantain chips',
+          'pan dulce','tres leches','horchata','tamarind','piloncillo',
+          'mexican chocolate','abuelita chocolate','ibarra',
+          'goya coconut milk','goya coconut water',
+        ],
+      },
+      {
+        name: 'Asian Foods',
+        keywords: [
+          'soy sauce','tamari','ponzu','miso','rice wine',
+          'mirin','sake','fish sauce','oyster sauce','hoisin sauce',
+          'chili oil','sesame oil','black vinegar',
+          'sweet soy sauce','kecap manis','sriracha','sambal',
+          'gochujang','doenjang','gochugaru','dashi','bonito flakes',
+          'nori','kombu','wakame','dried seaweed','panko asian',
+          'rice flour','sweet rice flour','tapioca flour','lotus root',
+          'water chestnuts','bamboo shoots','baby corn',
+          'straw mushrooms','dried shiitake','coconut cream',
+          'curry paste','red curry paste','green curry paste',
+          'massaman curry','pad thai sauce','kimchi','japchae',
+          'korean bbq sauce','shin ramyun','shin black','neoguri','spicy korean ramen',
+        ],
+      },
+      {
+        name: 'Indian Foods',
+        keywords: [
+          'dal','chana masala',
+          'tikka masala sauce','curry powder indian','garam masala',
+          'turmeric spice','cumin seeds','mustard seeds','fenugreek',
+          'cardamom','coriander seeds','amchur','chaat masala',
+          'tandoori masala','biryani mix','naan',
+          'papadum','samosa','pickle mango','mango chutney','tamarind paste',
+          'coconut chutney','idli mix','dosa mix',
+        ],
+      },
+      {
+        name: 'Portuguese & Brazilian Foods',
+        keywords: [
+          'portuguese foods','brazilian foods','bacalhau','portuguese sardines',
+          'piri piri sauce','portuguese olive oil',
+          'queijo fresco','caldo verde','feijao','farofa','guarana',
+          'brigadeiro','acai pack','pão de queijo mix',
+        ],
+      },
+      {
+        name: 'Middle Eastern & Mediterranean Foods',
+        keywords: [
+          'tahini','harissa','za\'atar','sumac','pomegranate molasses',
+          'rose water','orange blossom water','halva','baklava',
+          'pita chips middle eastern','grape leaves','dolmas',
+          'turkish delight','filo dough','phyllo',
+        ],
+      },
+      {
+        name: 'European & Other International',
+        keywords: [
+          'german sauerkraut','polish kielbasa packaged',
+          'greek olive oil','french mustard','british biscuits',
+          'irish oats','scandinavian crispbread',
+        ],
+      },
+      {
+        name: 'Caribbean Foods',
+        keywords: [
+          'jerk seasoning','jamaican patty','caribbean hot sauce',
+          'oxtail seasoning','grace coconut water','grace products',
+          'walkerswood','scotch bonnet sauce','sofrito caribbean',
+          'sugar cane','callaloo','ackee canned','saltfish',
+          'festival mix','bammy','cock soup','grace mackerel',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // FOOD LION
-    // Source: Curated based on typical Food Lion layout
-    // Southeast/Mid-Atlantic value-focused chain
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'food-lion',
-      name: 'Food Lion',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#0066cc',
-      searchNames: ['food lion','food lion llc'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','catfish','sausage','bacon','ham','turkey','hot dogs','deli meat','fish'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','bread','bagel','roll','bun','loaf','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','cider','almond milk','oat milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
+  // ── 19. HEALTH & NATURAL FOODS ──────────────────────────────────────────
+  {
+    name: 'Health & Natural Foods',
+    clusters: [
+      {
+        name: 'Plant-Based & Vegan',
+        keywords: [
+          'tofu','tempeh','seitan','plant based meat','beyond burger',
+          'impossible burger','veggie burger','vegan cheese',
+          'nutritional yeast','vegan protein','plant based milk',
+          'oat milk health','cashew cheese',
+        ],
+      },
+      {
+        name: 'Organic & Natural Pantry',
+        keywords: [
+          'organic','natural','non gmo','whole grain','ancient grain',
+          'organic pasta','organic rice','organic beans','organic oats',
+          'organic flour','organic sugar','organic olive oil',
+          'organic apple cider vinegar','organic honey',
+        ],
+      },
+      {
+        name: 'Superfoods & Specialty',
+        keywords: [
+          'chia seeds','flaxseed','hemp seeds','spirulina','chlorella',
+          'maca powder','acai powder','moringa','collagen powder',
+          'bone broth powder','wheatgrass','matcha powder',
+          'cacao nibs','raw cacao',
+        ],
+      },
+      {
+        name: 'Gluten-Free',
+        keywords: [
+          'gluten free','gluten free oats','gluten free cereal',
+          'gluten free granola','gluten free pancake mix',
+          'gluten free waffle mix','gluten free cake mix',
+          'gluten free cookie mix','gluten free brownie mix',
+          'gluten free tortilla','gluten free english muffin',
+          'gluten free snacks','gluten free pretzels',
+        ],
+      },
+      {
+        name: 'Protein & Fitness',
+        keywords: [
+          'protein powder','whey protein','plant protein',
+          'protein shake','meal replacement bar','quest bar',
+          'rx bar','kind protein','one bar','muscle milk',
+        ],
+      },
+      {
+        name: 'Natural Snacks & Dried Goods',
+        keywords: [
+          'dried mango natural','dried goji berries','dried mulberries',
+          'coconut flakes','unsweetened coconut','cacao nibs snack',
+          'dark chocolate natural','raw nuts','sprouted nuts',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // GIANT / MARTIN'S
-    // Source: Curated based on typical Giant Food layout
-    // Mid-Atlantic chain (covers Giant Food and Giant Food Stores banners)
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'giant',
-      name: 'Giant Food',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#e31837',
-      searchNames: ['giant','giant food','giant food stores','martins','martin\'s food','martin\'s'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','cabbage','cauliflower'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','pork chop','ham','fish','deli meat','hot dogs','crab','lobster'] },
-        { name: 'Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','american cheese','swiss','provolone','sandwich','prepared food','rotisserie','fried chicken','olive','pickle','hummus'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','tortilla','english muffin','cookies','cake','pie','donut','pastry','brownie'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','whipped cream','almond milk','oat milk','soy milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','cider','coconut water','almond milk','oat milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','rice cake'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags'] },
-        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','spirits','vodka','whiskey','bourbon','rum','tequila'] },
-      ]
-    },
+  // ── 20. BABY & INFANT ───────────────────────────────────────────────────
+  {
+    name: 'Baby & Infant',
+    clusters: [
+      {
+        name: 'Baby Food',
+        keywords: [
+          'baby food','pureed baby food','baby cereal','infant cereal',
+          'stage 1 baby food','stage 2 baby food','stage 3 baby food',
+          'baby puree','squeezable baby food','baby food pouches','happy baby','gerber',
+          'beech nut','plum organics','ella\'s kitchen',
+        ],
+      },
+      {
+        name: 'Formula & Feeding',
+        keywords: [
+          'infant formula','baby formula','enfamil','similac','gerber formula',
+          'organic formula','toddler formula','nursing pads','breast pump',
+          'bottle','sippy cup','baby bottle','pacifier','teether',
+        ],
+      },
+      {
+        name: 'Diapers & Wipes',
+        keywords: [
+          'diapers','newborn diapers','size 1 diapers','size 2 diapers',
+          'size 3 diapers','pull ups','training pants','baby wipes',
+          'pampers','huggies','luvs','honest diapers','seventh generation diapers',
+          'diaper cream','diaper rash cream','a&d ointment','desitin',
+        ],
+      },
+      {
+        name: 'Baby Care',
+        keywords: [
+          'baby shampoo','baby wash','baby lotion','baby powder',
+          'baby oil','baby sunscreen','baby monitor','johnson\'s baby',
+          'aveeno baby','cetaphil baby',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // COSTCO
-    // Source: Curated based on typical Costco warehouse layout
-    // Warehouse club — departments rather than numbered aisles
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'costco',
-      name: 'Costco',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#005daa',
-      searchNames: ['costco','costco wholesale','costco warehouse'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','coleslaw','fruit'] },
-        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','bison','turkey','pork chop','ribs','prime rib','tenderloin','rotisserie chicken','hot dogs','sausage','bacon','ham'] },
-        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass','calamari'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','spanakopita','charcuterie','cheese board','guacamole','hummus','salsa'] },
-        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','madeleine','cheesecake','tart'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','manchego','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','spring rolls','wontons','ice','frozen fruit','frozen shrimp','frozen fish'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
-        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried mango','dried cranberry'] },
-        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
-        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
-        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','camera','printer','computer','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','furniture','bedding','towels','kitchen'] },
-        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
-      ]
-    },
+  // ── 21. PERSONAL CARE ───────────────────────────────────────────────────
+  {
+    name: 'Personal Care',
+    clusters: [
+      {
+        name: 'Oral Care',
+        keywords: [
+          'toothpaste','toothbrush','mouthwash','dental floss','whitening strips',
+          'electric toothbrush','tongue scraper','breath mints','gum',
+          'colgate','crest','listerine','oral b','sensodyne',
+          'floss picks','dental picks','water flosser',
+        ],
+      },
+      {
+        name: 'Skin Care',
+        keywords: [
+          'moisturizer','lotion','body lotion','face wash','facial cleanser',
+          'face cream','sunscreen','spf','toner','serum','eye cream',
+          'lip balm','chapstick','hand cream','foot cream','body wash',
+          'exfoliator','face mask','cetaphil','neutrogena','olay','aveeno',
+          'lubriderm','gold bond','vaseline','aquaphor',
+        ],
+      },
+      {
+        name: 'Deodorant & Body',
+        keywords: [
+          'deodorant','antiperspirant','body spray','cologne','perfume',
+          'dove deodorant','secret','degree','old spice','speed stick',
+          'native deodorant','lume','axe',
+        ],
+      },
+      {
+        name: 'Feminine Care',
+        keywords: [
+          'tampons','pads','menstrual cups','panty liners','always',
+          'tampax','kotex','playtex','seventh generation pads',
+          'feminine wash','feminine wipes',
+        ],
+      },
+      {
+        name: 'Shaving',
+        keywords: [
+          'razor','shaving cream','shaving gel','aftershave','gillette',
+          'schick','venus','billie','harry\'s razors','disposable razor',
+          'electric shaver','waxing strips',
+        ],
+      },
+    ],
+  },
 
+  // ── 22. HAIR CARE ───────────────────────────────────────────────────────
+  {
+    name: 'Hair Care',
+    clusters: [
+      {
+        name: 'Shampoo & Conditioner',
+        keywords: [
+          'shampoo','conditioner','2 in 1 shampoo','dry shampoo',
+          'clarifying shampoo','moisturizing shampoo','color safe shampoo',
+          'head and shoulders','pantene','herbal essences','tresemme',
+          'dove shampoo','aveeno shampoo','ogx','sulfate free shampoo',
+        ],
+      },
+      {
+        name: 'Hair Styling',
+        keywords: [
+          'hair gel','hair mousse','hair spray','pomade','hair wax',
+          'curl cream','leave in conditioner','hair serum','hair oil',
+          'edge control','hair paste','heat protectant',
+        ],
+      },
+      {
+        name: 'Hair Treatment & Color',
+        keywords: [
+          'hair mask','deep conditioner','hair treatment','hair color',
+          'hair dye','box dye','root touch up','bleach kit','toner hair',
+          'hair gloss','keratin treatment',
+        ],
+      },
+      {
+        name: 'Hair Tools & Accessories',
+        keywords: [
+          'hair brush','comb','detangling brush','hair ties','bobby pins',
+          'hair clips','headband','hair net','shower cap',
+        ],
+      },
+    ],
+  },
 
+  // ── 23. VITAMINS & SUPPLEMENTS ──────────────────────────────────────────
+  {
+    name: 'Vitamins & Supplements',
+    clusters: [
+      {
+        name: 'Vitamins',
+        keywords: [
+          'vitamins','vitamin c','vitamin d','vitamin b12','vitamin b complex',
+          'vitamin e','vitamin a','vitamin k','multivitamin',
+          'prenatal vitamins','gummy vitamins','centrum','one a day',
+          'nature made','nature\'s bounty',
+        ],
+      },
+      {
+        name: 'Minerals & Electrolytes',
+        keywords: [
+          'calcium','magnesium','zinc','iron supplement','potassium',
+          'selenium','chromium','electrolytes','electrolyte tablets',
+        ],
+      },
+      {
+        name: 'Supplements & Herbs',
+        keywords: [
+          'fish oil','omega 3','probiotics','prebiotics','collagen supplement',
+          'biotin','melatonin','turmeric supplement','ashwagandha',
+          'echinacea','elderberry supplement','garlic supplement',
+          'coq10','glucosamine','chondroitin','saw palmetto',
+          'valerian root','ginkgo biloba','ginseng',
+        ],
+      },
+    ],
+  },
 
+  // ── 24. MEDICINE & FIRST AID ────────────────────────────────────────────
+  {
+    name: 'Medicine & First Aid',
+    clusters: [
+      {
+        name: 'Pain Relief',
+        keywords: [
+          'pain reliever','ibuprofen','acetaminophen','aspirin','naproxen',
+          'advil','tylenol','aleve','excedrin','motrin',
+        ],
+      },
+      {
+        name: 'Cold, Flu & Allergy',
+        keywords: [
+          'cold medicine','flu medicine','allergy medicine','antihistamine',
+          'decongestant','cough syrup','cough drops','dayquil','nyquil',
+          'sudafed','mucinex','zyrtec','claritin','allegra','benadryl',
+          'robitussin','theraflu','emergen c','airborne',
+        ],
+      },
+      {
+        name: 'Digestive & Antacids',
+        keywords: [
+          'antacid','tums','pepto bismol','rolaids','prilosec',
+          'nexium','zantac','gas x','mylanta','imodium','miralax',
+          'colace','metamucil','fiber supplement','probiotic digestive',
+          'pepcid',
+        ],
+      },
+      {
+        name: 'First Aid',
+        keywords: [
+          'bandages','band aid','gauze','adhesive tape','antiseptic',
+          'neosporin','hydrogen peroxide','rubbing alcohol','isopropyl alcohol',
+          'first aid kit','ace bandage','ice pack','heating pad',
+          'thermometer','blood pressure monitor',
+        ],
+      },
+      {
+        name: 'Eye, Ear & Nose',
+        keywords: [
+          'eye drops','contact solution','saline nasal spray','neti pot',
+          'ear drops','visine','clear eyes','systane','refresh tears',
+          'flonase','afrin',
+        ],
+      },
+      {
+        name: 'Sleep & Topical',
+        keywords: [
+          'sleep aid','melatonin sleep','unisom','zzzquil',
+          'hydrocortisone cream','anti itch cream','calamine lotion',
+          'antifungal cream','athletes foot cream','jock itch cream',
+          'wart remover','corn remover','blister treatment',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // BJ'S WHOLESALE CLUB
-    // Source: Curated — warehouse club, East Coast, ~240 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'bjs',
-      name: "BJ's Wholesale Club",
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#cc0000',
-      searchNames: ["bj's","bjs","bj's wholesale","bj's wholesale club"],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','fruit','berries'] },
-        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','turkey','pork chop','ribs','prime rib','tenderloin','hot dogs','sausage','bacon','ham','brisket','short rib'] },
-        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','charcuterie','cheese board','guacamole','hummus','salsa','rotisserie'] },
-        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','cheesecake'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','ice','frozen fruit','frozen shrimp','frozen fish'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
-        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried fruit'] },
-        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
-        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
-        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','bedding','towels','kitchen'] },
-        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
-      ]
-    },
+  // ── 25. CLEANING PRODUCTS ───────────────────────────────────────────────
+  {
+    name: 'Cleaning Products',
+    clusters: [
+      {
+        name: 'Laundry',
+        keywords: [
+          'laundry detergent','tide','gain','arm and hammer','all detergent',
+          'persil','dreft','seventh generation laundry',
+          'fabric softener','dryer sheets','bounce','downy',
+          'stain remover','oxiclean','shout','bleach laundry',
+          'color safe bleach',
+        ],
+      },
+      {
+        name: 'Dish Cleaning',
+        keywords: [
+          'dish soap','dishwasher detergent','dawn','palmolive','ajax',
+          'cascade','finish detergent','jet dry','dishwasher pods',
+          'scrub brush','dish sponge','steel wool',
+        ],
+      },
+      {
+        name: 'Surface & All Purpose',
+        keywords: [
+          'all purpose cleaner','surface spray','lysol spray','clorox spray',
+          'windex','glass cleaner','bathroom cleaner','toilet bowl cleaner',
+          'scrubbing bubbles','soft scrub','tilex','kaboom',
+          'mr clean','pine sol','fabuloso','pledge','furniture polish',
+        ],
+      },
+      {
+        name: 'Mops, Brooms & Supplies',
+        keywords: [
+          'mop','broom','dustpan','swiffer','swiffer pads','vacuum bags',
+          'cleaning gloves','rubber gloves','scrub pad',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SAM'S CLUB
-    // Source: Curated — Walmart-owned warehouse club, ~600 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'sams-club',
-      name: "Sam's Club",
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#0071ce',
-      searchNames: ["sam's club","sams club","sam's","samsclub"],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Fresh Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs','salad mix','fruit','berries'] },
-        { name: 'Fresh Meat & Poultry', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','lamb','turkey','pork chop','ribs','prime rib','tenderloin','hot dogs','sausage','bacon','ham','brisket'] },
-        { name: 'Fresh Seafood', keywords: ['salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','clam','oyster','fish','mahi mahi','swordfish','sea bass'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','sandwich','prepared food','soup','salad','lasagna','chicken pot pie','quiche','pizza','sushi','charcuterie','cheese board','guacamole','hummus','salsa','rotisserie'] },
-        { name: 'Bakery', keywords: ['bread','muffin','croissant','bagel','roll','bun','sourdough','tortilla','pita','cookies','cake','pie','donut','danish','brownie','cheesecake'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','dumplings','ice','frozen fruit','frozen shrimp','frozen fish'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade','almond milk','oat milk','creamer','espresso','k-cup','coffee pods'] },
-        { name: 'Pantry & Dry Goods', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','almond butter','crackers','chips','nuts','almonds','cashews','mixed nuts','popcorn','pretzels','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices','protein powder','protein bar','granola bar'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','snack','jerky','fruit snacks','dried fruit'] },
-        { name: 'Alcohol', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','sparkling wine','spirits','vodka','whiskey','bourbon','rum','tequila','gin','cider','hard seltzer','prosecco','sake'] },
-        { name: 'Health & Pharmacy', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','medicine','pain reliever','allergy','first aid','bandage','cold','flu','eye drops','sunscreen','dental','toothbrush','floss','shampoo','conditioner','soap','lotion','deodorant','razors','diapers','baby wipes'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','dishwasher pods','sponge','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','fabric softener','air freshener','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','storage'] },
-        { name: 'Electronics & Home', keywords: ['tv','television','laptop','tablet','phone','headphones','speaker','appliance','toaster','blender','air fryer','vacuum','coffee maker','mattress','bedding','towels','kitchen'] },
-        { name: 'Clothing & Apparel', keywords: ['shirt','pants','jeans','jacket','coat','shoes','socks','underwear','activewear','pajamas','dress','sweater','shorts','hat','gloves','scarf'] },
-      ]
-    },
+  // ── 26. PAPER PRODUCTS ──────────────────────────────────────────────────
+  {
+    name: 'Paper Products',
+    clusters: [
+      {
+        name: 'Toilet & Tissue',
+        keywords: [
+          'toilet paper','toilet tissue','charmin','cottonelle','scott',
+          'angel soft','kleenex','facial tissue','tissues',
+        ],
+      },
+      {
+        name: 'Paper Towels & Napkins',
+        keywords: [
+          'paper towels','bounty','sparkle paper towels','viva',
+          'napkins','paper napkins','dinner napkins',
+        ],
+      },
+      {
+        name: 'Trash Bags & Food Storage Bags',
+        keywords: [
+          'trash bags','garbage bags','hefty','glad trash bags',
+          'contractor bags','recycling bags','compostable bags',
+          'sandwich bags','ziplock bags','storage bags','freezer bags',
+          'gallon bags','quart bags',
+        ],
+      },
+      {
+        name: 'Plastic Wrap & Foil',
+        keywords: [
+          'plastic wrap','saran wrap','aluminum foil','reynolds wrap',
+          'parchment paper','wax paper','butcher paper',
+          'plastic bags','produce bags',
+        ],
+      },
+      {
+        name: 'Disposable Plates & Cups',
+        keywords: [
+          'paper plates','paper cups','plastic cups','solo cups',
+          'plastic cutlery','plastic forks','plastic spoons','plastic knives',
+          'foam cups','coffee cups disposable',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SHOPRITE
-    // Source: Curated — Wakefern cooperative, Northeast US, ~300 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'shoprite',
-      name: 'ShopRite',
-      confidence: 0.8,
-      type: 'grocery',
-      color: '#e31837',
-      searchNames: ['shoprite','shop rite','shoprite supermarkets'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','corn','grapes','berries','strawberry','blueberry','mango','pineapple','watermelon','herbs','cilantro','parsley','ginger','zucchini','squash','asparagus','raspberry','blackberry','grape','cantaloupe','peach','plum','pear','kiwi','cabbage','bell pepper','jalapeño','green beans','beets','radish','arugula','romaine','basil','mint','leek','eggplant','artichoke','brussels sprouts'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bacon','sausage','ham','salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab','chicken breast','chicken thighs','ground turkey','turkey breast','pork chops','ribs','chorizo','kielbasa','hot dogs','veal','duck','flank steak','skirt steak','chicken tenders','meatballs','halibut','mahi mahi','sea bass','trout','flounder','clams','mussels','oysters','calamari','smoked salmon','lox'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','mozzarella','parmesan','feta','brie','gouda','ricotta','cream','kefir','ice cream','whipped cream','plant-based butter','lactose-free milk','eggnog','buttermilk','chocolate milk','coffee creamer','non dairy creamer'] },
-        { name: 'Deli', keywords: ['deli turkey','deli ham','roast beef','salami','pepperoni','bologna','pastrami','corned beef','mortadella','prosciutto','swiss cheese','provolone','american cheese slices','prepared salads','potato salad','coleslaw','pasta salad','hummus','olives','pickles','rotisserie chicken','sub sandwiches','wraps','deli platters','tuna salad','egg salad','meatloaf','macaroni and cheese','mashed potatoes','soup','chili','spinach dip'] },
-        { name: 'Bakery & Bread', keywords: ['bread','sourdough','white bread','wheat bread','rye','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','danish','cake','cookies','sourdough bread','rye bread','multigrain bread','baguette','ciabatta','brioche','focaccia','naan','dinner rolls','hamburger buns','hot dog buns','flour tortillas','donuts','cinnamon rolls','brownies','cupcakes','pie','pound cake','challah','pumpernickel'] },
-        { name: 'Cereal & Breakfast', keywords: ['cereal','granola','oatmeal','oats','granola bars','breakfast bars','pop tarts','syrup','maple syrup','pancake mix','waffle mix','corn flakes','frosted flakes','cheerios','honey nut cheerios','raisin bran','captain crunch','instant oatmeal','honey','jam','jelly','peanut butter','almond butter','nutella','cream of wheat','dried fruit','raisins','cinnamon toast crunch'] },
-        { name: 'Canned & Jarred Goods', keywords: ['soup','chicken broth','vegetable broth','beef broth','canned tomato','tomato paste','tomato sauce','marinara','pasta sauce','canned beans','black beans','kidney beans','chickpeas','baked beans','canned corn','canned peas','canned fruit','canned tuna','canned salmon','sardines','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','pinto beans','cannellini beans','chicken noodle soup','bone broth','lentils','refried beans','tomato juice','cranberry sauce'] },
-        { name: 'Pasta, Rice & Grains', keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna','mac and cheese','noodles','rice','brown rice','white rice','quinoa','couscous','barley','stuffing mix','polenta','grits','jasmine rice','basmati rice','wild rice','oatmeal','rolled oats','farro','bulgur','rigatoni','orzo','egg noodles','ramen noodles','udon','soba','macaroni','bread crumbs','panko'] },
-        { name: 'Baking & Spices', keywords: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla extract','yeast','cornstarch','shortening','cake mix','brownie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','all-purpose flour','powdered sugar','cream of tartar','paprika','cumin','garlic powder','onion powder','oregano','basil','thyme','rosemary','nutmeg','turmeric','curry powder','cayenne','bay leaves','red pepper flakes'] },
-        { name: 'Condiments & Oils', keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing','olive oil','vegetable oil','canola oil','cooking spray','vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce','worcestershire','fish sauce','teriyaki','yellow mustard','dijon mustard','relish','ranch dressing','italian dressing','caesar dressing','thousand island','barbecue sauce','salsa','guacamole','hummus','pesto','pickles','olives','horseradish','honey mustard','jam','jelly','peanut butter','almond butter','maple syrup'] },
-        { name: 'Snacks & Chips', keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','mixed nuts','trail mix','dried fruit','raisins','fruit snacks','granola bars','cookies','candy','chocolate','gummies','beef jerky','oreos','gummy bears','licorice','hard candy','microwave popcorn','kettle chips','veggie chips','pork rinds','cheese puffs','protein bars','energy bars'] },
-        { name: 'Beverages', keywords: ['soda','cola','sparkling water','seltzer','tonic water','water','spring water','bottled water','sports drinks','gatorade','energy drinks','red bull','monster','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','green tea','kombucha','coffee','ground coffee','whole bean coffee','instant coffee','cold brew','hot tea','herbal tea','chamomile tea','black tea','diet soda','dr pepper','coconut water','tomato juice','v8','cold brew coffee','vitamin water'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','edamame','frozen vegetables','french fries','tater tots','frozen fruit','sorbet','gelato','frozen meals','frozen burritos','waffles','frozen waffles','frozen breakfast','frozen chicken','frozen fish','frozen shrimp','frozen dinners','pizza rolls','hot pockets','lean cuisine','frozen corn','frozen peas','frozen broccoli','frozen berries','frozen dumplings','pot stickers','pierogies','frozen pancakes','hash browns','onion rings','mozzarella sticks'] },
-        { name: 'Health & Beauty', keywords: ['vitamins','supplements','shampoo','conditioner','body wash','hand soap','bar soap','deodorant','antiperspirant','toothpaste','toothbrush','floss','mouthwash','lotion','moisturizer','sunscreen','razors','shaving cream','aspirin','ibuprofen','tylenol','cold medicine','cough drops','antacid','bandages','first aid','hand sanitizer','cotton balls','cotton swabs','pregnancy test','allergy medicine','naproxen','advil'] },
-        { name: 'Household & Paper', keywords: ['paper towels','toilet paper','napkins','paper plates','paper cups','trash bags','garbage bags','aluminum foil','plastic wrap','saran wrap','wax paper','freezer bags','sandwich bags','ziploc','storage bags','tissues','kleenex','parchment paper','plastic cups','straws','plastic utensils','light bulbs','batteries','laundry detergent','dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes','bleach','air freshener','sponges','scrub brush','rubber gloves','mop','broom'] },
-      ]
-    },
+  // ── 27. PET SUPPLIES ────────────────────────────────────────────────────
+  {
+    name: 'Pet Supplies',
+    clusters: [
+      {
+        name: 'Dog Food & Treats',
+        keywords: [
+          'dog food','dry dog food','wet dog food','dog treats',
+          'puppy food','senior dog food','grain free dog food',
+          'purina','blue buffalo dog','iams dog','hills science diet dog',
+          'pedigree','beneful','milk bone','beggin strips','greenies dog',
+          'dog chews','bully sticks','rawhide',
+        ],
+      },
+      {
+        name: 'Cat Food & Treats',
+        keywords: [
+          'cat food','dry cat food','wet cat food','cat treats',
+          'kitten food','senior cat food','grain free cat food',
+          'purina cat','blue buffalo cat','iams cat','hills science diet cat',
+          'friskies','fancy feast','meow mix','whiskas',
+          'temptations cat treats','greenies cat',
+        ],
+      },
+      {
+        name: 'Pet Care & Supplies',
+        keywords: [
+          'kitty litter','cat litter','clumping litter','tidy cats',
+          'arm and hammer litter','fresh step','world\'s best cat litter',
+          'dog collar','dog leash','cat collar','pet bed','dog bed',
+          'pet shampoo','flea treatment','heartgard','frontline',
+          'pet vitamins','pet dental','poop bags','pet wipes',
+          'aquarium','fish food','hamster food','bird food',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // ACME MARKETS
-    // Source: Curated — Albertsons banner, Mid-Atlantic/Northeast, ~170 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'acme',
-      name: 'Acme Markets',
-      confidence: 0.7,
-      type: 'grocery',
-      color: '#c41230',
-      searchNames: ['acme','acme markets','acme supermarket'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','lemon','lime','avocado','tomato','cucumber','lettuce','spinach','kale','broccoli','cauliflower','carrot','celery','pepper','onion','garlic','mushroom','potato','sweet potato','corn','grapes','berries','strawberry','blueberry','mango','pineapple','watermelon','herbs','cilantro','parsley','ginger','zucchini','squash','asparagus','raspberry','blackberry','grape','cantaloupe','peach','plum','pear','kiwi','cabbage','bell pepper','jalapeño','green beans','beets','radish','arugula','romaine','basil','mint','leek','eggplant','artichoke','brussels sprouts'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','ground beef','steak','beef','pork','lamb','turkey','bacon','sausage','ham','salmon','tuna','cod','shrimp','tilapia','scallops','lobster','crab','chicken breast','chicken thighs','ground turkey','turkey breast','pork chops','ribs','chorizo','kielbasa','hot dogs','veal','duck','flank steak','skirt steak','chicken tenders','meatballs','halibut','mahi mahi','sea bass','trout','flounder','clams','mussels','oysters','smoked salmon','lox'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','cheese','cheddar','american cheese','swiss','sour cream','cream cheese','yogurt','greek yogurt','cottage cheese','heavy cream','half and half','almond milk','oat milk','soy milk','whole milk','skim milk','2% milk','mozzarella','parmesan','feta','brie','gouda','ricotta','kefir','ice cream','whipped cream','coffee creamer','non dairy creamer'] },
-        { name: 'Deli', keywords: ['deli turkey','deli ham','roast beef','salami','pepperoni','bologna','pastrami','corned beef','prosciutto','prepared salads','potato salad','coleslaw','hummus','olives','pickles','rotisserie chicken','sub sandwiches','wraps','tuna salad','egg salad','soup','chili','macaroni and cheese','mashed potatoes'] },
-        { name: 'Bakery', keywords: ['bread','sourdough','white bread','wheat bread','rye','bagels','english muffins','rolls','buns','tortillas','pita','croissant','muffin','danish','cake','cookies','baguette','ciabatta','brioche','dinner rolls','hamburger buns','donuts','cinnamon rolls','brownies','cupcakes','pie','challah','pumpernickel'] },
-        { name: 'Cereal & Breakfast', keywords: ['cereal','granola','oatmeal','oats','granola bars','syrup','maple syrup','pancake mix','waffle mix','corn flakes','frosted flakes','cheerios','captain crunch','instant oatmeal','honey','jam','jelly','peanut butter','almond butter','nutella','cream of wheat','dried fruit','raisins'] },
-        { name: 'Canned Goods & Soups', keywords: ['soup','chicken broth','vegetable broth','beef broth','canned tomato','tomato paste','tomato sauce','marinara','pasta sauce','canned beans','black beans','kidney beans','chickpeas','baked beans','canned corn','canned peas','canned fruit','canned tuna','canned salmon','sardines','olives','pickles','salsa','applesauce','diced tomatoes','crushed tomatoes','pinto beans','chicken noodle soup','bone broth','lentils','refried beans','tomato juice','cranberry sauce','bouillon'] },
-        { name: 'Pasta, Rice & Grains', keywords: ['pasta','spaghetti','penne','rotini','fettuccine','lasagna','mac and cheese','noodles','rice','brown rice','white rice','quinoa','couscous','barley','polenta','grits','jasmine rice','basmati rice','wild rice','oatmeal','rolled oats','farro','bulgur','rigatoni','orzo','egg noodles','ramen noodles','udon','soba','macaroni','bread crumbs','panko','stuffing mix'] },
-        { name: 'Baking & Spices', keywords: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla extract','yeast','cornstarch','shortening','cake mix','brownie mix','chocolate chips','cocoa','spices','salt','pepper','cinnamon','honey','all-purpose flour','powdered sugar','paprika','cumin','garlic powder','onion powder','oregano','basil','thyme','rosemary','nutmeg','turmeric','curry powder','cayenne','red pepper flakes'] },
-        { name: 'Condiments & Dressings', keywords: ['ketchup','mustard','mayo','mayonnaise','ranch','salad dressing','olive oil','vegetable oil','canola oil','cooking spray','vinegar','balsamic','soy sauce','hot sauce','sriracha','bbq sauce','worcestershire','fish sauce','teriyaki','yellow mustard','dijon mustard','relish','ranch dressing','italian dressing','caesar dressing','thousand island','barbecue sauce','salsa','guacamole','hummus','pesto','pickles','olives','jam','jelly','peanut butter','maple syrup'] },
-        { name: 'Snacks', keywords: ['chips','potato chips','tortilla chips','pretzels','popcorn','crackers','nuts','almonds','cashews','mixed nuts','trail mix','dried fruit','fruit snacks','granola bars','cookies','candy','chocolate','gummies','beef jerky','oreos','hard candy','microwave popcorn','kettle chips','veggie chips','pork rinds','protein bars','energy bars'] },
-        { name: 'Beverages', keywords: ['soda','cola','sparkling water','seltzer','water','spring water','bottled water','sports drinks','gatorade','energy drinks','red bull','orange juice','apple juice','grape juice','cranberry juice','lemonade','iced tea','green tea','kombucha','coffee','ground coffee','instant coffee','cold brew','hot tea','herbal tea','black tea','diet soda','coconut water','tomato juice','v8','vitamin water'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','edamame','frozen vegetables','french fries','tater tots','frozen fruit','sorbet','gelato','frozen meals','frozen burritos','waffles','frozen breakfast','frozen chicken','frozen fish','frozen shrimp','frozen dinners','frozen corn','frozen peas','frozen broccoli','frozen berries','frozen dumplings','pot stickers','pierogies','hash browns','onion rings'] },
-        { name: 'Health, Beauty & Baby', keywords: ['vitamins','supplements','shampoo','conditioner','body wash','hand soap','deodorant','toothpaste','toothbrush','floss','mouthwash','lotion','moisturizer','sunscreen','razors','shaving cream','aspirin','ibuprofen','tylenol','cold medicine','cough drops','antacid','bandages','first aid','hand sanitizer','allergy medicine','diapers','wipes','baby food','baby formula'] },
-        { name: 'Household', keywords: ['paper towels','toilet paper','napkins','paper plates','trash bags','aluminum foil','plastic wrap','saran wrap','freezer bags','sandwich bags','ziploc','storage bags','tissues','parchment paper','light bulbs','batteries','laundry detergent','dish soap','dishwasher detergent','all-purpose cleaner','disinfecting wipes','bleach','air freshener','sponges','rubber gloves','mop','broom'] },
-      ]
-    },
+  // ── 28. HOUSEHOLD & HARDWARE ────────────────────────────────────────────
+  {
+    name: 'Household & Hardware',
+    clusters: [
+      {
+        name: 'Light Bulbs & Batteries',
+        keywords: [
+          'light bulbs','led bulbs','fluorescent bulbs','batteries',
+          'aa batteries','aaa batteries','c batteries','d batteries',
+          '9v batteries','lithium batteries','rechargeable batteries',
+        ],
+      },
+      {
+        name: 'Seasonal & Pest Control',
+        keywords: [
+          'insect repellent','bug spray','raid','ant traps','mouse traps',
+          'roach bait','mosquito repellent','citronella','fly paper',
+          'wasp spray',
+        ],
+      },
+      {
+        name: 'Tools & Adhesives',
+        keywords: [
+          'super glue','gorilla glue','tape','duct tape','masking tape',
+          'scotch tape','command strips','picture hooks','nails','screws',
+          'hammer','screwdriver','zip ties',
+        ],
+      },
+      {
+        name: 'Air Fresheners & Candles',
+        keywords: [
+          'air freshener','febreze','glade','candle','wax melts',
+          'reed diffuser','plug in air freshener','car air freshener',
+          'incense','odor eliminator',
+        ],
+      },
+      {
+        name: 'Storage & Organization',
+        keywords: [
+          'storage containers','bins','baskets','hangers','hooks',
+          'shelf liner','drawer organizer','vacuum storage bags',
+          'clothing storage',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SPROUTS FARMERS MARKET
-    // Source: Curated based on typical Sprouts layout
-    // Health/natural-focused chain, Sun Belt, ~400 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'sprouts',
-      name: 'Sprouts Farmers Market',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#5a9e3a',
-      searchNames: ['sprouts','sprouts farmers market','sprouts market'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','beet','radish','cabbage','cauliflower','leek','fennel','chard','collard greens','microgreens','sprouts'] },
-        { name: 'Bulk Foods', keywords: ['bulk','granola','oats','nuts','almonds','cashews','walnuts','pecans','dried fruit','raisins','dried mango','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','coffee','tea','spices','nutritional yeast','protein powder'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic chicken','wild caught','bison','venison'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','sliced cheese','sandwich','prepared food','rotisserie','soup','salad','hummus','olive','pickle','guacamole','charcuterie'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','greek yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
-        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','tortilla','english muffin','gluten free bread','pita','cookies','cake','pie','donut','brownie'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen shrimp','frozen acai','frozen smoothie'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','energy drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake','smoothie'] },
-        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium'] },
-        { name: 'Natural & Organic Grocery', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','baking powder','canned tomato','canned beans','spices','curry','miso'] },
-        { name: 'Body Care & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm','hair care'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','natural cleaner','dryer sheets','aluminum foil','plastic wrap','beeswax wrap'] },
-      ]
-    },
+  // ── 29. OFFICE & SCHOOL SUPPLIES ────────────────────────────────────────
+  {
+    name: 'Office & School Supplies',
+    clusters: [
+      {
+        name: 'Writing & Paper',
+        keywords: [
+          'pens','pencils','markers','highlighters','crayons','colored pencils',
+          'notebook','composition book','spiral notebook','loose leaf paper',
+          'construction paper','printer paper','index cards','sticky notes',
+          'post it',
+        ],
+      },
+      {
+        name: 'Office Supplies',
+        keywords: [
+          'stapler','staples','paper clips','binder clips','rubber bands',
+          'scissors','tape office','glue stick','white out','folders',
+          'binders','envelopes','stamps','ink cartridge','toner cartridge',
+        ],
+      },
+      {
+        name: 'Art & Craft',
+        keywords: [
+          'paint','watercolor','acrylic paint','craft glue','glitter',
+          'foam sheets','pipe cleaners','popsicle sticks','yarn',
+          'ribbon','stickers','washi tape',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WINN-DIXIE
-    // Source: Curated based on typical Winn-Dixie layout
-    // Southeast US chain (Southeastern Grocers), ~490 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'winn-dixie',
-      name: 'Winn-Dixie',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ['winn-dixie','winn dixie','winndixie'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs','cilantro'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish','crab','oyster'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','bread','bagel','roll','bun','loaf','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','cider','almond milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-        { name: 'Beer & Wine', keywords: ['wine','beer','ale','lager','ipa','white wine','red wine','rosé','champagne','hard seltzer','cider','spirits','vodka','whiskey','bourbon','rum','tequila'] },
-      ]
-    },
+  // ── 30. KITCHEN SUPPLIES ────────────────────────────────────────────────
+  {
+    name: 'Kitchen Supplies',
+    clusters: [
+      {
+        name: 'Cookware & Bakeware',
+        keywords: [
+          'pan','frying pan','skillet','saucepan','pot','stock pot',
+          'dutch oven','baking sheet','cake pan','muffin tin','loaf pan',
+          'roasting pan','cast iron','non stick pan','wok',
+        ],
+      },
+      {
+        name: 'Kitchen Tools & Gadgets',
+        keywords: [
+          'kitchen gadgets','spatula','ladle','whisk','tongs','peeler',
+          'grater','can opener','bottle opener','corkscrew','measuring cups',
+          'measuring spoons','mixing bowl','colander','strainer',
+          'cutting board','pizza cutter','cheese grater','zester',
+          'kitchen scissors','potato masher','pastry brush',
+        ],
+      },
+      {
+        name: 'Food Storage',
+        keywords: [
+          'food storage','tupperware','food containers','glass containers',
+          'meal prep containers','mason jars','canning jars','lids',
+          'plastic containers','reusable bags',
+        ],
+      },
+      {
+        name: 'Coffee & Tea Equipment',
+        keywords: [
+          'coffee maker','french press','pour over','coffee grinder',
+          'tea kettle','infuser','coffee filter',
+          'cold brew maker',
+        ],
+      },
+      {
+        name: 'Dishes & Utensils',
+        keywords: [
+          'plates','bowls','mugs','glasses','wine glasses','silverware',
+          'forks','knives','spoons','chopsticks','salad bowl',
+          'serving bowl','serving platter',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // BI-LO / HARVEYS (Southeastern Grocers)
-    // Source: Curated — same parent as Winn-Dixie, similar layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'bilo',
-      name: 'BI-LO',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#004b8d',
-      searchNames: ['bi-lo','bilo','harveys','harveys supermarket','fresco y mas'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','corn','herbs'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','catfish','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','waffle','burrito','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','almond milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
+  // ── 31. FLORAL & GARDEN ─────────────────────────────────────────────────
+  {
+    name: 'Floral & Garden',
+    clusters: [
+      {
+        name: 'Fresh Flowers & Plants',
+        keywords: [
+          'flowers','bouquet','roses','tulips','sunflowers','lilies',
+          'orchids','daisies','carnations','mixed flowers','potted plant',
+          'succulent','herb plant','flower arrangement',
+        ],
+      },
+      {
+        name: 'Garden Supplies',
+        keywords: [
+          'potting soil','mulch','fertilizer','plant food','seeds',
+          'seed packets','vegetable seeds','flower seeds','herb seeds',
+          'gardening gloves','trowel','watering can','plant pot',
+          'garden hose','weed killer',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // WINCO FOODS
-    // Source: Curated based on typical WinCo layout
-    // Employee-owned discount warehouse, ~130 locations, West/Northwest
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'winco',
-      name: 'WinCo Foods',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#003087',
-      searchNames: ['winco','winco foods','win-co'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cabbage','cauliflower','corn'] },
-        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','quinoa','lentils','rice','flour','sugar','cocoa','spices','candy','chocolate covered','gummy'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','sparkling water','almond milk','oat milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','baking powder','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','rice cake'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
+  // ── 32. COFFEE & TEA ────────────────────────────────────────────────────
+  {
+    name: 'Coffee & Tea',
+    clusters: [
+      {
+        name: 'Ground & Whole Bean Coffee',
+        keywords: [
+          'coffee','ground coffee','whole bean coffee','dark roast',
+          'medium roast','light roast','espresso beans','decaf coffee',
+          'folgers','maxwell house','dunkin coffee','starbucks coffee',
+          'peet\'s coffee','lavazza','illy','eight o clock coffee',
+          'death wish coffee',
+        ],
+      },
+      {
+        name: 'K-Cups & Pods',
+        keywords: [
+          'k cups','coffee pods','nespresso pods','dolce gusto',
+          'single serve coffee','coffee capsules',
+        ],
+      },
+      {
+        name: 'Instant Coffee',
+        keywords: [
+          'instant coffee','nescafe',"taster\'s choice","medaglia d\'oro",
+          'cafe bustelo instant',
+        ],
+      },
+      {
+        name: 'Tea',
+        keywords: [
+          'tea','green tea','black tea','herbal tea','chamomile','peppermint tea',
+          'chai tea','oolong','white tea','rooibos','lipton','celestial seasonings',
+          'bigelow','tazo','yogi tea','traditional medicinals','republic of tea',
+          'tea bags','loose leaf tea','matcha',
+        ],
+      },
+      {
+        name: 'Coffee Creamers & Add-ins',
+        keywords: [
+          'coffee creamer','non dairy creamer','liquid creamer',
+          'powdered creamer','international delight','coffee mate',
+          'condensed milk coffee','evaporated milk coffee',
+          'collagen coffee','mct oil','butter coffee',
+        ],
+      },
+      {
+        name: 'Hot Chocolate & Specialty',
+        keywords: [
+          'hot chocolate','hot cocoa','nesquik','ovaltine','abuelita hot chocolate',
+          'drinking chocolate','cacao drink','turmeric latte mix',
+          'golden milk mix','matcha mix','chai mix',
+        ],
+      },
+    ],
+  },
 
-    // ════════════════════════════════════════════════════════════════════════
-    // LIDL
-    // Source: Curated based on typical Lidl US layout
-    // German discount chain, ~170 US locations, Southeast/Mid-Atlantic
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'lidl',
-      name: 'Lidl',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#0050aa',
-      searchNames: ['lidl','lidl us'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','cabbage','herbs','corn'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','lamb','turkey','hot dogs','fish'] },
-        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','pepperoni','prosciutto','sliced cheese','american cheese','swiss','provolone','brie','gouda','cheddar','feta','goat cheese','charcuterie'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','pretzel','cookies','cake','pie','donut','pastry','danish','brownie'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','schnitzel','frozen fish','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','sports drink','energy drink','lemonade'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vegetable oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','muesli'] },
-        { name: 'Snacks & Sweets', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','candy','chocolate','gummies','cookies','wafers','marzipan','stollen','biscuits'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','sunscreen'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','dryer sheets','aluminum foil','plastic wrap'] },
-        { name: 'Middle Aisle (Weekly Specials)', keywords: ['tools','clothing','electronics','garden','sports','seasonal','kitchen gadgets','bedding','luggage','toys','outdoor','camping','fitness'] },
-      ]
-    },
+];
 
-    // ════════════════════════════════════════════════════════════════════════
-    // SAVE-A-LOT
-    // Source: Curated based on typical Save-A-Lot layout
-    // Deep-discount chain, ~900 locations, nationwide
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'save-a-lot',
-      name: 'Save-A-Lot',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e8171f',
-      searchNames: ['save-a-lot','save a lot','savealot'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','potato','sweet potato','cabbage','corn'] },
-        { name: 'Meat & Poultry', keywords: ['chicken','beef','pork','ground beef','ground turkey','sausage','bacon','ham','turkey','hot dogs','fish','tilapia'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','american cheese'] },
-        { name: 'Bread & Bakery', keywords: ['bread','bagel','roll','bun','tortilla','english muffin','cookies','cake','donut'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','grits'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Household', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // GROCERY OUTLET
-    // Source: Curated based on typical Grocery Outlet layout
-    // Deep-discount opportunistic buyer, ~450 locations, West Coast/expanding
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'grocery-outlet',
-      name: 'Grocery Outlet',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e8171f',
-      searchNames: ['grocery outlet','grocery outlet bargain market'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','herbs'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish'] },
-        { name: 'Deli & Cheese', keywords: ['deli','ham','turkey','salami','sliced cheese','american cheese','swiss','prepared food','rotisserie','pickle','hummus'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','brie','whipped cream','almond milk','oat milk'] },
-        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','tortilla','cookies','cake','donut','pastry','brownie'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','peas','french fries','waffle','burrito','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','energy drink','lemonade','almond milk','oat milk'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','granola','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','supplements','medicine','pain reliever','allergy','bandage','sunscreen'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // STATER BROS
-    // Source: Curated based on typical Stater Bros layout
-    // Southern California regional chain, ~170 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'stater-bros',
-      name: 'Stater Bros.',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ['stater bros','stater brothers','stater bros markets'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','carne asada','chorizo','salmon','tilapia','shrimp','tuna','sausage','bacon','ham','turkey','hot dogs','fish','ribs'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','queso fresco','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','tamales','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','horchata','almond milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','masa','sugar','salt','oil','lard','vinegar','pasta sauce','salsa','enchilada sauce','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','pinto beans','black beans','oats','cereal','honey','jam','peanut butter','crackers','tortilla chips','nuts','popcorn','baking soda','canned tomato','canned chile','canned beans','spices','cumin','chili powder'] },
-        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // THE FRESH MARKET
-    // Source: Curated based on typical Fresh Market layout
-    // Upscale specialty grocer, ~160 locations, Southeast focus
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'fresh-market',
-      name: 'The Fresh Market',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#2e7d32',
-      searchNames: ['fresh market','the fresh market'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','corn','potato','sweet potato','ginger','herbs','cilantro','parsley','basil','arugula','fennel','leek','beet','radish','exotic fruit','dragon fruit','passion fruit'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','halibut','lobster','crab','scallop','oyster','sausage','bacon','lamb','veal','duck','bison','wild boar','venison'] },
-        { name: 'Prepared Foods & Deli', keywords: ['deli','ham','turkey','roast beef','salami','sliced cheese','sandwich','sushi','prepared food','rotisserie','hot bar','soup','salad','hummus','olive','pickle','charcuterie','pâté','terrine'] },
-        { name: 'Cheese & Charcuterie', keywords: ['cheese','brie','camembert','manchego','gruyère','gouda','aged cheddar','blue cheese','gorgonzola','stilton','fontina','havarti','goat cheese','chevre','pecorino','prosciutto','salami','mortadella','soppressata'] },
-        { name: 'Bakery', keywords: ['bread','bagel','muffin','croissant','roll','bun','loaf','sourdough','baguette','ciabatta','focaccia','brioche','cake','pie','cookie','donut','pastry','eclair','macaron','tart','scone'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','half and half','sour cream','cream cheese','cottage cheese','ricotta','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','gouda','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','gelato','frozen pizza','frozen meal','frozen vegetable','edamame','french fries','ice','frozen fruit','frozen appetizer','frozen dessert'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sparkling water','kombucha','sports drink','cold brew','matcha','lemonade','cider','coconut water'] },
-        { name: 'Pantry & Specialty', keywords: ['pasta','rice','flour','sugar','salt','olive oil','truffle oil','vinegar','balsamic','pasta sauce','salsa','soy sauce','fish sauce','sriracha','miso','tahini','soup','broth','beans','lentils','quinoa','farro','oats','cereal','honey','maple syrup','jam','peanut butter','almond butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','spices','curry paste','coconut milk'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','sunscreen','toothpaste','toothbrush','deodorant','vitamins','supplements','essential oil','natural beauty'] },
-        { name: 'Household & Floral', keywords: ['flowers','bouquet','plant','candle','laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','aluminum foil'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // NATURAL GROCERS (Vitamin Cottage)
-    // Source: Curated based on typical Natural Grocers layout
-    // Organic/natural chain, ~160 locations, Mountain West
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'natural-grocers',
-      name: 'Natural Grocers',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#6aaa3a',
-      searchNames: ['natural grocers','vitamin cottage','natural grocers vitamin cottage'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','raspberry','lemon','lime','avocado','tomato','lettuce','spinach','kale','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','zucchini','potato','sweet potato','ginger','herbs','arugula','beet','radish','chard','collard greens','microgreens'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','lamb','turkey','grass fed','organic','wild caught','bison','venison'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','kefir','cheese','cheddar','mozzarella','parmesan','brie','feta','goat cheese','whipped cream','almond milk','oat milk','soy milk','coconut milk','cashew milk'] },
-        { name: 'Bakery & Bread', keywords: ['bread','bagel','muffin','roll','bun','sourdough','tortilla','gluten free bread','pita','cookies','cake','brownie','sprouted bread'] },
-        { name: 'Bulk Foods', keywords: ['bulk','oats','granola','nuts','almonds','cashews','walnuts','dried fruit','raisins','trail mix','seeds','sunflower seeds','pumpkin seeds','flaxseed','chia','quinoa','lentils','rice','flour','sugar','cocoa','spices','nutritional yeast'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','sorbet','frozen pizza','frozen meal','frozen vegetable','edamame','peas','french fries','waffle','burrito','ice','frozen fruit','frozen acai'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sparkling water','kombucha','sports drink','coconut water','almond milk','oat milk','cold brew','matcha','protein shake'] },
-        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','protein powder','fish oil','probiotic','multivitamin','collagen','magnesium','zinc','vitamin c','vitamin d','omega','elderberry','turmeric','ashwagandha','melatonin','b12','iron','calcium','adaptogen','CBD','herbal','homeopathic'] },
-        { name: 'Grocery & Pantry', keywords: ['pasta','rice','flour','sugar','salt','olive oil','coconut oil','vinegar','pasta sauce','salsa','soy sauce','coconut aminos','hot sauce','soup','broth','beans','lentils','quinoa','oats','cereal','granola','honey','maple syrup','jam','peanut butter','almond butter','tahini','crackers','chips','popcorn','baking soda','canned tomato','canned beans','spices','miso','curry'] },
-        { name: 'Body Care', keywords: ['shampoo','conditioner','soap','body wash','lotion','sunscreen','toothpaste','toothbrush','deodorant','natural deodorant','essential oil','face wash','moisturizer','lip balm'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','natural cleaner','beeswax wrap','dryer balls'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // LUCKY SUPERMARKETS
-    // Source: Curated based on typical Lucky's layout
-    // California regional chain
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'lucky',
-      name: 'Lucky Supermarkets',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ['lucky','lucky supermarkets','lucky stores','lucky supermarket'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','ginger','herbs','cilantro','corn','cabbage'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','salmon','tilapia','shrimp','tuna','cod','sausage','bacon','ham','turkey','hot dogs','fish','crab'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','sandwich','pickle'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','jack cheese','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sparkling water','almond milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // FIESTA MART
-    // Source: Curated based on typical Fiesta Mart layout
-    // Texas Hispanic-focused chain, ~70 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'fiesta-mart',
-      name: 'Fiesta Mart',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ['fiesta mart','fiesta','fiesta supermarket'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','jalapeño','tomatillo','cilantro','mango','papaya','pineapple','guava','mushroom','potato','sweet potato','cabbage','chayote','jicama','nopales','plantain','yuca','corn','herbs'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','carne asada','fajita','chorizo','carnitas','barbacoa','chicharron','tripe','menudo','beef tongue','salmon','tilapia','shrimp','catfish','crab','whole fish','sausage','bacon','ham','turkey'] },
-        { name: 'Tortilleria & Bakery', keywords: ['tortilla','flour tortilla','corn tortilla','pan dulce','bolillo','conchas','telera','bread','roll','bun','tres leches','cake','cookies','donut','pastry','empanada'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','chicharron','prepared food','rotisserie','fried chicken','carnitas','tamales','pozole','menudo','soup','hot bar','guacamole','pico de gallo','salsa','hummus'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso fresco','cotija','oaxaca cheese','panela','manchego','asadero','whipped cream','evaporated milk','condensed milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','burritos','enchiladas','taquitos','edamame','french fries','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','horchata','agua fresca','Jamaica','tamarind','coconut water','almond milk','Jarritos','Mexican soda','cider'] },
-        { name: 'Hispanic Foods & Pantry', keywords: ['tortilla','masa','masa harina','cornmeal','rice','beans','pinto beans','black beans','refried beans','chile','ancho','pasilla','guajillo','chipotle','adobo','mole','enchilada sauce','salsa','tomatillo','tamarind','piloncillo','cajeta','dulce de leche','hot sauce','Valentina','Tapatio','flour','sugar','salt','oil','lard','manteca','vinegar','soy sauce','spices','cumin','chili powder','oregano','cinnamon','vanilla'] },
-        { name: 'Snacks & Candy', keywords: ['chips','tortilla chips','chicharron','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Mexican candy','tamarind candy','churros','pepino','chamoy'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // SEDANO'S
-    // Source: Curated based on typical Sedano's layout
-    // Florida Hispanic-focused chain, ~30 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'sedanos',
-      name: "Sedano's",
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ["sedano's","sedanos","sedano's supermarkets"],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','cilantro','mango','papaya','pineapple','guava','plantain','yuca','boniato','malanga','chayote','corn','herbs','ají','culantro'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','ground beef','carne asada','palomilla','vaca frita','pernil','lechon','chorizo','morcilla','salmon','tilapia','shrimp','snapper','crab','whole fish','sausage','bacon','ham','turkey','masitas'] },
-        { name: 'Deli & Prepared Foods', keywords: ['deli','ham','turkey','salami','Cuban sandwich','medianoche','croqueta','prepared food','rotisserie','fried chicken','ropa vieja','picadillo','congri','hot bar','tamales','guacamole','salsa'] },
-        { name: 'Bakery', keywords: ['Cuban bread','pan cubano','bread','roll','bun','medianoche','mallorca','pan dulce','cookies','cake','donut','pastry','tres leches','flan'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','crema','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','queso blanco','queso fresco','gouda','whipped cream','evaporated milk','condensed milk','café con leche'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','paletas','frozen pizza','frozen meal','frozen vegetable','tamales','tostones','yuca frita','plantains','pastelitos','croquetas','french fries','ice','frozen fruit','frozen shrimp'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','beer','sports drink','energy drink','café','Bustelo','Pilon','horchata','coconut water','almond milk','Materva','Ironbeer','Jupina','Goya soda','malta','cider'] },
-        { name: 'Cuban & Latin Foods & Pantry', keywords: ['rice','black beans','red beans','sofrito','Goya','Sazon','Adobo','Bijol','olive oil','vinegar','mojo','naranja agria','hot sauce','guava paste','guava jelly','dulce de leche','coconut cream','plantain chips','tostones','yuca','malanga','boniato','corn flour','masa','spices','cumin','oregano','bay leaf','cinnamon','vanilla'] },
-        { name: 'Snacks & Candy', keywords: ['chips','plantain chips','mariquitas','crackers','popcorn','nuts','candy','chocolate','gummies','cookies','Cuban crackers','galletas'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers','baby'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // BROOKSHIRE'S / SUPER 1 FOODS
-    // Source: Curated based on typical Brookshire's layout
-    // Texas/Louisiana/Arkansas regional chain, ~150 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'brookshires',
-      name: "Brookshire's",
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ["brookshire's",'brookshires','brookshire grocery','super 1 foods','super one foods','spring market'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Produce', keywords: ['apple','banana','orange','grape','strawberry','blueberry','lemon','lime','avocado','tomato','lettuce','spinach','broccoli','carrot','celery','cucumber','pepper','onion','garlic','mushroom','potato','sweet potato','corn','cabbage','herbs','cilantro'] },
-        { name: 'Meat & Seafood', keywords: ['chicken','beef','pork','steak','ground beef','ground turkey','catfish','tilapia','shrimp','salmon','tuna','sausage','andouille','bacon','ham','turkey','hot dogs','fish','crab','crawfish'] },
-        { name: 'Deli & Bakery', keywords: ['deli','ham','turkey','salami','sliced cheese','bread','bagel','roll','bun','tortilla','cookies','cake','donut','rotisserie','fried chicken','sandwich','pickle','prepared food','kolache'] },
-        { name: 'Dairy & Eggs', keywords: ['milk','butter','eggs','egg','cream','sour cream','cream cheese','cottage cheese','yogurt','cheese','cheddar','mozzarella','parmesan','whipped cream','almond milk','oat milk'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','peas','corn','french fries','tater tots','waffle','burrito','pot pie','ice','frozen fruit'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','wine','beer','sports drink','energy drink','lemonade','sweet tea','almond milk','creamer'] },
-        { name: 'Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','red beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','Cajun seasoning','Tony Chachere'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','pork rinds'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','diapers'] },
-        { name: 'Household', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // DOLLAR GENERAL (grocery items)
-    // Source: Curated based on typical Dollar General grocery layout
-    // Discount/convenience, ~19,000 locations nationwide
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'dollar-general',
-      name: 'Dollar General',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#ffcb05',
-      searchNames: ['dollar general','dgx','dollar general market'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','rice cake'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','creamer','kool-aid','powdered drink'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice','frozen fruit'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','cold','flu','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','zip bags','sponge','mop','broom','light bulbs','batteries','candles','air freshener'] },
-        { name: 'Seasonal & General', keywords: ['seasonal','holiday','clothing','socks','underwear','school supplies','office','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','automotive','tools'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // FAMILY DOLLAR (grocery items)
-    // Source: Curated based on typical Family Dollar grocery layout
-    // Discount/convenience, ~8,000 locations nationwide
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'family-dollar',
-      name: 'Family Dollar',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#8b0000',
-      searchNames: ['family dollar'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','soy sauce','hot sauce','mustard','ketchup','mayonnaise','soup','broth','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal','grits'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','almond milk','kool-aid','powdered drink'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','almond milk','deli meat','hot dogs','bacon','sausage'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','tater tots','waffle','burrito','ice'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','dryer sheets','aluminum foil','plastic wrap','sponge','light bulbs','batteries','candles','air freshener'] },
-        { name: 'Clothing & General', keywords: ['clothing','socks','underwear','school supplies','stationery','greeting cards','gift wrap','toys','pet food','dog food','cat food','cat litter','seasonal','holiday'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // DOLLAR TREE (grocery items)
-    // Source: Curated based on typical Dollar Tree grocery layout
-    // Everything-$1.25 discount chain, ~8,000 locations
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'dollar-tree',
-      name: 'Dollar Tree',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#007a3d',
-      searchNames: ['dollar tree'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Food & Pantry', keywords: ['pasta','rice','flour','sugar','salt','oil','vinegar','pasta sauce','salsa','hot sauce','mustard','ketchup','soup','beans','oats','cereal','honey','jam','peanut butter','crackers','chips','nuts','popcorn','baking soda','canned tomato','canned tuna','canned beans','spices','mac and cheese','ramen','instant noodles','oatmeal'] },
-        { name: 'Snacks & Candy', keywords: ['chips','crackers','pretzels','popcorn','nuts','candy','chocolate','gummies','cookies','jerky','fruit snacks','granola bar'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','lemonade','kool-aid','powdered drink','creamer'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','butter','eggs','egg','cream cheese','yogurt','cheese','sour cream','orange juice','deli meat','hot dogs'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen pizza','frozen meal','frozen vegetable','french fries','waffle','burrito','ice'] },
-        { name: 'Health & Beauty', keywords: ['shampoo','conditioner','soap','body wash','lotion','toothpaste','toothbrush','deodorant','razors','vitamins','medicine','pain reliever','allergy','bandage','feminine care','diapers','baby wipes','sunscreen','cotton balls','q-tips','makeup','nail polish'] },
-        { name: 'Household & Cleaning', keywords: ['laundry','detergent','dish soap','paper towels','toilet paper','tissues','garbage bags','cleaning spray','bleach','aluminum foil','plastic wrap','zip bags','sponge','light bulbs','batteries','candles','air freshener','storage','baskets','organizers'] },
-        { name: 'Party & Seasonal', keywords: ['party supplies','balloons','plates','cups','napkins','gift wrap','greeting cards','seasonal','holiday','decorations','toys','crafts','stationery','school supplies','office','pet food'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // CVS PHARMACY (grocery items)
-    // Source: Curated based on typical CVS grocery/convenience layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'cvs',
-      name: 'CVS Pharmacy',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#cc0000',
-      searchNames: ['cvs','cvs pharmacy','cvs health'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
-        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','protein powder','fiber'] },
-        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor','glucose meter'] },
-        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','dried fruit','cereal','oats','soup','canned goods','pasta','rice','peanut butter','jam','honey','crackers','instant noodles','mac and cheese'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','kombucha','sparkling water','lemonade','coconut water'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat','hummus','salad'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit','frozen vegetable'] },
-        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','toner','serum','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','nail care','perfume','cologne','deodorant','razors','shaving cream','waxing','feminine care','tampons','pads'] },
-        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','baby shampoo','baby powder','pacifier','bottle','pregnancy test','contraception','condoms'] },
-        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','detergent','batteries','light bulbs','aluminum foil','plastic wrap','zip bags','sponge','candles','air freshener'] },
-        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','office','stationery'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // WALGREENS (grocery items)
-    // Source: Curated based on typical Walgreens grocery/convenience layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'walgreens',
-      name: 'Walgreens',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#e31837',
-      searchNames: ['walgreens','walgreens pharmacy','duane reade'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
-        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber','protein powder'] },
-        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer','blood pressure monitor'] },
-        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles','mac and cheese'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade','coconut water'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','frozen breakfast','ice','frozen fruit'] },
-        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
-        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
-        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
-        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
-      ]
-    },
-
-    // ════════════════════════════════════════════════════════════════════════
-    // RITE AID (grocery items)
-    // Source: Curated based on typical Rite Aid grocery/convenience layout
-    // ════════════════════════════════════════════════════════════════════════
-    {
-      id: 'rite-aid',
-      name: 'Rite Aid',
-      type: 'grocery',
-      confidence: 0.7,
-      color: '#003087',
-      searchNames: ['rite aid','rite-aid'],
-      dataSource: 'curated',
-      aisles: [
-        { name: 'Pharmacy & Prescriptions', keywords: ['prescription','pharmacy','medication','rx','insulin','blood pressure','cholesterol','diabetes','thyroid','antibiotic','birth control','inhaler'] },
-        { name: 'Vitamins & Supplements', keywords: ['vitamins','supplements','multivitamin','vitamin c','vitamin d','fish oil','probiotic','calcium','magnesium','zinc','iron','b12','omega','melatonin','elderberry','collagen','fiber'] },
-        { name: 'Health & Medicine', keywords: ['pain reliever','ibuprofen','acetaminophen','aspirin','allergy','antihistamine','cold','flu','cough','sinus','antacid','heartburn','stomach','laxative','sleep aid','eye drops','ear drops','nasal spray','first aid','bandage','antiseptic','thermometer'] },
-        { name: 'Food & Snacks', keywords: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola bar','protein bar','candy','chocolate','gummies','cookies','jerky','fruit snacks','cereal','soup','canned goods','peanut butter','instant noodles'] },
-        { name: 'Beverages', keywords: ['water','juice','soda','coffee','tea','sports drink','energy drink','almond milk','creamer','sparkling water','lemonade'] },
-        { name: 'Dairy & Refrigerated', keywords: ['milk','eggs','egg','butter','cream cheese','yogurt','juice','orange juice','almond milk','cheese','deli meat'] },
-        { name: 'Frozen', keywords: ['frozen','ice cream','frozen meal','frozen pizza','ice','frozen fruit'] },
-        { name: 'Beauty & Personal Care', keywords: ['shampoo','conditioner','hair color','hair care','soap','body wash','lotion','moisturizer','sunscreen','face wash','makeup','foundation','mascara','lipstick','eyeliner','blush','concealer','nail polish','perfume','cologne','deodorant','razors','shaving cream','feminine care','tampons','pads'] },
-        { name: 'Baby & Family Care', keywords: ['diapers','baby wipes','baby formula','baby food','baby lotion','baby wash','pacifier','bottle','pregnancy test','contraception','condoms'] },
-        { name: 'Household', keywords: ['paper towels','toilet paper','tissues','garbage bags','cleaning spray','dish soap','laundry','batteries','light bulbs','aluminum foil','zip bags','candles','air freshener'] },
-        { name: 'Seasonal & Photo', keywords: ['seasonal','holiday','greeting cards','gift wrap','gift cards','photo','photo printing','school supplies','stationery'] },
-      ]
-    },
-  ] // end grocery array
-
-  // Future categories can be added here:
-  // pharmacy: [...],
-  // hardware: [...],
-};
-
-// Helper: find a chain template by matching a Google Places store name
+// ── Computed flat keywords array (for backward compatibility) ────────────
+// The existing kwMatch and other functions use template.keywords as a flat
+// array. This getter computes it from clusters so we never maintain two copies.
+GROCERY_TEMPLATES.forEach(t => {
+  Object.defineProperty(t, 'keywords', {
+    get() { return this.clusters.flatMap(c => c.keywords); },
+    enumerable: true,
+    configurable: true,
+  });
+});
