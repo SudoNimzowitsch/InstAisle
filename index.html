@@ -7250,6 +7250,8 @@ function openSignBuilder() {
   _signBuilder = { source:null, gps:null, files:[], images:[], aisles:[],
                    reverseGeocodedAddress:null, gpsVerified:false,
                    storeName:'', storeAddress:'', storeCity:'', storeState:'' };
+  // Reset the serial compression queue for this session
+  _compressQueue = Promise.resolve();
 
   // Show a small picker: camera or upload
   const choice = document.createElement('div');
@@ -7422,10 +7424,12 @@ function handleSignCapture(e) {
   if (!files.length) return;
   // Accumulate — supports multi-shot flow
   _signBuilder.files = _signBuilder.files.concat(files);
-  // Compress the new photo(s) in the background while user reviews thumbnails
+  // Compress the new photo(s) in the background while user reviews thumbnails.
+  // Uses the serial queue so only one compression runs at a time — prevents
+  // memory spikes when the user shoots multiple photos in quick succession.
   files.forEach((file, i) => {
     const idx = _signBuilder.files.length - files.length + i;
-    _compressSignImage(file).then(compressed => {
+    _compressSignImageQueued(file).then(compressed => {
       _signBuilder.images[idx] = compressed;
       // Null out raw file reference once compressed — free the memory
       _signBuilder.files[idx] = null;
@@ -7897,31 +7901,41 @@ function closeSignBuilder() {
   document.getElementById('sign-builder-backdrop')?.remove();
 }
 
-// Compress a sign image to ~300KB max, 1024px wide — Gemini doesn't need more
+// Compress a sign image to 800px max — uses a blob URL instead of readAsDataURL
+// so we never create a full-size base64 copy of the raw camera file in memory.
+// Pipeline: File → blob URL (pointer only) → Image → canvas → small base64 JPEG.
 function _compressSignImage(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = e => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        const MAX = 800;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          const scale = Math.min(MAX / w, MAX / h);
-          w = Math.round(w * scale);
-          h = Math.round(h * scale);
-        }
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], mimeType: 'image/jpeg' });
-      };
-      img.src = e.target.result;
+    const blobURL = URL.createObjectURL(file);
+    const img = new Image();
+    img.onerror = () => { URL.revokeObjectURL(blobURL); reject(new Error('Image load failed')); };
+    img.onload = () => {
+      // Revoke immediately — Image has decoded the data, pointer no longer needed
+      URL.revokeObjectURL(blobURL);
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const scale = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], mimeType: 'image/jpeg' });
     };
-    reader.readAsDataURL(file);
+    img.src = blobURL;
   });
+}
+
+// Serial compression queue for the camera path — ensures only one photo is
+// being compressed at a time, preventing memory spikes when shooting quickly.
+let _compressQueue = Promise.resolve();
+function _compressSignImageQueued(file) {
+  const result = _compressQueue.then(() => _compressSignImage(file));
+  // Don't let a rejection break the queue for subsequent items
+  _compressQueue = result.catch(() => {});
+  return result;
 }
 
 // Get device GPS coordinates (resolves to null if unavailable/denied)
