@@ -8005,12 +8005,14 @@ async function signBuilderConfirmReview() {
           window._pendingUserStoreId = null;
         }
       }
-      _autoSaveStore();
-      // Editing from sign photos (camera or upload) confers trusted user status
-      if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
-        const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
-        if (_editedStore) _grantTrustedAfterPhotoEdit(_editedStore); // fire-and-forget
-      }
+    // Editing from sign builder: save immediately — the sign builder is a deliberate
+    // completed action that warrants an auto-commit rather than manual "Save changes."
+    await saveStore();
+    // Confer trusted user status after photo edit (fire-and-forget)
+    if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
+      const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
+      if (_editedStore) _grantTrustedAfterPhotoEdit(_editedStore);
+    }
     }
 
   } catch(err) {
