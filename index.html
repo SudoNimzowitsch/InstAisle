@@ -7903,7 +7903,9 @@ function closeSignBuilder() {
 
 // Compress a sign image to 800px max — uses a blob URL instead of readAsDataURL
 // so we never create a full-size base64 copy of the raw camera file in memory.
-// Pipeline: File → blob URL (pointer only) → Image → canvas → small base64 JPEG.
+// Uses canvas.toBlob() instead of toDataURL() to avoid a Samsung WebView bug
+// ("Unable to complete previous operation due to low memory") triggered by the
+// synchronous GPU readback that toDataURL() forces.
 function _compressSignImage(file) {
   return new Promise((resolve, reject) => {
     const blobURL = URL.createObjectURL(file);
@@ -7922,7 +7924,16 @@ function _compressSignImage(file) {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve({ data: c.toDataURL('image/jpeg', 0.82).split(',')[1], mimeType: 'image/jpeg' });
+      // toBlob() is async and avoids the Samsung WebView GPU readback bug that
+      // toDataURL() triggers. The resulting blob is already small (~80KB), so
+      // reading it with FileReader is fine.
+      c.toBlob(blob => {
+        if (!blob) { reject(new Error('toBlob failed')); return; }
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = e => resolve({ data: e.target.result.split(',')[1], mimeType: 'image/jpeg' });
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.82);
     };
     img.src = blobURL;
   });
