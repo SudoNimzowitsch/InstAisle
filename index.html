@@ -7721,6 +7721,7 @@ async function _runSignBuilder() {
         gps:     _signBuilder.gps,
       }),
     });
+    console.log('[SB] processAisleSigns sent source:', _signBuilder.source, 'gps:', _signBuilder.gps);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -7731,6 +7732,7 @@ async function _runSignBuilder() {
     _signBuilder.aisles                 = data.aisles || [];
     _signBuilder.reverseGeocodedAddress = data.reverse_geocoded_address || null;
     _signBuilder.gpsVerified            = data.gps_verified || false;
+    console.log('[SB] processAisleSigns response gps_verified:', data.gps_verified, 'reverseGeocoded:', data.reverse_geocoded_address);
 
     if (_signBuilder.aisles.length === 0) {
       closeSignBuilder();
@@ -7931,6 +7933,7 @@ async function signBuilderConfirmReview() {
       }
 
       const result = await res.json();
+      console.log('[SB] assembleStore result:', result, 'gpsVerified sent:', _signBuilder.gpsVerified);
       window._pendingUserStoreId      = result.store_id;
       window._pendingLibraryStatus    = result.library_status;
       window._pendingLibraryLocationId = result.store_id; // store_locations doc ID
