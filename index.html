@@ -7538,7 +7538,6 @@ function _signBuilderDone() {
 }
 
 // ── Mobile debug overlay (remove after debugging) ─────────────────────────
-function _sbDebug(msg) {
   let el = document.getElementById('_sb_debug_overlay');
   if (!el) {
     el = document.createElement('div');
@@ -7548,7 +7547,6 @@ function _sbDebug(msg) {
   }
   el.textContent += '\n' + msg;
   el.scrollTop = el.scrollHeight;
-  _sbDebug('', msg);
 }
 // ── End debug overlay ──────────────────────────────────────────────────────
 
@@ -7852,14 +7850,11 @@ async function signBuilderConfirmReview() {
   const btn = document.getElementById('sign-builder-confirm-btn');
   btn.disabled = true;
   btn.textContent = 'Building…';
-  _sbDebug(' start, editingStoreId:', state.editingStoreId, 'aisles:', _signBuilder.aisles?.length, 'gps:', _signBuilder.gps);
 
   try {
     const user = window._currentUser;
     if (!user) throw new Error('Not signed in');
-    _sbDebug(' user ok');
     const token = await user.getIdToken();
-    _sbDebug(' token ok');
 
     // Geocode address if batch path (no GPS coords yet)
     let lat = _signBuilder.gps?.lat || null;
@@ -7876,7 +7871,6 @@ async function signBuilderConfirmReview() {
     if (!lat || !lng) {
       // Geocode the user-supplied address via OpenCage
       const addrStr = [_signBuilder.storeAddress, _signBuilder.storeCity, _signBuilder.storeState].filter(Boolean).join(', ');
-      _sbDebug(' geocoding addrStr:', addrStr);
       if (addrStr) {
         try {
           const geo = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(addrStr)}&key=f6fbe292a2fa43be9860c7b05df59840&limit=1&no_annotations=1`);
@@ -7887,7 +7881,6 @@ async function signBuilderConfirmReview() {
       }
     }
 
-    _sbDebug(' lat/lng resolved:', lat, lng);
 
     if (!lat || !lng) {
       if (!state.editingStoreId) {
@@ -7900,7 +7893,6 @@ async function signBuilderConfirmReview() {
         // Make the address fields visible and required
         const addrSection = document.getElementById('sign-builder-address-section');
         if (addrSection) addrSection.style.display = '';
-        _sbDebug(' EARLY RETURN: no coords for new store');
         return;
       }
       // Editing without coords is fine — proceed without location data
@@ -8069,9 +8061,7 @@ async function signBuilderConfirmReview() {
     }
 
     closeSignBuilder();
-    _sbDebug(' closeSignBuilder done');
     renderAisleRows();
-    _sbDebug(' renderAisleRows done, tempAisles:', tempAisles.length);
 
     if (state.editingStoreId) {
       const store = state.stores.find(s => s.id === state.editingStoreId);
@@ -8086,9 +8076,7 @@ async function signBuilderConfirmReview() {
         }
       }
       // Editing from sign builder: save immediately — deliberate completed action
-      _sbDebug(' calling saveStore (edit path)');
       await saveStore();
-      _sbDebug(' saveStore done (edit path)');
       // Confer trusted user status after photo edit (fire-and-forget)
       if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
         const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
@@ -8096,9 +8084,7 @@ async function signBuilderConfirmReview() {
       }
     } else {
       // New store path: saveStore() creates the Firestore record and closes the store modal
-      _sbDebug(' calling saveStore (new store path), store-name-input value:', document.getElementById('store-name-input')?.value);
       await saveStore();
-      _sbDebug(' saveStore done (new store path)');
     }
 
   } catch(err) {
@@ -8909,7 +8895,6 @@ function _autoSaveStoreNow() {
 }
 
 async function saveStore(){
-  _sbDebug('saveStore called, editingStoreId:' + state.editingStoreId + ' name:' + document.getElementById('store-name-input')?.value + ' aisles:' + tempAisles.length);
   syncNames();
   const name=document.getElementById('store-name-input').value.trim();
   if(!name){ showToast('Please enter a store name'); return; }
