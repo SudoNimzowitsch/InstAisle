@@ -7842,6 +7842,7 @@ async function signBuilderConfirmReview() {
     const user = window._currentUser;
     if (!user) throw new Error('Not signed in');
     const token = await user.getIdToken();
+    console.log('[SB] confirm start, editingStoreId:', state.editingStoreId, 'gps:', _signBuilder.gps, 'addr:', _signBuilder.storeAddress);
 
     // Geocode address if batch path (no GPS coords yet)
     let lat = _signBuilder.gps?.lat || null;
@@ -7869,9 +7870,9 @@ async function signBuilderConfirmReview() {
     }
 
 
-    if (!lat || !lng) {
-      if (!state.editingStoreId) {
-        // GPS and reverse geocoding both failed — show address entry so the user
+    console.log('[SB] lat/lng resolved:', lat, lng);
+
+    if (!lat || !lng) { — show address entry so the user
         // can provide a location rather than silently blocking the build.
         btn.disabled = false;
         btn.textContent = '✓ Build Store';
@@ -8012,7 +8013,7 @@ async function signBuilderConfirmReview() {
     } else {
       // New store — replace entirely
       tempAisles = newAisles;
-      const msg = result.library_status === 'published'
+      const msg = window._pendingLibraryStatus === 'published'
         ? `Store built ✓ Added to the InstAisle library`
         : `Store built ✓ Will join the library when you shop there`;
       showToast(msg);
@@ -8078,7 +8079,7 @@ async function signBuilderConfirmReview() {
     console.error('[SB] CAUGHT ERROR:', err);
     btn.disabled = false;
     btn.textContent = '✓ Build Store';
-    showToast('Error building store — please try again');
+    showToast('Build failed: ' + (err?.message || String(err)), 8000);
   }
 }
 
@@ -10651,10 +10652,13 @@ function _hideStoreFabs() {
   const onList = document.querySelector('.screen#screen-list.active');
   fab.style.display = onList ? 'flex' : 'none';
 }
-function showToast(msg){
+function showToast(msg, duration){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2600);
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove('show'), duration || 2600);
+  // Long-press or tap to dismiss early
+  t.onclick = () => { t.classList.remove('show'); clearTimeout(t._hideTimer); };
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
