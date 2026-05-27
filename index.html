@@ -7931,8 +7931,9 @@ async function signBuilderConfirmReview() {
       }
 
       const result = await res.json();
-      window._pendingUserStoreId   = result.store_id;
-      window._pendingLibraryStatus = result.library_status;
+      window._pendingUserStoreId      = result.store_id;
+      window._pendingLibraryStatus    = result.library_status;
+      window._pendingLibraryLocationId = result.store_id; // store_locations doc ID
     }
 
     // Apply the assembled aisles into tempAisles
@@ -8924,7 +8925,7 @@ async function saveStore(){
     const id='store-'+Date.now();
     const newStore={id,name,color:tempColor,aisles,ownerUid:window._currentUser?.uid,
       library_chain_id:    pendingLibraryMeta?.chain_id    || null,
-      library_location_id: pendingLibraryMeta?.location_id || null,
+      library_location_id: window._pendingLibraryLocationId || pendingLibraryMeta?.location_id || null,
       library_address:     pendingLibraryMeta?.address     || null,
       library_aisles_snapshot: pendingLibraryMeta?.aisles_snapshot || null,
       _userStoreId:  window._pendingUserStoreId  || null,
@@ -8934,6 +8935,7 @@ async function saveStore(){
     };
     window._pendingUserStoreId  = null;
     window._pendingLibraryStatus = null;
+    window._pendingLibraryLocationId = null;
     state.stores.push(newStore);
     if (!_isV2()) { state.lists[id]=[]; migrateListsIfNeeded(id); }
     state.corrections[id]={};
@@ -8956,7 +8958,8 @@ async function saveStore(){
   invalidateAisleIndexCache(); closeModal('modal-store'); renderAll(); switchScreen('list'); showToast('Store saved ✓');
   if (window._storeIsGenericDefault) {
     window._storeIsGenericDefault = false;
-    setTimeout(() => openModal('modal-generic-warning'), 300);
+    const warnModal = document.getElementById('modal-generic-warning');
+    if (warnModal) setTimeout(() => openModal('modal-generic-warning'), 300);
   }
   // Show index conflict prompt if any were flagged during contribution
   setTimeout(window.maybeShowNameConflictPrompt, 800);
