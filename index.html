@@ -7537,7 +7537,20 @@ function _signBuilderDone() {
   _runSignBuilder();
 }
 
-// ── In-browser camera (getUserMedia) ──────────────────────────────────────
+// ── Mobile debug overlay (remove after debugging) ─────────────────────────
+function _sbDebug(msg) {
+  let el = document.getElementById('_sb_debug_overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_sb_debug_overlay';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;background:rgba(0,0,0,.85);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all';
+    document.body.appendChild(el);
+  }
+  el.textContent += '\n' + msg;
+  el.scrollTop = el.scrollHeight;
+  _sbDebug('', msg);
+}
+// ── End debug overlay ──────────────────────────────────────────────────────
 
 // Start camera stream inside the modal — avoids the Android activity switch
 // that causes Samsung WebView to kill the app when the system camera opens.
@@ -7839,14 +7852,14 @@ async function signBuilderConfirmReview() {
   const btn = document.getElementById('sign-builder-confirm-btn');
   btn.disabled = true;
   btn.textContent = 'Building…';
-  console.log('[SB] start, editingStoreId:', state.editingStoreId, 'aisles:', _signBuilder.aisles?.length, 'gps:', _signBuilder.gps);
+  _sbDebug(' start, editingStoreId:', state.editingStoreId, 'aisles:', _signBuilder.aisles?.length, 'gps:', _signBuilder.gps);
 
   try {
     const user = window._currentUser;
     if (!user) throw new Error('Not signed in');
-    console.log('[SB] user ok');
+    _sbDebug(' user ok');
     const token = await user.getIdToken();
-    console.log('[SB] token ok');
+    _sbDebug(' token ok');
 
     // Geocode address if batch path (no GPS coords yet)
     let lat = _signBuilder.gps?.lat || null;
@@ -7863,7 +7876,7 @@ async function signBuilderConfirmReview() {
     if (!lat || !lng) {
       // Geocode the user-supplied address via OpenCage
       const addrStr = [_signBuilder.storeAddress, _signBuilder.storeCity, _signBuilder.storeState].filter(Boolean).join(', ');
-      console.log('[SB] geocoding addrStr:', addrStr);
+      _sbDebug(' geocoding addrStr:', addrStr);
       if (addrStr) {
         try {
           const geo = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(addrStr)}&key=f6fbe292a2fa43be9860c7b05df59840&limit=1&no_annotations=1`);
@@ -7874,7 +7887,7 @@ async function signBuilderConfirmReview() {
       }
     }
 
-    console.log('[SB] lat/lng resolved:', lat, lng);
+    _sbDebug(' lat/lng resolved:', lat, lng);
 
     if (!lat || !lng) {
       if (!state.editingStoreId) {
@@ -7887,7 +7900,7 @@ async function signBuilderConfirmReview() {
         // Make the address fields visible and required
         const addrSection = document.getElementById('sign-builder-address-section');
         if (addrSection) addrSection.style.display = '';
-        console.log('[SB] EARLY RETURN: no coords for new store');
+        _sbDebug(' EARLY RETURN: no coords for new store');
         return;
       }
       // Editing without coords is fine — proceed without location data
@@ -8056,9 +8069,9 @@ async function signBuilderConfirmReview() {
     }
 
     closeSignBuilder();
-    console.log('[SB] closeSignBuilder done');
+    _sbDebug(' closeSignBuilder done');
     renderAisleRows();
-    console.log('[SB] renderAisleRows done, tempAisles:', tempAisles.length);
+    _sbDebug(' renderAisleRows done, tempAisles:', tempAisles.length);
 
     if (state.editingStoreId) {
       const store = state.stores.find(s => s.id === state.editingStoreId);
@@ -8073,9 +8086,9 @@ async function signBuilderConfirmReview() {
         }
       }
       // Editing from sign builder: save immediately — deliberate completed action
-      console.log('[SB] calling saveStore (edit path)');
+      _sbDebug(' calling saveStore (edit path)');
       await saveStore();
-      console.log('[SB] saveStore done (edit path)');
+      _sbDebug(' saveStore done (edit path)');
       // Confer trusted user status after photo edit (fire-and-forget)
       if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
         const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
@@ -8083,9 +8096,9 @@ async function signBuilderConfirmReview() {
       }
     } else {
       // New store path: saveStore() creates the Firestore record and closes the store modal
-      console.log('[SB] calling saveStore (new store path), store-name-input value:', document.getElementById('store-name-input')?.value);
+      _sbDebug(' calling saveStore (new store path), store-name-input value:', document.getElementById('store-name-input')?.value);
       await saveStore();
-      console.log('[SB] saveStore done (new store path)');
+      _sbDebug(' saveStore done (new store path)');
     }
 
   } catch(err) {
@@ -8896,6 +8909,7 @@ function _autoSaveStoreNow() {
 }
 
 async function saveStore(){
+  _sbDebug('saveStore called, editingStoreId:' + state.editingStoreId + ' name:' + document.getElementById('store-name-input')?.value + ' aisles:' + tempAisles.length);
   syncNames();
   const name=document.getElementById('store-name-input').value.trim();
   if(!name){ showToast('Please enter a store name'); return; }
