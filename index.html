@@ -7269,7 +7269,7 @@ function openSignBuilder() {
   (_signBuilder.thumbUrls || []).forEach(u => u && URL.revokeObjectURL(u));
   // Reset state
   _signBuilder = { source:null, gps:null, files:[], images:[], aisles:[],
-                   thumbUrls:[], _cameraStream:null,
+                   thumbUrls:[], _cameraStream:null, _inFlight:0,
                    reverseGeocodedAddress:null, gpsVerified:false,
                    storeName:'', storeAddress:'', storeCity:'', storeState:'' };
   // Reset the serial compression queue for this session
@@ -7561,6 +7561,10 @@ function _signBuilderCaptureFrame() {
   const shutter = document.getElementById('sign-camera-shutter');
   if (shutter) { shutter.disabled = true; setTimeout(() => { shutter.disabled = false; }, 400); }
 
+  // Track in-flight encodes so Done stays disabled until all complete
+  _signBuilder._inFlight = (_signBuilder._inFlight || 0) + 1;
+  _updateCameraOverlayUI();
+
   const MAX = 800;
   let w = video.videoWidth || MAX, h = video.videoHeight || MAX;
   if (w > MAX || h > MAX) {
@@ -7572,14 +7576,26 @@ function _signBuilderCaptureFrame() {
   c.getContext('2d').drawImage(video, 0, 0, w, h);
 
   c.toBlob(blob => {
-    if (!blob) { showToast('Capture failed — try again'); return; }
+    if (!blob) {
+      _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
+      _updateCameraOverlayUI();
+      showToast('Capture failed — try again');
+      return;
+    }
     const thumbUrl = URL.createObjectURL(blob);
     const reader = new FileReader();
+    reader.onerror = () => {
+      _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
+      URL.revokeObjectURL(thumbUrl);
+      _updateCameraOverlayUI();
+      showToast('Capture failed — try again');
+    };
     reader.onload = e => {
       const compressed = { data: e.target.result.split(',')[1], mimeType: 'image/jpeg' };
       _signBuilder.files.push(null);        // keep arrays in parallel
       _signBuilder.images.push(compressed);
       _signBuilder.thumbUrls.push(thumbUrl);
+      _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
       _updateCameraOverlayUI();
     };
     reader.readAsDataURL(blob);
@@ -7610,7 +7626,7 @@ function _updateCameraOverlayUI() {
   }
 
   const doneBtn = document.getElementById('sign-camera-done-btn');
-  if (doneBtn) doneBtn.disabled = count === 0;
+  if (doneBtn) doneBtn.disabled = count === 0 || (_signBuilder._inFlight || 0) > 0;
 }
 
 // Stop all camera tracks and clear the video element.
@@ -7992,7 +8008,6 @@ async function signBuilderConfirmReview() {
     closeSignBuilder();
     renderAisleRows();
 
-    // If editing an existing store, apply pending library status then auto-save
     if (state.editingStoreId) {
       const store = state.stores.find(s => s.id === state.editingStoreId);
       if (store) {
@@ -8005,14 +8020,16 @@ async function signBuilderConfirmReview() {
           window._pendingUserStoreId = null;
         }
       }
-    // Editing from sign builder: save immediately — the sign builder is a deliberate
-    // completed action that warrants an auto-commit rather than manual "Save changes."
-    await saveStore();
-    // Confer trusted user status after photo edit (fire-and-forget)
-    if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
-      const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
-      if (_editedStore) _grantTrustedAfterPhotoEdit(_editedStore);
-    }
+      // Editing from sign builder: save immediately — deliberate completed action
+      await saveStore();
+      // Confer trusted user status after photo edit (fire-and-forget)
+      if (_signBuilder.source === 'camera' || _signBuilder.source === 'upload') {
+        const _editedStore = state.stores.find(s => s.id === state.editingStoreId);
+        if (_editedStore) _grantTrustedAfterPhotoEdit(_editedStore);
+      }
+    } else {
+      // New store path: saveStore() creates the Firestore record and closes the store modal
+      await saveStore();
     }
 
   } catch(err) {
