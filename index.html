@@ -7537,19 +7537,6 @@ function _signBuilderDone() {
   _runSignBuilder();
 }
 
-// ── Mobile debug overlay (remove after debugging) ─────────────────────────
-  let el = document.getElementById('_sb_debug_overlay');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_sb_debug_overlay';
-    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;background:rgba(0,0,0,.85);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all';
-    document.body.appendChild(el);
-  }
-  el.textContent += '\n' + msg;
-  el.scrollTop = el.scrollHeight;
-}
-// ── End debug overlay ──────────────────────────────────────────────────────
-
 // Start camera stream inside the modal — avoids the Android activity switch
 // that causes Samsung WebView to kill the app when the system camera opens.
 // Falls back to the file input (photo library picker) if permission is denied
