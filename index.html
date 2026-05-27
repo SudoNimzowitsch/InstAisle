@@ -7679,18 +7679,25 @@ async function _runSignBuilder() {
   const statusEl    = document.getElementById('sign-builder-status');
   const substatusEl = document.getElementById('sign-builder-substatus');
 
-  statusEl.textContent    = `Processing ${_signBuilder.files.length} sign${_signBuilder.files.length!==1?'s':''}…`;
+  const imageCount = _signBuilder.images.filter(Boolean).length;
+  statusEl.textContent    = `Processing ${imageCount} sign${imageCount!==1?'s':''}…`;
   substatusEl.textContent = 'Compressing images…';
 
   try {
-    // Camera path: images pre-compressed in background after each shot — just use them.
-    // Upload path: compress all in parallel now (no memory issue reported there).
+    // Camera path: images pre-compressed after each capture — collect non-null entries only.
+    // getUserMedia captures have files[i]=null; file-input fallback may have uncompressed files.
+    // Upload path: compress all files in parallel.
     let images;
     if (_signBuilder.source === 'camera') {
-      // Use pre-compressed images; compress any that lost the race in parallel
-      images = await Promise.all(_signBuilder.images.map((img, i) =>
-        img ? Promise.resolve(img) : _compressSignImage(_signBuilder.files[i])
-      ));
+      // Collect already-compressed images; retry any that failed (file-input fallback only)
+      images = await Promise.all(_signBuilder.images.map((img, i) => {
+        if (img) return Promise.resolve(img);
+        const file = _signBuilder.files[i];
+        if (!file) return null; // getUserMedia capture — already compressed above, skip
+        return _compressSignImage(file);
+      }));
+      images = images.filter(Boolean); // drop any nulls
+      if (!images.length) { closeSignBuilder(); showToast('No photos captured — please try again'); return; }
     } else {
       // Upload path — parallel compression as before
       images = await Promise.all(_signBuilder.files.map(f => _compressSignImage(f)));
@@ -7701,14 +7708,17 @@ async function _runSignBuilder() {
     if (!user) { closeSignBuilder(); showToast('Please sign in first'); return; }
     const token = await user.getIdToken();
 
+    const chainId = pendingLibraryMeta?.chain_id
+      || (state.editingStoreId
+          ? state.stores.find(s => s.id === state.editingStoreId)?.library_chain_id || null
+          : null);
+
     const res = await fetch(`${CF_BASE}/processAisleSigns`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({
         images,
-        chainId: pendingLibraryMeta?.chain_id || state.editingStoreId
-                  ? state.stores.find(s => s.id === state.editingStoreId)?.library_chain_id || null
-                  : null,
+        chainId,
         source:  _signBuilder.source,
         gps:     _signBuilder.gps,
       }),
