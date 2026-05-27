@@ -7872,13 +7872,14 @@ async function signBuilderConfirmReview() {
 
     console.log('[SB] lat/lng resolved:', lat, lng);
 
-    if (!lat || !lng) { — show address entry so the user
+    if (!lat || !lng) {
+      if (!state.editingStoreId) {
+        // GPS and reverse geocoding both failed — show address entry so the user
         // can provide a location rather than silently blocking the build.
         btn.disabled = false;
         btn.textContent = '✓ Build Store';
         _showSignBuilderSection('name');
         showToast('Please enter the store address so we can locate it');
-        // Make the address fields visible and required
         const addrSection = document.getElementById('sign-builder-address-section');
         if (addrSection) addrSection.style.display = '';
         return;
