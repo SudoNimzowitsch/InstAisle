@@ -1324,6 +1324,23 @@ textarea.input{resize:vertical;min-height:90px;}
         <input class="input" id="sign-builder-name-input" placeholder="e.g. Market Basket">
       </div>
       <div id="sign-builder-address-preview" style="font-size:.72rem;color:var(--muted);margin-bottom:16px;display:none"></div>
+      <!-- Address fields shown only when GPS failed -->
+      <div id="sign-builder-address-section" style="display:none">
+        <div class="input-wrap" style="margin-bottom:8px">
+          <label class="input-label">Street Address</label>
+          <input class="input" id="sign-builder-address-input" placeholder="e.g. 1200 Newport Ave">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div class="input-wrap" style="flex:2">
+            <label class="input-label">City</label>
+            <input class="input" id="sign-builder-city-input" placeholder="e.g. Attleboro">
+          </div>
+          <div class="input-wrap" style="flex:1">
+            <label class="input-label">State</label>
+            <input class="input" id="sign-builder-state-input" placeholder="MA" maxlength="2">
+          </div>
+        </div>
+      </div>
       <button class="btn btn-primary btn-full" onclick="signBuilderConfirmName()">Continue →</button>
       <button class="btn btn-ghost btn-full btn-sm" style="margin-top:8px" onclick="closeSignBuilder()">Cancel</button>
     </div>
@@ -7751,6 +7768,16 @@ function signBuilderConfirmName() {
     _signBuilder.storeAddress = parts[0] || '';
     _signBuilder.storeCity    = parts[1] || '';
     _signBuilder.storeState   = (parts[2] || '').split(' ')[0] || '';
+  } else {
+    // GPS failed — read from manual address fields if they were shown
+    const addrInput  = document.getElementById('sign-builder-address-input');
+    const cityInput  = document.getElementById('sign-builder-city-input');
+    const stateInput = document.getElementById('sign-builder-state-input');
+    if (addrInput?.value.trim()) {
+      _signBuilder.storeAddress = addrInput.value.trim();
+      _signBuilder.storeCity    = cityInput?.value.trim() || '';
+      _signBuilder.storeState   = stateInput?.value.trim() || '';
+    }
   }
   _showSignBuilderReview();
 }
@@ -7835,9 +7862,15 @@ async function signBuilderConfirmReview() {
 
     if (!lat || !lng) {
       if (!state.editingStoreId) {
-        showToast('Could not determine store location — please check the address');
+        // GPS and reverse geocoding both failed — show address entry so the user
+        // can provide a location rather than silently blocking the build.
         btn.disabled = false;
         btn.textContent = '✓ Build Store';
+        _showSignBuilderSection('name');
+        showToast('Please enter the store address so we can locate it');
+        // Make the address fields visible and required
+        const addrSection = document.getElementById('sign-builder-address-section');
+        if (addrSection) addrSection.style.display = '';
         return;
       }
       // Editing without coords is fine — proceed without location data
