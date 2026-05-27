@@ -1339,6 +1339,22 @@ textarea.input{resize:vertical;min-height:90px;}
       <button class="btn btn-ghost btn-full btn-sm" onclick="closeSignBuilder()">Cancel</button>
     </div>
 
+    <!-- In-browser camera viewfinder (getUserMedia path — avoids Android activity switch) -->
+    <div id="sign-builder-camera" style="display:none;flex-direction:column;flex:1;min-height:0;padding:0 0 8px">
+      <div style="position:relative;flex:1;min-height:160px;background:#000;border-radius:12px;overflow:hidden;margin-bottom:10px">
+        <video id="sign-builder-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+        <div id="sign-camera-count" style="display:none;position:absolute;top:8px;left:8px;background:rgba(0,0,0,.62);color:#fff;font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:20px"></div>
+      </div>
+      <div id="sign-camera-thumbs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:8px;min-height:0"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <button class="btn btn-ghost" style="flex:1;font-size:.8rem" onclick="closeSignBuilder()">Cancel</button>
+        <button id="sign-camera-shutter" onclick="_signBuilderCaptureFrame()"
+                style="width:62px;height:62px;border-radius:50%;background:var(--green);border:3px solid rgba(255,255,255,.8);flex-shrink:0;font-size:1.3rem;cursor:pointer;transition:transform .1s"
+                onpointerdown="this.style.transform='scale(.9)'" onpointerup="this.style.transform='scale(1)'">📷</button>
+        <button id="sign-camera-done-btn" class="btn btn-primary" style="flex:1;font-size:.8rem" onclick="_signBuilderCameraDone()" disabled>Done</button>
+      </div>
+    </div>
+
     <!-- Review state -->
     <div id="sign-builder-review" style="display:none;flex:1;min-height:0;display:none;flex-direction:column">
       <div class="modal-title" style="margin-bottom:4px" id="sign-builder-review-title">Review Your Store</div>
@@ -7233,8 +7249,10 @@ const CF_BASE = 'https://us-central1-instaisle-e8d6b.cloudfunctions.net';
 let _signBuilder = {
   source: null,        // 'camera' | 'upload'
   gps: null,           // { lat, lng } from geolocation API
-  files: [],           // File objects (nulled after compression)
+  files: [],           // File objects (nulled after compression; null for getUserMedia captures)
   images: [],          // pre-compressed { data, mimeType } objects
+  thumbUrls: [],       // blob URLs for thumbnail display (revoked on reset/close)
+  _cameraStream: null, // active MediaStream from getUserMedia
   aisles: [],          // assembled aisles from processAisleSigns response
   reverseGeocodedAddress: null,
   gpsVerified: false,
@@ -7246,8 +7264,12 @@ let _signBuilder = {
 
 // ── Entry point — called from 📷 Signs button in store modal ──────────────
 function openSignBuilder() {
+  // Cleanup any previous session
+  _signBuilderStopCamera();
+  (_signBuilder.thumbUrls || []).forEach(u => u && URL.revokeObjectURL(u));
   // Reset state
   _signBuilder = { source:null, gps:null, files:[], images:[], aisles:[],
+                   thumbUrls:[], _cameraStream:null,
                    reverseGeocodedAddress:null, gpsVerified:false,
                    storeName:'', storeAddress:'', storeCity:'', storeState:'' };
   // Reset the serial compression queue for this session
@@ -7340,8 +7362,7 @@ async function _signBuilderChoose(source) {
     }
   }
 
-  document.getElementById('sign-capture-input').value = '';
-  document.getElementById('sign-capture-input').click();
+  _startInBrowserCamera();
 }
 
 // Batch upload: collect name + address before file picker
@@ -7418,24 +7439,22 @@ function _signBuilderShowNameAddress() {
   modal.classList.add('open');
 }
 
-// Called when camera path photos are captured
+// Called when camera path photos are captured via file input fallback
 function handleSignCapture(e) {
   const files = [...(e.target.files || [])];
   if (!files.length) return;
-  // Accumulate — supports multi-shot flow
-  _signBuilder.files = _signBuilder.files.concat(files);
-  // Compress the new photo(s) in the background while user reviews thumbnails.
-  // Uses the serial queue so only one compression runs at a time — prevents
-  // memory spikes when the user shoots multiple photos in quick succession.
-  files.forEach((file, i) => {
-    const idx = _signBuilder.files.length - files.length + i;
+  files.forEach(file => {
+    const thumbUrl = URL.createObjectURL(file);
+    const idx = _signBuilder.files.length;
+    _signBuilder.files.push(file);
+    _signBuilder.images.push(null);
+    _signBuilder.thumbUrls.push(thumbUrl);
+    // Compress in the background via serial queue
     _compressSignImageQueued(file).then(compressed => {
       _signBuilder.images[idx] = compressed;
-      // Null out raw file reference once compressed — free the memory
-      _signBuilder.files[idx] = null;
+      _signBuilder.files[idx] = null; // free raw file reference
     }).catch(() => {
-      // Compression failed — will retry in _runSignBuilder
-      _signBuilder.images[idx] = null;
+      _signBuilder.images[idx] = null; // will retry in _runSignBuilder
     });
   });
   _signBuilderShowCaptureReview();
@@ -7443,23 +7462,20 @@ function handleSignCapture(e) {
 
 function _signBuilderShowCaptureReview() {
   _showSignBuilderSection('capture');
-  const count = _signBuilder.files.length;
+  const count = _signBuilder.thumbUrls.length;
   document.getElementById('sign-builder-capture-subtitle').textContent =
     `${count} photo${count !== 1 ? 's' : ''} captured — add more or build the store`;
 
-  // Render thumbnails
+  // Render thumbnails from stored URLs (valid for both camera and file input paths)
   const thumbsEl = document.getElementById('sign-builder-thumbs');
   thumbsEl.innerHTML = '';
-  _signBuilder.files.forEach((file, i) => {
-    const url = URL.createObjectURL(file);
+  _signBuilder.thumbUrls.forEach((url, i) => {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)';
     const img = document.createElement('img');
     img.src = url;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover';
-    img.onload = () => URL.revokeObjectURL(url);
-    // Badge the last one so user knows which "Retake last" will remove
-    if (i === _signBuilder.files.length - 1) {
+    if (i === _signBuilder.thumbUrls.length - 1) {
       const badge = document.createElement('div');
       badge.style.cssText = 'position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;font-size:.6rem;padding:1px 4px;border-radius:4px';
       badge.textContent = 'latest';
@@ -7469,28 +7485,149 @@ function _signBuilderShowCaptureReview() {
     thumbsEl.appendChild(wrap);
   });
 
-  // Always show retake — retaking opens the camera immediately so count never hits 0
   const retakeBtn = document.querySelector('[onclick="_signBuilderRetakeLast()"]');
   if (retakeBtn) retakeBtn.style.display = 'block';
 }
 
 function _signBuilderAddAnother() {
-  const input = document.getElementById('sign-capture-input');
-  input.value = '';
-  input.click();
+  if (_signBuilder.source === 'camera') {
+    _startInBrowserCamera();
+  } else {
+    const input = document.getElementById('sign-capture-input');
+    input.value = '';
+    input.click();
+  }
 }
 
 function _signBuilderRetakeLast() {
-  _signBuilder.files.pop();
-  // Re-open camera immediately — the new shot will be appended via handleSignCapture
-  const input = document.getElementById('sign-capture-input');
-  input.value = '';
-  input.click();
+  // Remove the last captured shot from all parallel arrays
+  if (_signBuilder.thumbUrls.length > 0) {
+    URL.revokeObjectURL(_signBuilder.thumbUrls.pop());
+    _signBuilder.images.pop();
+    _signBuilder.files.pop();
+  }
+  if (_signBuilder.source === 'camera') {
+    _startInBrowserCamera();
+  } else {
+    const input = document.getElementById('sign-capture-input');
+    input.value = '';
+    input.click();
+  }
 }
 
 function _signBuilderDone() {
-  if (!_signBuilder.files.length) return;
+  if (!_signBuilder.images.some(Boolean)) return;
   _runSignBuilder();
+}
+
+// ── In-browser camera (getUserMedia) ──────────────────────────────────────
+
+// Start camera stream inside the modal — avoids the Android activity switch
+// that causes Samsung WebView to kill the app when the system camera opens.
+// Falls back to the file input (photo library picker) if permission is denied
+// or getUserMedia is unavailable.
+async function _startInBrowserCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // Browser doesn't support getUserMedia — fall back to file picker
+    const input = document.getElementById('sign-capture-input');
+    input.value = ''; input.click();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } },
+      audio: false
+    });
+    _signBuilder._cameraStream = stream;
+    _showSignBuilderSection('camera');
+    const video = document.getElementById('sign-builder-video');
+    video.srcObject = stream;
+    await video.play().catch(() => {}); // autoplay may fire before play() on some devices
+    _updateCameraOverlayUI();
+  } catch(err) {
+    // Permission denied or hardware error — fall back to file picker
+    showToast('Camera access denied — select a photo from your library');
+    const input = document.getElementById('sign-capture-input');
+    input.value = ''; input.click();
+  }
+}
+
+// Capture the current video frame, compress it, and add it to _signBuilder.
+function _signBuilderCaptureFrame() {
+  const video = document.getElementById('sign-builder-video');
+  if (!video || video.readyState < 2) return; // not ready yet
+
+  // Brief visual feedback — disable shutter for 400ms
+  const shutter = document.getElementById('sign-camera-shutter');
+  if (shutter) { shutter.disabled = true; setTimeout(() => { shutter.disabled = false; }, 400); }
+
+  const MAX = 800;
+  let w = video.videoWidth || MAX, h = video.videoHeight || MAX;
+  if (w > MAX || h > MAX) {
+    const scale = Math.min(MAX / w, MAX / h);
+    w = Math.round(w * scale); h = Math.round(h * scale);
+  }
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(video, 0, 0, w, h);
+
+  c.toBlob(blob => {
+    if (!blob) { showToast('Capture failed — try again'); return; }
+    const thumbUrl = URL.createObjectURL(blob);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const compressed = { data: e.target.result.split(',')[1], mimeType: 'image/jpeg' };
+      _signBuilder.files.push(null);        // keep arrays in parallel
+      _signBuilder.images.push(compressed);
+      _signBuilder.thumbUrls.push(thumbUrl);
+      _updateCameraOverlayUI();
+    };
+    reader.readAsDataURL(blob);
+  }, 'image/jpeg', 0.82);
+}
+
+// Update shot counter badge and thumbnail strip inside the camera overlay.
+function _updateCameraOverlayUI() {
+  const count = _signBuilder.thumbUrls.length;
+
+  const badge = document.getElementById('sign-camera-count');
+  if (badge) {
+    badge.textContent = `${count} photo${count !== 1 ? 's' : ''}`;
+    badge.style.display = count > 0 ? 'block' : 'none';
+  }
+
+  const strip = document.getElementById('sign-camera-thumbs');
+  if (strip) {
+    strip.innerHTML = '';
+    _signBuilder.thumbUrls.forEach((url, i) => {
+      const img = document.createElement('img');
+      img.src = url;
+      const isLast = i === _signBuilder.thumbUrls.length - 1;
+      img.style.cssText = `height:52px;width:52px;object-fit:cover;border-radius:6px;flex-shrink:0;border:2px solid ${isLast ? 'var(--green)' : 'var(--border)'}`;
+      strip.appendChild(img);
+    });
+    if (count > 0) strip.scrollLeft = strip.scrollWidth;
+  }
+
+  const doneBtn = document.getElementById('sign-camera-done-btn');
+  if (doneBtn) doneBtn.disabled = count === 0;
+}
+
+// Stop all camera tracks and clear the video element.
+function _signBuilderStopCamera() {
+  if (_signBuilder?._cameraStream) {
+    _signBuilder._cameraStream.getTracks().forEach(t => t.stop());
+    _signBuilder._cameraStream = null;
+  }
+  const video = document.getElementById('sign-builder-video');
+  if (video) video.srcObject = null;
+}
+
+// Called when user taps "Done" in the camera overlay.
+function _signBuilderCameraDone() {
+  _signBuilderStopCamera();
+  if (_signBuilder.thumbUrls.length === 0) { closeSignBuilder(); return; }
+  _signBuilderShowCaptureReview();
 }
 
 // Called when batch upload files are selected
@@ -7889,13 +8026,15 @@ async function signBuilderConfirmReview() {
 function _showSignBuilderSection(section) {
   const modal = document.getElementById('modal-sign-builder');
   modal.classList.add('open');
-  ['processing', 'capture', 'name', 'review'].forEach(s => {
+  ['processing', 'capture', 'name', 'review', 'camera'].forEach(s => {
     const el = document.getElementById('sign-builder-' + s);
-    if (el) el.style.display = s === section ? (s === 'review' ? 'flex' : 'block') : 'none';
+    if (el) el.style.display = s === section ? (['review','camera'].includes(s) ? 'flex' : 'block') : 'none';
   });
 }
 
 function closeSignBuilder() {
+  _signBuilderStopCamera();
+  (_signBuilder.thumbUrls || []).forEach(u => u && URL.revokeObjectURL(u));
   document.getElementById('modal-sign-builder')?.classList.remove('open');
   document.getElementById('sign-builder-choice-sheet')?.remove();
   document.getElementById('sign-builder-backdrop')?.remove();
