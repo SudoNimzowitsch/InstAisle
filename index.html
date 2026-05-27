@@ -8953,8 +8953,13 @@ async function saveStore(){
     }
     pendingLibraryMeta=null;
     if(window.createStoreInFirestore) await window.createStoreInFirestore(newStore);
-    // Only contribute to library once verified — new stores start as pending
-    if(newStore._libraryStatus === 'published' && window.contributeToLibrary) window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
+    // contributeToLibrary updates an existing store_locations doc with refined aisle data.
+    // For sign-builder stores, assembleStore already wrote the full doc server-side (Admin SDK) —
+    // skip the client-side contribution to avoid a permissions error on the freshly-created doc.
+    const _fromSignBuilder = !!newStore._userStoreId;
+    if(!_fromSignBuilder && newStore._libraryStatus === 'published' && window.contributeToLibrary) {
+      window.contributeToLibrary(newStore).catch(e => console.warn('[library] contribution error:', e.message));
+    }
     // Warn if this store looks like it already exists in the library
     _checkLibraryDuplicate(newStore);
   }
