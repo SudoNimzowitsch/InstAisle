@@ -7568,36 +7568,57 @@ async function _startInBrowserCamera() {
 }
 
 // Capture the current video frame, compress it, and add it to _signBuilder.
-function _signBuilderCaptureFrame() {
+// Capture a sign photo. Uses ImageCapture.takePhoto() when available — this
+// takes a full-resolution still from the camera's native capture pipeline,
+// far sharper than a video frame grab. Falls back to canvas drawImage() on
+// browsers that don't support ImageCapture.
+async function _signBuilderCaptureFrame() {
   const video = document.getElementById('sign-builder-video');
-  if (!video || video.readyState < 2) return; // not ready yet
+  if (!video || video.readyState < 2) return;
 
-  // Brief visual feedback — disable shutter for 400ms
   const shutter = document.getElementById('sign-camera-shutter');
-  if (shutter) { shutter.disabled = true; setTimeout(() => { shutter.disabled = false; }, 400); }
+  if (shutter) { shutter.disabled = true; setTimeout(() => { shutter.disabled = false; }, 1200); }
 
-  // Track in-flight encodes so Done stays disabled until all complete
   _signBuilder._inFlight = (_signBuilder._inFlight || 0) + 1;
   _updateCameraOverlayUI();
 
-  const MAX = 800;
-  let w = video.videoWidth || MAX, h = video.videoHeight || MAX;
-  if (w > MAX || h > MAX) {
-    const scale = Math.min(MAX / w, MAX / h);
-    w = Math.round(w * scale); h = Math.round(h * scale);
-  }
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  c.getContext('2d').drawImage(video, 0, 0, w, h);
+  try {
+    let rawBlob;
 
-  c.toBlob(blob => {
-    if (!blob) {
-      _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
-      _updateCameraOverlayUI();
-      showToast('Capture failed — try again');
-      return;
+    // Primary: ImageCapture.takePhoto() — full-res native still, far sharper than a video frame
+    const track = _signBuilder._cameraStream?.getVideoTracks?.()?.[0];
+    if (track && typeof ImageCapture !== 'undefined') {
+      try {
+        const imageCapture = new ImageCapture(track);
+        rawBlob = await imageCapture.takePhoto();
+      } catch(e) {
+        rawBlob = null; // fall through to canvas
+      }
     }
-    const thumbUrl = URL.createObjectURL(blob);
+
+    // Fallback: canvas frame grab from the video element
+    if (!rawBlob) {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth || 1280; c.height = video.videoHeight || 720;
+      c.getContext('2d').drawImage(video, 0, 0);
+      rawBlob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.95));
+    }
+
+    if (!rawBlob) throw new Error('Capture produced no data');
+
+    // Downsample to 1600px max via createImageBitmap (avoids full-res OOM on Samsung)
+    const MAX = 1600;
+    const bitmap = await createImageBitmap(rawBlob, { resizeWidth: MAX, resizeQuality: 'high' });
+    const c2 = document.createElement('canvas');
+    c2.width = bitmap.width; c2.height = bitmap.height;
+    c2.getContext('2d').drawImage(bitmap, 0, 0);
+    bitmap.close();
+
+    // Use the raw blob for the thumbnail (sharper preview) but send the resized version to Gemini
+    const thumbUrl = URL.createObjectURL(rawBlob);
+    const finalBlob = await new Promise(res => c2.toBlob(res, 'image/jpeg', 0.92));
+    if (!finalBlob) throw new Error('Encoding failed');
+
     const reader = new FileReader();
     reader.onerror = () => {
       _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
@@ -7607,14 +7628,20 @@ function _signBuilderCaptureFrame() {
     };
     reader.onload = e => {
       const compressed = { data: e.target.result.split(',')[1], mimeType: 'image/jpeg' };
-      _signBuilder.files.push(null);        // keep arrays in parallel
+      _signBuilder.files.push(null);
       _signBuilder.images.push(compressed);
       _signBuilder.thumbUrls.push(thumbUrl);
       _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
       _updateCameraOverlayUI();
     };
-    reader.readAsDataURL(blob);
-  }, 'image/jpeg', 0.82);
+    reader.readAsDataURL(finalBlob);
+
+  } catch(err) {
+    console.error('[SB] capture error:', err);
+    _signBuilder._inFlight = Math.max(0, (_signBuilder._inFlight || 1) - 1);
+    _updateCameraOverlayUI();
+    showToast('Capture failed — try again');
+  }
 }
 
 // Update shot counter badge and thumbnail strip inside the camera overlay.
@@ -8119,14 +8146,14 @@ function closeSignBuilder() {
 // 3. canvas.toBlob() (async) instead of toDataURL() (sync) — avoids a
 //    separate Samsung WebView GPU readback bug.
 function _compressSignImage(file) {
-  const MAX = 800;
+  const MAX = 1600;
 
   // Primary path: createImageBitmap with resize
   if (typeof createImageBitmap !== 'undefined') {
     return new Promise((resolve, reject) => {
       // resizeWidth: MAX scales the long axis — acceptable for OCR purposes.
       // The browser can decode at this size directly, avoiding a full-res bitmap.
-      createImageBitmap(file, { resizeWidth: MAX, resizeQuality: 'medium' })
+      createImageBitmap(file, { resizeWidth: MAX, resizeQuality: 'high' })
         .then(bitmap => {
           const c = document.createElement('canvas');
           c.width = bitmap.width;
@@ -8139,7 +8166,7 @@ function _compressSignImage(file) {
             reader.onerror = reject;
             reader.onload = e => resolve({ data: e.target.result.split(',')[1], mimeType: 'image/jpeg' });
             reader.readAsDataURL(blob);
-          }, 'image/jpeg', 0.82);
+          }, 'image/jpeg', 0.92);
         })
         .catch(reject);
     });
@@ -8167,7 +8194,7 @@ function _compressSignImage(file) {
         reader.onerror = reject;
         reader.onload = e => resolve({ data: e.target.result.split(',')[1], mimeType: 'image/jpeg' });
         reader.readAsDataURL(blob);
-      }, 'image/jpeg', 0.82);
+      }, 'image/jpeg', 0.92);
     };
     img.src = blobURL;
   });
