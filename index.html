@@ -7289,6 +7289,10 @@ function openSignBuilder() {
                    thumbUrls:[], _cameraStream:null, _inFlight:0,
                    reverseGeocodedAddress:null, gpsVerified:false,
                    storeName:'', storeAddress:'', storeCity:'', storeState:'' };
+  // Reset the confirm button in case a previous session left it in a loading state
+  const confirmBtn = document.getElementById('sign-builder-confirm-btn');
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✓ Build Store'; }
+
   // Reset the serial compression queue for this session
   _compressQueue = Promise.resolve();
 
@@ -7608,16 +7612,35 @@ async function _signBuilderCaptureFrame() {
 
     // Downsample to 1600px max via createImageBitmap (avoids full-res OOM on Samsung)
     const MAX = 1600;
-    const bitmap = await createImageBitmap(rawBlob, { resizeWidth: MAX, resizeQuality: 'high' });
-    const c2 = document.createElement('canvas');
-    c2.width = bitmap.width; c2.height = bitmap.height;
-    c2.getContext('2d').drawImage(bitmap, 0, 0);
-    bitmap.close();
+    let finalBlob;
+    try {
+      const bitmap = await createImageBitmap(rawBlob, { resizeWidth: MAX, resizeQuality: 'medium' });
+      const c2 = document.createElement('canvas');
+      c2.width = bitmap.width; c2.height = bitmap.height;
+      c2.getContext('2d').drawImage(bitmap, 0, 0);
+      bitmap.close();
+      finalBlob = await new Promise(res => c2.toBlob(res, 'image/jpeg', 0.92));
+    } catch(e) {
+      // createImageBitmap failed — fall back to loading into an Image element
+      finalBlob = await new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(rawBlob);
+        const img = new Image();
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img load failed')); };
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) { const s = Math.min(MAX/w, MAX/h); w = Math.round(w*s); h = Math.round(h*s); }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          c.toBlob(resolve, 'image/jpeg', 0.92);
+        };
+        img.src = url;
+      });
+    }
 
-    // Use the raw blob for the thumbnail (sharper preview) but send the resized version to Gemini
-    const thumbUrl = URL.createObjectURL(rawBlob);
-    const finalBlob = await new Promise(res => c2.toBlob(res, 'image/jpeg', 0.92));
     if (!finalBlob) throw new Error('Encoding failed');
+    const thumbUrl = URL.createObjectURL(rawBlob);
 
     const reader = new FileReader();
     reader.onerror = () => {
@@ -8153,7 +8176,7 @@ function _compressSignImage(file) {
     return new Promise((resolve, reject) => {
       // resizeWidth: MAX scales the long axis — acceptable for OCR purposes.
       // The browser can decode at this size directly, avoiding a full-res bitmap.
-      createImageBitmap(file, { resizeWidth: MAX, resizeQuality: 'high' })
+      createImageBitmap(file, { resizeWidth: MAX, resizeQuality: 'medium' })
         .then(bitmap => {
           const c = document.createElement('canvas');
           c.width = bitmap.width;
