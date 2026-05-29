@@ -5109,7 +5109,12 @@ function renderStoresScreen(){
 // STORE MODAL
 // ══════════════════════════════
 function openStoreSwitch(){
-  document.getElementById('store-switch-list').innerHTML=state.stores.map(s=>`
+  const sorted = [...state.stores].sort((a, b) => {
+    if (a.id === state.activeStoreId) return -1;
+    if (b.id === state.activeStoreId) return  1;
+    return (b.lastOpened || 0) - (a.lastOpened || 0);
+  });
+  document.getElementById('store-switch-list').innerHTML=sorted.map(s=>`
     <div class="card" style="cursor:pointer;border-color:${state.activeStoreId===s.id?s.color:'var(--border)'};margin-bottom:8px;display:flex;align-items:center;gap:10px" onclick="setActiveStore('${s.id}')">
       <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0;margin-top:2px;align-self:flex-start"></div>
       <div style="flex:1;min-width:0">
