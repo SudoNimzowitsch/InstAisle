@@ -5127,6 +5127,8 @@ function openStoreSwitch(){
         onclick="event.stopPropagation();deleteStore('${s.id}')">✕</button>
     </div>`).join('')||'<p class="text-muted" style="text-align:center;padding:12px 0">No stores yet.</p>';
   openModal('modal-store-switch');
+  const listEl = document.getElementById('store-switch-list');
+  if (listEl) listEl.scrollTop = 0;
 }
 
 function setActiveStore(id){
