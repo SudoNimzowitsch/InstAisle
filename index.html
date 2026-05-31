@@ -7382,9 +7382,13 @@ async function _signBuilderChoose(source) {
         showToast('Could not get your location \u2014 sign uploads require GPS to confirm you\'re at this store');
         return;
       }
-      const dist = haversineMeters(_signBuilder.gps.lat, _signBuilder.gps.lng, existingStore.lat, existingStore.lng);
-      if (dist > 300) {
-        showToast('Sign photos must be taken on-site.');
+      // Prefer capture_lat/lng (original GPS from sign builder) over lat/lng
+      // which may have been updated by geocoding or other edits
+      const refLat = existingStore.capture_lat || existingStore.lat;
+      const refLng = existingStore.capture_lng || existingStore.lng;
+      const dist = haversineMeters(_signBuilder.gps.lat, _signBuilder.gps.lng, refLat, refLng);
+      if (dist > 1000) {
+        showToast('GPS couldn\'t confirm you\'re at this store — if you\'re here, please try again in a moment.');
         return;
       }
     }
